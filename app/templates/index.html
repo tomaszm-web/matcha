@@ -31,9 +31,7 @@
 			</div>
         </div>
     </header>
-    <footer id="app">
-		%% username %%
-		{{ message }}
+    <footer>
     </footer>
 	<div class="modal fade" id="signUp">
 		<div class="modal-dialog">
@@ -43,13 +41,17 @@
 				<button type="button" class="close" data-dismiss="modal">&times;</button>
 	  		</div>
 	  		<div class="modal-body">
-				<form action="" class="signUpForm">
-					<input type="text" name="username" placeholder="Login">
-					<input type="text" name="name" placeholder="First name">
-					<input type="text" name="surname" placeholder="Last name">
-					<input type="email" name="email" placeholder="E-mail">
-					<input type="password" name="pass" placeholder="Password">
-					<input type="password" name="repass" placeholder="Repeat password">
+				<form action="" class="signUpForm" id="signUpForm" @submit="checkForm">
+					<input type="text" name="username" placeholder="Login" required>
+					<input type="text" name="name" placeholder="First name" required>
+					<input type="text" name="surname" placeholder="Last name" required>
+					<input type="email" name="email" placeholder="E-mail" required>
+					<input type="password" name="pass" placeholder="Password" v-model="pass" required>
+					<input type="password" name="repass" placeholder="Repeat password" required>
+					<ul class="errors" v-if="errors.length">
+						<li v-for="error in errors">{{ error }}</li>
+					</ul>
+					<button class="btn">Sign up</button>
 				</form>
 	  		</div>
 	  		<div class="modal-footer">
