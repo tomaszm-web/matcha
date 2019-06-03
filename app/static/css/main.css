@@ -1,66 +1,64 @@
 body {
-    font-family: 'Roboto', sans-serif;
+	font-family: 'Poppins', sans-serif;
 }
 
 ul, li {
-    display: block;
-    padding: 0;
-    margin: 0;
+	display: block;
+	padding: 0;
+	margin: 0;
 }
 
 input, button {
-    outline: none;
+	outline: none;
 }
 
 input {
-    display: block;
-    background-color: #fff;
-    border-radius: 12px;
-    border: 1px solid #dbdddd;
-    padding: 7px 15px;
-    width: 100%;
+	display: block;
+	background-color: #fff;
+	border-radius: 12px;
+	border: 1px solid #dbdddd;
+	padding: 7px 15px;
+	width: 100%;
 }
 
 a {
-    -webkit-transition: .15s ease-in all;
-    -moz-transition: .15s ease-in all;
-    -ms-transition: .15s ease-in all;
-    -o-transition: .15s ease-in all;
-    transition: .15s ease-in all;
+	-webkit-transition: .15s ease-in all;
+	-moz-transition: .15s ease-in all;
+	-ms-transition: .15s ease-in all;
+	-o-transition: .15s ease-in all;
+	transition: .15s ease-in all;
 }
 
 a:hover {
-    text-decoration: none;
+	text-decoration: none;
 }
 
 .btn {
-    color: #fff;
-    text-align: center;
-    padding: 3px 20px;
-    font-size: 20px;
-    font-weight: 300;
-    background-color: #f05151;
-    border: 1px solid #f05151;
-    border-radius: 70px
+	color: #fff;
+	text-align: center;
+	padding: 10px 35px;
+	font-size: 12px;
+	background-color: #f05151;
+	border: 1px solid #f05151;
 }
 
 .btn:hover {
-    color: #f05151;
-    background-color: transparent;
+	color: #f05151;
+	background-color: transparent;
 }
 
 .btn-transparent {
-    background-color: transparent;
-    border-color: #fff;
+	background-color: transparent;
+	border-color: #fff;
 }
 
 .btn-transparent:hover {
-    color: #f05151;
-    background-color: #fff;
+	color: #f05151;
+	background-color: #fff;
 }
 
 .close {
-    outline: none!important;
+	outline: none!important;
 }
 
 .errors {
@@ -71,35 +69,49 @@ a:hover {
 	flex-direction: column;
 }
 
+h1 {
+	font-family: 'Montserrat', sans-serif;
+	font-weight: 800;
+	font-size: 7.4rem;
+	letter-spacing: 4px;
+}
+
 /*Header*/
-header {
-    background-color: #f05151;
+#nav {
+	background-color: #3B354D;
 }
 
 .logo {
-    font-weight: bold;
-    font-size: 20px;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 15px;
+	font-weight: bold;
+	font-size: 20px;
+	color: #fff;
+	text-transform: uppercase;
+	letter-spacing: 15px;
 }
 
 .main-menu__list {
-    display: flex;
+	display: flex;
 }
 
 .main-menu__item a {
-    color: #fff;
-    display: block;
-    line-height: 50px;
-    padding: 15px 10px;
-    border-top: 3px solid transparent;
+	color: #fff;
+	display: block;
+	line-height: 50px;
+	padding: 10px 10px;
+	border-top: 3px solid transparent;
 }
 
 .main-menu__item a:hover {
-    border-color: #fff;
+	color: #FF6162;
 }
 
 .signUpForm input {
-    margin: 7px 0;
+	margin: 7px 0;
+}
+
+/*Header*/
+header {
+	background: url("../img/bg.jpg") no-repeat center top;
+	color: #fff;
+	padding: 120px 0;
 }
