@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Matcha</title>
-	<link href="https://fonts.googleapis.com/css?family=Montserrat:800|Poppins&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css?family=Montserrat:900|Poppins:300,400&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
     <link href="static/css/main.css" rel="stylesheet">
 </head>
 <body>
@@ -14,7 +16,7 @@
 				<div class="col-3 logo">
 					Matcha
 				</div>
-				<div class="col-5">
+				<div class="col-8">
 					<nav class="main-menu">
 						<ul class="main-menu__list">
 							<li class="main-menu__item"><a href="#">Lorem</a></li>
@@ -24,17 +26,22 @@
 						</ul>
 					</nav>
 				</div>
-				<div class="col-4">
-					<a href="#" class="btn btn-transparent" data-toggle="modal" data-target="#signUp">Sign up</a>
-					<a href="#" class="btn btn-transparent">Log in</a>
+				<div class="col-1 text-center">
+					<a href="#" class="profile-link" data-toggle="dropdown" id="user-profile">
+						<i class="fas fa-user-circle"></i>
+					</a>
+					<div class="dropdown-menu dropdown-menu-right" aria-labelledby="user-profile">
+						<a href="#" class="btn btn-transparent" data-toggle="modal" data-target="#signUp">Sign up</a>
+						<a href="#" class="btn btn-transparent">Log in</a>
+					</div>
 				</div>
 			</div>
         </div>
     </section>
 	<header>
 		<div class="container">
-			<div class="row">
-				<div class="col text-center">
+			<div class="row justify-content-center">
+				<div class="col-7 text-center">
 					<h1 class="main-title">Socialize.</h1>
 					<p class="main-subtitle">
 						Searching for your soul mate is difficult. With a bit of FUN & social interactions, everything becomes much simpler!
@@ -54,12 +61,12 @@
 	  		</div>
 	  		<div class="modal-body">
 				<form action="" class="signUpForm" id="signUpForm" @submit="checkForm">
-					<input type="text" name="username" placeholder="Login" required>
-					<input type="text" name="name" placeholder="First name" required>
-					<input type="text" name="surname" placeholder="Last name" required>
-					<input type="email" name="email" placeholder="E-mail" required>
-					<input type="password" name="pass" placeholder="Password" v-model="pass" required>
-					<input type="password" name="repass" placeholder="Repeat password" required>
+					<input class="form-control" type="text" name="username" placeholder="Login" required>
+					<input class="form-control" type="text" name="name" placeholder="First name" required>
+					<input class="form-control" type="text" name="surname" placeholder="Last name" required>
+					<input class="form-control" type="email" name="email" placeholder="E-mail" required>
+					<input class="form-control" type="password" name="pass" placeholder="Password" v-model="pass" required>
+					<input class="form-control" type="password" name="repass" placeholder="Repeat password" required>
 					<ul class="errors" v-if="errors.length">
 						<li v-for="error in errors">{{ error }}</li>
 					</ul>
