@@ -1,8 +1,17 @@
-from app import app
 import pymysql
 
 
 class Database:
 	def __init__(self):
-		self.con = pymysql.connect(host=app.config["host"], user=app.config["user"], password=app.config["password"], db=app.config["db"], cursorclass=pymysql.cursors.DictCursor)
+		self.con = None
+		self.cur = None
+
+	def init_app(self, app):
+		self.con = pymysql.connect(host=app.config["DB_HOST"], user=app.config["DB_USER"], password=app.config["DB_PASSWORD"], db=app.config["DB_NAME"], cursorclass=pymysql.cursors.DictCursor)
 		self.cur = self.con.cursor()
+
+	def create_tables(self):
+		return self.cur
+
+
+db = Database()
