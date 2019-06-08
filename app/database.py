@@ -2,16 +2,14 @@ import pymysql
 
 
 class Database:
-	def __init__(self):
-		self.con = None
-		self.cur = None
-
-	def init_app(self, app):
+	def __init__(self, app):
 		self.con = pymysql.connect(host=app.config["DB_HOST"], user=app.config["DB_USER"], password=app.config["DB_PASSWORD"], db=app.config["DB_NAME"], cursorclass=pymysql.cursors.DictCursor)
-		self.cur = self.con.cursor()
 
 	def create_tables(self):
-		return self.cur
+		return self.con
 
-
-db = Database()
+	def query(self, sql, values=None):
+		cur = self.con.cursor()
+		cur.execute(sql, values)
+		self.con.commit()
+		return cur

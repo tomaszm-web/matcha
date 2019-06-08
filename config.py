@@ -12,6 +12,17 @@ class Config(object):
 	DB_PASSWORD = "8tdbKY8Vct"
 	DB_NAME = "EbumYmCv3K"
 
+	# Email sender configuration
+	MAIL_SERVER = 'smtp.googlemail.com'
+	MAIL_PORT = 465
+	MAIL_USE_TLS = False
+	MAIL_USE_SSL = True
+	MAIL_USERNAME = "evgeny.ocheredko@gmail.com"
+	MAIL_PASSWORD = "36673667"
+
+	# administrator list
+	ADMINS = ["evgeny.ocheredko@gmail.com"]
+
 
 class ProductionConfig(Config):
 	DEBUG = False

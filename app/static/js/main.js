@@ -4,8 +4,7 @@ form = new Vue({
 		errors: [],
 		pass: null,
 		repass: null,
-		passRegExp: new RegExp("^(((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})"),
-		message: null
+		passRegExp: new RegExp("^(((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})")
 	},
 	methods: {
 		checkForm() {
@@ -23,12 +22,12 @@ form = new Vue({
 					url: '/registration',
 					data: new FormData(e.target)
 				})
-				.then(function () {
+				.then((response) => {
 					e.target.reset();
-					this.message = "Registration is almost done! You should confirm your E-mail.";
+					this.errors.push.apply(this.errors, response.data);
 				})
-				.catch(function (error) {
-					console.log(error);
+				.catch(() => {
+					this.errors.push("Something went wrong! Try again")
 				});
 			}
 		}

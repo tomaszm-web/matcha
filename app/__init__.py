@@ -1,6 +1,7 @@
 import os
 from flask import Flask
-from .database import db
+from app.database import Database
+from flask_mail import Mail
 
 
 class CustomFlask(Flask):
@@ -11,10 +12,8 @@ class CustomFlask(Flask):
 	))
 
 
-def create_app():
-	app = CustomFlask(__name__)
-	app.config.from_object(os.environ['APP_SETTINGS'])
-	db.init_app(app)
-	import app.routes as routes
-	app.register_blueprint(routes.main_module)
-	return app
+app = CustomFlask(__name__)
+app.config.from_object(os.environ['APP_SETTINGS'])
+db = Database(app)
+mail = Mail(app)
+from app import routes, models
