@@ -2,6 +2,7 @@ import os
 from flask import Flask
 from app.database import Database
 from flask_mail import Mail
+from config import DevelopmentConfig
 
 
 class CustomFlask(Flask):
@@ -13,7 +14,7 @@ class CustomFlask(Flask):
 
 
 app = CustomFlask(__name__)
-app.config.from_object(os.environ['APP_SETTINGS'])
+app.config.from_object(DevelopmentConfig)
 db = Database(app)
 mail = Mail(app)
 from app import routes, models

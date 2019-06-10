@@ -1,14 +1,14 @@
 import secrets
-from flask import render_template, url_for, flash, redirect
+from flask import render_template, url_for, flash, redirect, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import app, db
 from app.mail import send_email
 
 
-class Ajax:
-	def registration(self, form):
+class Account:
+	@staticmethod
+	def registration(form):
 		errors = []
-
 		sql = "SELECT * FROM `users` WHERE login=%s"
 		cur = db.query(sql, (form["login"]))
 		if cur.rowcount > 0:
@@ -17,7 +17,6 @@ class Ajax:
 		cur = db.query(sql, (form["email"]))
 		if cur.rowcount > 0:
 			errors.append("User with this E-mail already exists")
-
 		sql = "INSERT INTO `users`(login, name, surname, email, password, token) VALUES(%s, %s, %s, %s, %s, %s)"
 		token = secrets.token_hex(10)
 		db.query(sql, (
@@ -32,14 +31,43 @@ class Ajax:
 					app.config["ADMINS"][0],
 					[form["email"]],
 					"Unfortunately, html markup doesn't work at your mail client!",
-					render_template('signup_email.html', user=form, token=token))
+					render_template('signup_email.html', login=form["login"], token=token))
 		return errors
 
-	def confirmation(self, login, token):
+	@staticmethod
+	def login(form):
+		errors = []
+		sql = "SELECT * FROM `users` WHERE login=%s"
+		cur = db.query(sql, (form["login"]))
+		user = cur.fetchone()
+		if not user:
+			errors.append("Wrong login!")
+		elif not check_password_hash(user["password"], form["pass"]):
+			errors.append("Wrong password!")
+		elif not user["confirmed"]:
+			errors.append("You should confirm your E-mail first!")
+		else:
+			session["user"] = form["login"]
+		return errors
+
+	@staticmethod
+	def confirmation(login, token):
 		sql = "SELECT token FROM `users` WHERE login=%s"
 		cur = db.query(sql, (login))
-		if cur.fetchone() == token:
-			sql = "UPDATE `users`(confirmation) WHERE id=%s VALUES(1)"
+		if cur.fetchone()["token"] == token:
+			sql = "UPDATE `users` SET confirmed=1 WHERE login=%s"
 			db.query(sql, (login))
 			return True
 		return False
+
+	@staticmethod
+	def reset(form, action):
+		errors = []
+		if action == "check":
+			sql = "SELECT * FROM `users` WHERE email=%s"
+			cur = db.query(sql, (form["email"]))
+			if not cur.fetchone():
+				errors.append("No user with such E-mail")
+		elif action == "reset":
+			sql = "UPDATE `users`(password) VALUES(%s) WHERE email=%s"
+			db.query(sql, (generate_password_hash(form["pass"]), form["email"]))

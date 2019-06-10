@@ -8,13 +8,13 @@
 <body>
 	<table style="padding: 30px; color:#ffffff; margin: 0 auto; background-color: #416788; border-radius: 4px; font-size: 18px">
 		<tr><td align=center style="font-weight: 600; font-size: 22px">
-			Dear, %% user.login %%!!
+			Dear, %% login %%!!
 		</td></tr>
 		<tr><td align=center>
 			Thank you for signing up to Matcha. Registration is almost done!<br> To confirm your E-mail, go via this link:
 		</td></tr>
 		<tr><td align=center>
-			<a href="%% url_for('index', login=user.login, token=token, _external=True) %%" style="padding: 15px; display: block; background-color: #f05151; color: #ffffff; text-decoration: none; font-size: 18px; font-weight: 600; border-radius: 4px; margin: 7px 0">
+			<a href="%% url_for('confirmation', login=login, token=token, _external=True) %%" style="padding: 15px; display: block; background-color: #f05151; color: #ffffff; text-decoration: none; font-size: 18px; font-weight: 600; border-radius: 4px; margin: 7px 0">
 				Confirm your email
 			</a>
 		</td></tr>

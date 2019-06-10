@@ -40,22 +40,24 @@ a:hover {
 }
 
 .btn {
-	color: #fff;
-	text-align: center;
 	padding: 10px 35px;
 	font-size: 12px;
+}
+
+.btn-danger {
 	background-color: #f05151;
 	border: 1px solid #f05151;
 }
 
-.btn:hover {
-	color: #f05151;
-	background-color: transparent;
-}
+/*.btn-danger:hover {*/
+/*	color: #f05151;*/
+/*	background-color: transparent;*/
+/*}*/
 
 .btn-transparent {
 	background-color: transparent;
-	border-color: #fff;
+	color: #fff;
+	border: 1px solid #fff;
 }
 
 .btn-transparent:hover {
@@ -107,7 +109,7 @@ h1 {
 	color: #FF6162;
 }
 
-.signUpForm input {
+form input {
 	margin: 7px 0;
 }
 
