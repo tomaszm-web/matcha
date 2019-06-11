@@ -1,5 +1,5 @@
 import secrets
-from flask import render_template, url_for, flash, redirect, session
+from flask import render_template, url_for, flash, redirect, session, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import app, db
 from app.mail import send_email
@@ -7,31 +7,46 @@ from app.mail import send_email
 
 class Account:
 	@staticmethod
+	def check_login_existant(login):
+		sql = "SELECT * FROM `users` WHERE login=%s"
+		cur = db.query(sql, [login])
+		return cur.rowcount > 0
+
+	@staticmethod
+	def check_email_existant(email):
+		sql = "SELECT * FROM `users` WHERE email=%s"
+		cur = db.query(sql, [email])
+		return cur.rowcount > 0
+
+	@staticmethod
+	def get_user_info(login):
+		sql = "SELECT * FROM `users` WHERE login=%s"
+		cur = db.query(sql, [login])
+		return cur.fetchone()
+
+	@staticmethod
 	def registration(form):
 		errors = []
-		sql = "SELECT * FROM `users` WHERE login=%s"
-		cur = db.query(sql, (form["login"]))
-		if cur.rowcount > 0:
+		if Account.check_login_existant(form["login"]):
 			errors.append("User with this login already exists")
-		sql = "SELECT * FROM `users` WHERE email=%s"
-		cur = db.query(sql, (form["email"]))
-		if cur.rowcount > 0:
+		if Account.check_email_existant(form["login"]):
 			errors.append("User with this E-mail already exists")
-		sql = "INSERT INTO `users`(login, name, surname, email, password, token) VALUES(%s, %s, %s, %s, %s, %s)"
-		token = secrets.token_hex(10)
-		db.query(sql, (
-			form["login"],
-			form["name"],
-			form["surname"],
-			form["email"],
-			generate_password_hash(form["pass"]),
-			token
-		))
-		send_email("Thank's for the signing-up to Matcha",
-					app.config["ADMINS"][0],
-					[form["email"]],
-					"Unfortunately, html markup doesn't work at your mail client!",
-					render_template('signup_email.html', login=form["login"], token=token))
+		if len(errors) == 0:
+			sql = "INSERT INTO `users`(login, name, surname, email, password, token) VALUES(%s, %s, %s, %s, %s, %s)"
+			token = secrets.token_hex(10)
+			db.query(sql, (
+				form["login"],
+				form["name"],
+				form["surname"],
+				form["email"],
+				generate_password_hash(form["pass"]),
+				token
+			))
+			send_email("Thank's for the signing-up to Matcha",
+						app.config["ADMINS"][0],
+						[form["email"]],
+						"Unfortunately, html markup doesn't work at your mail client!",
+						render_template('signup_email.html', login=form["login"], token=token))
 		return errors
 
 	@staticmethod
@@ -48,6 +63,7 @@ class Account:
 			errors.append("You should confirm your E-mail first!")
 		else:
 			session["user"] = form["login"]
+			flash("You successfully logged in!")
 		return errors
 
 	@staticmethod
@@ -63,11 +79,26 @@ class Account:
 	@staticmethod
 	def reset(form, action):
 		errors = []
-		if action == "check":
+		try:
 			sql = "SELECT * FROM `users` WHERE email=%s"
 			cur = db.query(sql, (form["email"]))
-			if not cur.fetchone():
-				errors.append("No user with such E-mail")
-		elif action == "reset":
-			sql = "UPDATE `users`(password) VALUES(%s) WHERE email=%s"
-			db.query(sql, (generate_password_hash(form["pass"]), form["email"]))
+			user = cur.fetchone()
+			if action == "check":
+				if not user:
+					errors.append("No user with such E-mail")
+				else:
+					send_email("Matcha: Reset password",
+								app.config["ADMINS"][0],
+								[form["email"]],
+								"Unfortunately, html markup doesn't work at your mail client!",
+								render_template('reset_password.html', user=user))
+			elif action == "reset":
+				if form["token"] != user["token"]:
+					errors.append("Wrong token!")
+				else:
+					sql = "UPDATE `users` SET password=%s WHERE email=%s"
+					db.query(sql, (generate_password_hash(form["pass"]), form["email"]))
+					flash("You successfully updated your password!")
+		except ValueError:
+			errors.append("Something went wrong")
+		return errors

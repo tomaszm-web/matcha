@@ -36,7 +36,10 @@ def login():
 @app.route('/logout', methods=["GET"])
 def logout():
 	if "user" in session:
+		flash("You successfully logged out!")
 		session.pop("user", None)
+	else:
+		flash("You should log in first, to be able to log out!")
 	return redirect(url_for('index'))
 
 
@@ -53,6 +56,15 @@ def confirmation():
 def reset():
 	errors = Account.reset(request.form, action=request.form["action"])
 	return json.dumps(errors)
+
+
+@app.route('/profile')
+def profile():
+	if "user" not in session:
+		flash("You should log in to access your profile")
+		return redirect(url_for('index'))
+	user = Account.get_user_info(session["user"])
+	return render_template('profile.html', user=user)
 
 
 @app.before_request

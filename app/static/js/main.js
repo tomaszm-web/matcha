@@ -1,3 +1,11 @@
+let parts = window.location.search.substr(1).split("&");
+let $_GET = {};
+for (let i = 0; i < parts.length; i++) {
+	let temp = parts[i].split("=");
+	$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
+}
+
+/*--------Forms--------*/
 let passRegExp = new RegExp("^(((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})");
 
 let registration = new Vue({
@@ -25,9 +33,9 @@ let registration = new Vue({
 					data: new FormData(e.target)
 				})
 				.then((response) => {
-					e.target.reset();
 					this.errors.push.apply(this.errors, response.data);
 					if (!this.errors.length) {
+						e.target.reset();
 						this.message = "Registration is almost done! You should confirm your E-mail to log in."
 					}
 				})
@@ -69,16 +77,26 @@ let login = new Vue({
 let reset = new Vue({
 	el: "#reset form",
 	data: {
-		action: "check",
+		action: "action" in $_GET && "email" in $_GET && "token" in $_GET ? $_GET["action"] : "check",
+		email: null,
 		pass: null,
 		repass: null,
 		errors: [],
 		message: ""
 	},
+	created() {
+		if ("action" in $_GET && $_GET["action"] == "reset") {
+			$("#reset").modal("show");
+			this.action = $_GET.action;
+			this.email = $_GET["email"];
+		}
+	},
 	methods: {
 		checkForm(action) {
 			this.errors = [];
-			if (!this.pass.match(passRegExp))
+			if (!this.pass || !this.repass)
+				this.errors.push("Empty password");
+			else if (!this.pass.match(passRegExp))
 				this.errors.push("Password must be at least of length 6 and contain letters and digits");
 			else if (this.repass !== this.pass)
 				this.errors.push("Password and Re-password must be equal");
@@ -87,9 +105,11 @@ let reset = new Vue({
 		sendForm(e) {
 			this.errors = [];
 			this.message = "";
-			if (this.action === "reset" && !this.checkForm()) return ;
 			let data = new FormData(e.target);
-			data.append("action", this.action);
+			if (this.action === "reset") {
+				if (!this.checkForm()) return ;
+				data.append("token", $_GET["token"]);
+			}
 			axios({
 				method: 'post',
 				url: '/reset',
@@ -101,7 +121,8 @@ let reset = new Vue({
 				if (!this.errors.length) {
 					if (this.action === "check")
 						this.message = "Letter with link to re-initialize your password was sent to your E-mail!"
-					this.action = "reset"
+					else if (this.action === "reset")
+						location.replace(location.href.split('?')[0]);
 				}
 			})
 			.catch(() => {
