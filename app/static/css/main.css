@@ -1,5 +1,6 @@
 body {
 	font-family: 'Poppins', sans-serif;
+	background-color: #F0EBEB;
 }
 
 ul, li {
@@ -155,6 +156,13 @@ header {
 /*Profile*/
 #profile {
 	padding: 80px 0;
+}
+
+.settings-form {
+	background-color: #fff;
+	padding: 40px 20px;
+	border-radius: .25rem;
+	box-shadow: 0 0 15px 0 rgba(0, 0, 0, 0.04);
 }
 
 /*Footer*/
