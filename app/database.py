@@ -13,3 +13,7 @@ class Database:
 		cur.execute(sql, values)
 		self.con.commit()
 		return cur
+
+	def get_row(self, sql, values=None):
+		cur = self.query(sql, values)
+		return cur.fetchone()

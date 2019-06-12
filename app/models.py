@@ -45,7 +45,7 @@ class Account:
 			send_email("Thank's for the signing-up to Matcha",
 						app.config["ADMINS"][0],
 						[form["email"]],
-						"Unfortunately, html markup doesn't work at your mail client!",
+						"Thank you for signing up to matcha. You should confirm your E-mail!",
 						render_template('signup_email.html', login=form["login"], token=token))
 		return errors
 
@@ -106,18 +106,33 @@ class Account:
 	@staticmethod
 	def change(form):
 		errors = []
+		email_confirmed = True
 		try:
-			sql = 'UPDATE `users`SET login=%s, email=%s, name=%s, surname=%s, gender=%s, preferences=%s, biography=%s WHERE id=%s'
-			db.query(sql, [
-				form["login"],
-				form["email"],
-				form["name"],
-				form["surname"],
-				form["gender"],
-				form["preferences"],
-				form["biography"],
-				form["user_id"]
-			])
+			sql = "SELECT login, email FROM `users` WHERE id=%s"
+			user = db.get_row(sql, (form["user_id"]))
+			if user["login"] != form["login"]:
+				if Account.check_login_existant(form["login"]):
+					errors.append("User with this login already exists")
+				else:
+					session["user"] = user["login"]
+			if user["email"] != form["email"]:
+				if Account.check_email_existant(form["email"]):
+					errors.append("User with this E-mail already exists")
+				else:
+					email_confirmed = False
+			if len(errors) == 0:
+				sql = "UPDATE `users` SET login=%s, email=%s, name=%s, surname=%s, gender=%s, preferences=%s, biography=%s, confirmed=%s WHERE id=%s"
+				db.query(sql, [
+					form["login"],
+					form["email"],
+					form["name"],
+					form["surname"],
+					form["gender"],
+					form["preferences"],
+					form["biography"],
+					email_confirmed,
+					form["user_id"]
+				])
 		except KeyError:
 			errors.append("You haven't set some values")
 		return errors
