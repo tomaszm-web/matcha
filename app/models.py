@@ -20,7 +20,7 @@ class Account:
 
 	@staticmethod
 	def get_user_info(login):
-		sql = "SELECT * FROM `users` WHERE login=%s"
+		sql = "SELECT id, login, email, confirmed, name, surname, gender, preferences, biography FROM users WHERE login=%s"
 		cur = db.query(sql, [login])
 		return cur.fetchone()
 
@@ -99,6 +99,25 @@ class Account:
 					sql = "UPDATE `users` SET password=%s WHERE email=%s"
 					db.query(sql, (generate_password_hash(form["pass"]), form["email"]))
 					flash("You successfully updated your password!")
-		except ValueError:
-			errors.append("Something went wrong")
+		except KeyError:
+			errors.append("You haven't set some values")
+		return errors
+
+	@staticmethod
+	def change(form):
+		errors = []
+		try:
+			sql = 'UPDATE `users`SET login=%s, email=%s, name=%s, surname=%s, gender=%s, preferences=%s, biography=%s WHERE id=%s'
+			db.query(sql, [
+				form["login"],
+				form["email"],
+				form["name"],
+				form["surname"],
+				form["gender"],
+				form["preferences"],
+				form["biography"],
+				form["user_id"]
+			])
+		except KeyError:
+			errors.append("You haven't set some values")
 		return errors

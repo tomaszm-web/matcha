@@ -2,46 +2,56 @@
 {% block content %}
 	<section id="profile">
 		<div class="container">
-			<form class="row settings-form">
+			<form action="/change_profile_info" method="POST" class="row settings-form">
 				<div class="col-12">
 					<h2>Account details</h2>
 				</div>
-				<div class="col-6 form-group">
-					Username:
-					<input class="form-control" type="text" name="login" value="%% user.login %%">
-				</div>
-				<div class="col-6 form-group">
-					E-mail:
-					<input class="form-control" type="email" name="email" value="%% user.email %%">
-				</div>
-				<div class="col-6 form-group">
-					Name:
-					<input class="form-control" type="text" name="name" value="%% user.name %%">
-				</div>
-				<div class="col-6 form-group">
-					Last Name:
-					<input class="form-control" type="text" name="surname" value="%% user.surname %%">
-				</div>
-				<div class="col-6 form-group">
-					Gender:
-					<select class="form-control" name="gender">
-						<option value="Male">Male</option>
-						<option value="Female">Female</option>
-					</select>
-				</div>
-				<div class="col-6 form-group">
-					Sexual preferences:
-					<select class="form-control" name="gender">
-						<option value="Male">Girls</option>
-						<option value="Female">Boys</option>
-						<option value="Female">Bisexual</option>
-					</select>
+				<input type="hidden" name="csrf_token" value="%% csrf_token %%">
+				<input type="hidden" name="user_id" value="%% user.id %%">
+				<div class="col-6">
+					<label class="form-group">
+						Username:
+						<input class="form-control" type="text" name="login" value="%% user.login %%" required>
+					</label>
+					<label class="form-group">
+						E-mail:
+						<input class="form-control" type="email" name="email" value="%% user.email %%" required>
+					</label>
+					<label class="form-group">
+						Name:
+						<input class="form-control" type="text" name="name" value="%% user.name %%" required>
+					</label>
+					<label class="form-group">
+						Last Name:
+						<input class="form-control" type="text" name="surname" value="%% user.surname %%" required>
+					</label>
 				</div>
 				<div class="col-6">
-					Biography:
-					<textarea name="biography" class="form-control"></textarea>
+					<label class="form-group">
+						Gender:
+						<select class="form-control" name="gender" required>
+							<option value="male" {% print('selected') if user.gender == "male" %}>Male</option>
+							<option value="female" {% print('selected') if user.gender == "female" %}>Female</option>
+						</select>
+					</label>
+					<label class="form-group">
+						Sexual preferences:
+						<select class="form-control" name="preferences" required>
+							<option value="bisexual" {% print('selected') if user.preferences == "bisexual" %}>Bisexual</option>
+							<option value="girls" {% print('selected') if user.preferences == "girls" %}>Girls</option>
+							<option value="boys" {% print('selected') if user.preferences == "boys" %}>Boys</option>
+						</select>
+					</label>
+					<label class="form-group">
+						Biography:
+						<textarea name="biography" placeholder="Type a few words about you" class="form-control"
+								  required>%% user.biography %%</textarea>
+					</label>
 				</div>
-				<div class="col align-self-center"><button class="btn btn-success">Apply changes</button></div>
+				<div class="col align-self-center">
+					<button class="btn btn-success">Apply changes</button>
+					<a href="#" data-toggle="modal" data-target="#reset" class="btn btn-primary">Change password</a>
+				</div>
 			</form>
 		</div>
 	</section>

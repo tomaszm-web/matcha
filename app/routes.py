@@ -64,7 +64,17 @@ def profile():
 		flash("You should log in to access your profile")
 		return redirect(url_for('index'))
 	user = Account.get_user_info(session["user"])
-	return render_template('profile.html', user=user)
+	return render_template('profile.html', user=user, csrf_token=session["csrf_token"])
+
+
+@app.route('/change_profile_info', methods=["POST"])
+def change():
+	errors = Account.change(request.form)
+	for error in errors:
+		flash(error)
+	if len(errors) == 0:
+		flash("Your profile's info was successfully updated")
+	return redirect(url_for('profile'))
 
 
 @app.before_request
