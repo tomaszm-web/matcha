@@ -2,17 +2,19 @@
 {% block content %}
 	<section id="profile">
 		<div class="container">
-			<form action="/change_profile_info" method="POST" class="row settings-form">
+			<form action="/change_profile_info" method="POST" class="row settings-form" enctype="multipart/form-data">
 				<div class="col-12">
 					<h2>Account details</h2>
 				</div>
 				<input type="hidden" name="csrf_token" value="%% csrf_token %%">
-				<input type="hidden" name="user_id" value="%% user.id %%">
-				<div class="col-6">
-					<label class="form-group">
-						Username:
-						<input class="form-control" type="text" name="login" value="%% user.login %%" required>
+				<div class="col-12 d-flex align-items-center">
+					<label class="profile__avatar" style="background-image: url(%% user.avatar %%)">
+						<i class="fa fa-upload"></i>
+						<input type="file" name="avatar" accept="image/*">
 					</label>
+					<code>%% user.login %%</code>
+				</div>
+				<div class="col-6">
 					<label class="form-group">
 						E-mail:
 						<input class="form-control" type="email" name="email" value="%% user.email %%" required>
@@ -37,7 +39,9 @@
 					<label class="form-group">
 						Sexual preferences:
 						<select class="form-control" name="preferences" required>
-							<option value="bisexual" {% print('selected') if user.preferences == "bisexual" %}>Bisexual</option>
+							<option value="bisexual" {% print('selected') if user.preferences == "bisexual" %}>
+								Bisexual
+							</option>
 							<option value="girls" {% print('selected') if user.preferences == "girls" %}>Girls</option>
 							<option value="boys" {% print('selected') if user.preferences == "boys" %}>Boys</option>
 						</select>

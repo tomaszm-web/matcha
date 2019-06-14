@@ -18,7 +18,7 @@
 			<div class="col-1 text-center"><img src="static/img/logo.png" alt="Matcha"></div>
 			<div class="col-10">
 				<nav class="main-menu">
-					<ul class="main-menu__list">
+					<ul class="main-menu__list justify-content-center">
 						<li class="main-menu__item"><a href="%% url_for('index') %%">Main</a></li>
 						<li class="main-menu__item"><a href="%% url_for('profile') %%">Profile</a></li>
 						<li class="main-menu__item"><a href="#">Lorem</a></li>
@@ -27,9 +27,8 @@
 				</nav>
 			</div>
 			<div class="col-1 text-center">
-				<a href="#" class="profile-link" data-toggle="dropdown" id="user-profile">
-					<i class="fas fa-user-circle"></i>
-				</a>
+				<a href="#" class="profile-link" data-toggle="dropdown" id="user-profile"
+				   style="background-image: url(%% user.avatar if user else 'static/img/default_avatar.png' %%)"></a>
 				<div class="dropdown-menu dropdown-menu-right" aria-labelledby="user-profile">
 					{% if "user" not in session %}
 						<a href="#" class="btn btn-transparent" data-toggle="modal" data-target="#signUp">Sign up</a>
@@ -47,10 +46,10 @@
 	<div class="container">
 		<div class="row">
 			<div class="col-6">
-				2018 Matcha. All rights reserved.
+				2018 <code>Matcha.</code> All rights reserved.
 			</div>
 			<div class="col-6 text-right">
-				Created by yochered
+				Created by <code>yochered</code>
 			</div>
 		</div>
 	</div>

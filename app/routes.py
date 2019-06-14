@@ -6,7 +6,8 @@ from flask import (
 	session,
 	abort,
 	flash,
-	redirect
+	redirect,
+	send_from_directory
 )
 import secrets
 import json
@@ -46,7 +47,7 @@ def logout():
 @app.route('/confirmation', methods=["GET"])
 def confirmation():
 	if Account.confirmation(request.args["login"], request.args["token"]):
-		flash("Your E-mail was successfully confirmed. You can now log-in")
+		flash("Your E-mail was successfully confirmed!")
 	else:
 		flash("Something went wrong. Try again!")
 	return redirect(url_for('index'))
@@ -69,7 +70,7 @@ def profile():
 
 @app.route('/change_profile_info', methods=["POST"])
 def change():
-	errors = Account.change(request.form)
+	errors = Account.change(request.form, request.files)
 	for error in errors:
 		flash(error)
 	if len(errors) == 0:
@@ -83,3 +84,8 @@ def csrf_protect():
 		token = session['csrf_token']
 		if not token or token != request.form.get('csrf_token'):
 			abort(403)
+
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+	return send_from_directory("../" + app.config['UPLOAD_FOLDER'], filename)

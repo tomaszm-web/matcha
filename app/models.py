@@ -1,6 +1,8 @@
+import os
 import secrets
 from flask import render_template, url_for, flash, redirect, session, abort
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from app import app, db
 from app.mail import send_email
 
@@ -19,10 +21,23 @@ class Account:
 		return cur.rowcount > 0
 
 	@staticmethod
+	def check_img_extension(filename):
+		return '.' in filename and filename.rsplit('.', 1)[1] in ["png", "jpg", "jpeg"]
+
+	@staticmethod
 	def get_user_info(login):
-		sql = "SELECT id, login, email, confirmed, name, surname, gender, preferences, biography FROM users WHERE login=%s"
+		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences, biography, avatar "
+			   "FROM users WHERE login=%s")
 		cur = db.query(sql, [login])
 		return cur.fetchone()
+
+	@staticmethod
+	def email_confirmation(email, login, token):
+		send_email("Thank's for the signing-up to Matcha",
+				   app.config["ADMINS"][0],
+				   [email],
+				   "You should confirm your E-mail!",
+				   render_template('signup_email.html', login=login, token=token))
 
 	@staticmethod
 	def registration(form):
@@ -42,11 +57,7 @@ class Account:
 				generate_password_hash(form["pass"]),
 				token
 			))
-			send_email("Thank's for the signing-up to Matcha",
-						app.config["ADMINS"][0],
-						[form["email"]],
-						"Thank you for signing up to matcha. You should confirm your E-mail!",
-						render_template('signup_email.html', login=form["login"], token=token))
+			Account.email_confirmation(form["email"], form["login"], token)
 		return errors
 
 	@staticmethod
@@ -88,10 +99,10 @@ class Account:
 					errors.append("No user with such E-mail")
 				else:
 					send_email("Matcha: Reset password",
-								app.config["ADMINS"][0],
-								[form["email"]],
-								"Unfortunately, html markup doesn't work at your mail client!",
-								render_template('reset_password.html', user=user))
+							   app.config["ADMINS"][0],
+							   [form["email"]],
+							   "It seems you want to change your password?",
+							   render_template('reset_password.html', user=user))
 			elif action == "reset":
 				if form["token"] != user["token"]:
 					errors.append("Wrong token!")
@@ -104,26 +115,26 @@ class Account:
 		return errors
 
 	@staticmethod
-	def change(form):
+	def change(form, files=None):
 		errors = []
 		email_confirmed = True
 		try:
-			sql = "SELECT login, email FROM `users` WHERE id=%s"
-			user = db.get_row(sql, (form["user_id"]))
-			if user["login"] != form["login"]:
-				if Account.check_login_existant(form["login"]):
-					errors.append("User with this login already exists")
-				else:
-					session["user"] = user["login"]
+			user = Account.get_user_info(session["user"])
 			if user["email"] != form["email"]:
 				if Account.check_email_existant(form["email"]):
 					errors.append("User with this E-mail already exists")
 				else:
 					email_confirmed = False
+			avatar_filename = user["avatar"]
+			if "avatar" in files and Account.check_img_extension(files["avatar"].filename):
+				avatar_filename = secure_filename(files["avatar"].filename)
+				avatar_filename = os.path.join(app.config['UPLOAD_FOLDER'], avatar_filename)
+				files["avatar"].save(avatar_filename)
 			if len(errors) == 0:
-				sql = "UPDATE `users` SET login=%s, email=%s, name=%s, surname=%s, gender=%s, preferences=%s, biography=%s, confirmed=%s WHERE id=%s"
+				sql = ("UPDATE `users` "
+					   "SET email=%s, name=%s, surname=%s, gender=%s, preferences=%s, biography=%s, confirmed=%s, avatar=%s "
+					   "WHERE login=%s")
 				db.query(sql, [
-					form["login"],
 					form["email"],
 					form["name"],
 					form["surname"],
@@ -131,8 +142,12 @@ class Account:
 					form["preferences"],
 					form["biography"],
 					email_confirmed,
-					form["user_id"]
+					avatar_filename,
+					user["login"]
 				])
+				if not email_confirmed:
+					Account.email_confirmation(form["email"], session["user"], user["token"])
+					flash("You will have to confirm your new E-mail!")
 		except KeyError:
 			errors.append("You haven't set some values")
 		return errors

@@ -23,6 +23,9 @@ class Config(object):
 	# administrator list
 	ADMINS = ["evgeny.ocheredko@gmail.com"]
 
+	# Upload folder
+	UPLOAD_FOLDER = "uploads"
+
 
 class ProductionConfig(Config):
 	DEBUG = False

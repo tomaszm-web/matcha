@@ -145,11 +145,13 @@ header {
 }
 
 .profile-link {
-	font-size: 30px;
-	width: 100%;
-	color: white;
+	width: 50px;
+	height: 50px;
 	cursor: pointer;
 	display: block;
+	background-position: center center;
+	-webkit-background-size: cover;
+	background-size: cover;
 }
 
 .profile-link:hover {
@@ -171,6 +173,50 @@ header {
 
 .settings-form select {
 	margin: 7px 0;
+}
+.settings-form .profile__avatar {
+	-webkit-border-radius: 100%;
+	-moz-border-radius: 100%;
+	border-radius: 100%;
+	width: 70px;
+	height: 70px;
+	cursor: pointer;
+	margin: 0 20px 1rem 0;
+	background-position: center center;
+	-webkit-background-size: cover;
+	background-size: cover;
+	font-size: 0;
+	-webkit-transition: .15s ease-in all;
+	-moz-transition: .15s ease-in all;
+	-ms-transition: .15s ease-in all;
+	-o-transition: .15s ease-in all;
+	transition: .15s ease-in all;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: white;
+}
+
+.profile__avatar:hover {
+	font-size: 30px
+}
+
+.profile__avatar.selected {
+	background: #3B354D!important;
+    font-size: 30px;
+	color: #28a745;
+}
+
+.profile__avatar:focus {
+	background: #000;
+}
+
+.profile__avatar input {
+	display: none;
+}
+
+.profile__avatar input {
+	background-color: #000;
 }
 
 /*Footer*/

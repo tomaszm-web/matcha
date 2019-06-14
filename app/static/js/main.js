@@ -131,3 +131,8 @@ let reset = new Vue({
 		}
 	}
 });
+
+let elem = document.querySelector(".profile__avatar input");
+if (elem) elem.onchange = (e) => {
+	e.target.parentNode.classList.add("selected");
+};
