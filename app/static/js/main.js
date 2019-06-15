@@ -136,3 +136,9 @@ let elem = document.querySelector(".profile__avatar input");
 if (elem) elem.onchange = (e) => {
 	e.target.parentNode.classList.add("selected");
 };
+
+$(document).ready(function() {
+    $('.multiple-tags').select2({
+		placeholder: "Select some tags"
+	});
+});

@@ -19,7 +19,8 @@ from app.models import Account
 @app.route('/index')
 def index():
 	session["csrf_token"] = secrets.token_hex(15)
-	return render_template('index.html', csrf_token=session["csrf_token"])
+	users = Account.get_all_users()
+	return render_template('index.html', users=users, csrf_token=session["csrf_token"])
 
 
 @app.route('/registration', methods=["POST"])
@@ -70,7 +71,8 @@ def profile():
 
 @app.route('/change_profile_info', methods=["POST"])
 def change():
-	errors = Account.change(request.form, request.files)
+	selected_tags = request.form.getlist("tags")
+	errors = Account.change(request.form, request.files, selected_tags)
 	for error in errors:
 		flash(error)
 	if len(errors) == 0:
@@ -89,3 +91,7 @@ def csrf_protect():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
 	return send_from_directory("../" + app.config['UPLOAD_FOLDER'], filename)
+
+# todo Create tags system
+# todo Create Gps positioning
+# todo Create Fame Rating

@@ -66,7 +66,7 @@ a:hover {
 }
 
 .close {
-	outline: none!important;
+	outline: none !important;
 }
 
 .errors {
@@ -89,9 +89,9 @@ h2 {
 
 .flashes {
 	position: fixed;
-    right: 15px;
-    top: 75px;
-    z-index: 999;
+	right: 15px;
+	top: 75px;
+	z-index: 999;
 }
 
 /*Header*/
@@ -159,6 +159,11 @@ header {
 	color: white;
 }
 
+/*Users*/
+#users {
+	padding: 80px 0;
+}
+
 /*Profile*/
 #profile {
 	padding: 80px 0;
@@ -174,6 +179,7 @@ header {
 .settings-form select {
 	margin: 7px 0;
 }
+
 .settings-form .profile__avatar {
 	-webkit-border-radius: 100%;
 	-moz-border-radius: 100%;
@@ -202,8 +208,8 @@ header {
 }
 
 .profile__avatar.selected {
-	background: #3B354D!important;
-    font-size: 30px;
+	background: #3B354D !important;
+	font-size: 30px;
 	color: #28a745;
 }
 
@@ -224,4 +230,21 @@ footer {
 	background-color: #3B354D;
 	color: #fff;
 	padding: 15px 0;
+}
+
+/*SELECT2*/
+.select2-container .select2-selection--multiple {
+	background-color: #7b8b9421;
+	border: 1px solid #ced4da !important;
+	border-radius: 4px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+	background-color: #007bff;
+	color: #fff;
+	border: none;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+	color: #f05151;
 }

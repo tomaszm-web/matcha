@@ -17,23 +17,31 @@
 				<div class="col-6">
 					<label class="form-group">
 						E-mail:
-						<input class="form-control" type="email" name="email" value="%% user.email %%" required>
+						<input class="form-control" type="email" name="email" value="%% user.email %%" required
+							   maxlength="30">
 					</label>
 					<label class="form-group">
 						Name:
-						<input class="form-control" type="text" name="name" value="%% user.name %%" required>
+						<input class="form-control" type="text" name="name" value="%% user.name %%" required
+							   maxlength="20">
 					</label>
 					<label class="form-group">
 						Last Name:
-						<input class="form-control" type="text" name="surname" value="%% user.surname %%" required>
+						<input class="form-control" type="text" name="surname" value="%% user.surname %%" required
+							   maxlength="20">
+					</label>
+					<label class="form-group">
+						Biography:
+						<textarea name="biography" placeholder="Type a few words about you" class="form-control"
+								  required>%% user.biography %%</textarea>
 					</label>
 				</div>
 				<div class="col-6">
 					<label class="form-group">
 						Gender:
 						<select class="form-control" name="gender" required>
-							<option value="male" {% print('selected') if user.gender == "male" %}>Male</option>
-							<option value="female" {% print('selected') if user.gender == "female" %}>Female</option>
+							<option value="male" %% selected if user.gender == "male" %%>Male</option>
+							<option value="female" %% selected if user.gender == "female" %%>Female</option>
 						</select>
 					</label>
 					<label class="form-group">
@@ -47,9 +55,12 @@
 						</select>
 					</label>
 					<label class="form-group">
-						Biography:
-						<textarea name="biography" placeholder="Type a few words about you" class="form-control"
-								  required>%% user.biography %%</textarea>
+						Interests tags:
+						<select name="tags" class="form-control multiple-tags" multiple>
+							<option value="a">#a</option>
+							<option value="b">#b</option>
+							<option value="f">#f</option>
+						</select>
 					</label>
 				</div>
 				<div class="col align-self-center">

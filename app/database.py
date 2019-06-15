@@ -19,3 +19,7 @@ class Database:
 	def get_row(self, sql, values=None):
 		cur = self.query(sql, values)
 		return cur.fetchone()
+
+	def get_all_rows(self, sql, values=None):
+		cur = self.query(sql, values)
+		return cur.fetchall()

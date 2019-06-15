@@ -1,16 +1,39 @@
 {% extends "layout.html" %}
 {% block content %}
-<header>
-	<div class="container">
-		<div class="row justify-content-center">
-			<div class="col-7 text-center">
-				<h1 class="main-title">Socialize.</h1>
-				<p class="main-subtitle">
-					Searching for your soul mate is difficult. With a bit of FUN & social interactions, everything
-					becomes much simpler!
-				</p>
+	<header>
+		<div class="container">
+			<div class="row justify-content-center">
+				<div class="col-7 text-center">
+					<h1 class="main-title">Socialize.</h1>
+					<p class="main-subtitle">
+						Searching for your soul mate is difficult. With a bit of FUN & social interactions, everything
+						becomes much simpler!
+					</p>
+				</div>
 			</div>
 		</div>
-	</div>
-</header>
+	</header>
+	<section id="users">
+		<div class="container">
+			<div class="row">
+				<div class="col">
+					<h2>Meet our Active Members</h2>
+				</div>
+			</div>
+			<div class="row">
+				{% for user in users %}
+					<div class="col-4">
+						<div class="card">
+							<img src="%% user.avatar %%" alt="Matcha" class="card-img-top">
+							<div class="card-body">
+								<h5 class="card-title">%% user.login %%</h5>
+								<p class="card-text">%% user.biography %%</p>
+								<a href="#" class="btn btn-danger">Like</a>
+							</div>
+						</div>
+					</div>
+				{% endfor %}
+			</div>
+		</div>
+	</section>
 {% endblock %}
