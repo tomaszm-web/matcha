@@ -32,17 +32,15 @@ $(document).ready(function () {
 						method: 'post',
 						url: '/registration',
 						data: new FormData(e.target)
-					})
-						.then((response) => {
-							this.errors.push.apply(this.errors, response.data);
-							if (!this.errors.length) {
-								e.target.reset();
-								this.message = "Registration is almost done! You should confirm your E-mail to log in."
-							}
-						})
-						.catch(() => {
-							this.errors.push("Something went wrong! Try again")
-						});
+					}).then((response) => {
+						this.errors.push.apply(this.errors, response.data);
+						if (!this.errors.length) {
+							e.target.reset();
+							this.message = "Registration is almost done! You should confirm your E-mail to log in."
+						}
+					}).catch(() => {
+						this.errors.push("Something went wrong! Try again")
+					});
 				}
 			}
 		}
@@ -61,16 +59,14 @@ $(document).ready(function () {
 					method: 'post',
 					url: '/login',
 					data: new FormData(e.target)
-				})
-					.then((response) => {
-						this.errors.push.apply(this.errors, response.data);
-						if (!this.errors.length) {
-							location.reload()
-						}
-					})
-					.catch(() => {
-						this.errors.push("Something went wrong! Try again")
-					});
+				}).then((response) => {
+					this.errors.push.apply(this.errors, response.data);
+					if (!this.errors.length) {
+						location.reload()
+					}
+				}).catch(() => {
+					this.errors.push("Something went wrong! Try again")
+				});
 			}
 		}
 	});
@@ -115,20 +111,18 @@ $(document).ready(function () {
 					method: 'post',
 					url: '/reset',
 					data: data
-				})
-					.then((response) => {
-						e.target.reset();
-						this.errors.push.apply(this.errors, response.data);
-						if (!this.errors.length) {
-							if (this.action === "check")
-								this.message = "Letter with link to re-initialize your password was sent to your E-mail!"
-							else if (this.action === "reset")
-								location.replace(location.href.split('?')[0]);
-						}
-					})
-					.catch(() => {
-						this.errors.push("Something went wrong! Try again")
-					});
+				}).then((response) => {
+					e.target.reset();
+					this.errors.push.apply(this.errors, response.data);
+					if (!this.errors.length) {
+						if (this.action === "check")
+							this.message = "Letter with link to re-initialize your password was sent to your E-mail!"
+						else if (this.action === "reset")
+							location.replace(location.href.split('?')[0]);
+					}
+				}).catch(() => {
+					this.errors.push("Something went wrong! Try again")
+				});
 			}
 		}
 	});
@@ -141,5 +135,19 @@ $(document).ready(function () {
 	$('.multiple-tags').select2({
 		placeholder: "Select some tags",
 		tags: true
+	});
+
+	$('.likeUser').click(function () {
+		axios({
+			method: 'post',
+			url: location.origin + '/like_user',
+			data: {
+				"liked_user": $(this).siblings(':first-child').text()
+			}
+		}).then(() => {
+			$(this).attr('disabled', true)
+		}).catch(() => {
+			console.log("Something went wrong! Try again")
+		});
 	});
 });

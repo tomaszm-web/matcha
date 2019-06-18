@@ -49,6 +49,10 @@ a:hover {
 	font-size: 12px;
 }
 
+.btn i {
+	margin-right: 5px;
+}
+
 .btn-danger {
 	background-color: #f05151;
 	border: 1px solid #f05151;
