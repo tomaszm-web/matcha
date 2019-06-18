@@ -12,7 +12,12 @@
 						<i class="fa fa-upload"></i>
 						<input type="file" name="avatar" accept="image/*">
 					</label>
-					<code>%% user.login %%</code>
+					<div class="profile__info">
+						<code>%% user.login %%</code>
+						<div class="progress">
+							<div class="progress-bar" style="width: 70%">Your Fame Rating: 70%</div>
+						</div>
+					</div>
 				</div>
 				<div class="col-6">
 					<label class="form-group">
@@ -40,8 +45,8 @@
 					<label class="form-group">
 						Gender:
 						<select class="form-control" name="gender" required>
-							<option value="male" %% selected if user.gender == "male" %%>Male</option>
-							<option value="female" %% selected if user.gender == "female" %%>Female</option>
+							<option value="male" {% print('selected') if user.gender == "male" %}>Male</option>
+							<option value="female" {% print('selected') if user.gender == "female" %}>Female</option>
 						</select>
 					</label>
 					<label class="form-group">
@@ -57,9 +62,9 @@
 					<label class="form-group">
 						Interests tags:
 						<select name="tags" class="form-control multiple-tags" multiple>
-							<option value="a">#a</option>
-							<option value="b">#b</option>
-							<option value="f">#f</option>
+							{% for tag in user["tags"] %}
+								<option value="%% tag['name'] %%" selected>#%% tag['name'] %%</option>
+							{% endfor %}
 						</select>
 					</label>
 				</div>

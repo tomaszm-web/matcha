@@ -1,4 +1,3 @@
-import json
 import os
 import secrets
 from flask import render_template, url_for, flash, redirect, session, abort
@@ -26,15 +25,28 @@ class Account:
 		return '.' in filename and filename.rsplit('.', 1)[1] in ["png", "jpg", "jpeg"]
 
 	@staticmethod
+	def get_tags(user_id):
+		sql = ("SELECT tags.name FROM `tags` "
+			   "INNER JOIN `users_tags` ON tags.id = users_tags.tag_id "
+			   "WHERE users_tags.user_id = %s")
+		tags = db.get_all_rows(sql, [user_id])
+		return tags
+
+	@staticmethod
 	def get_user_info(login):
 		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences, biography, avatar "
 			   "FROM `users` WHERE login=%s")
-		return db.get_row(sql, [login])
+		user = db.get_row(sql, [login])
+		user["tags"] = Account.get_tags(user["id"])
+		return user
 
 	@staticmethod
 	def get_all_users(sorted=None):
 		sql = "SELECT id, login, name, surname, gender, preferences, biography, avatar FROM `users`"
-		return db.get_all_rows(sql)
+		users = db.get_all_rows(sql)
+		for user in users:
+			user["tags"] = Account.get_tags(user["id"])
+		return users
 
 	@staticmethod
 	def email_confirmation(email, login, token):
@@ -45,10 +57,11 @@ class Account:
 				   render_template('signup_email.html', login=login, token=token))
 
 	@staticmethod
-	def insert_unexistant_tags(tags):
+	def insert_unexistant_tags(tags, all_tags=None):
 		if not tags:
 			return False
-		all_tags = db.get_all_rows("SELECT * FROM `tags`")
+		if not all_tags:
+			all_tags = db.get_all_rows("SELECT * FROM `tags`")
 		all_tags_names = [tag["name"] for tag in all_tags]
 		sql = "INSERT INTO `tags` (name) VALUES"
 		tag_list = []
@@ -60,14 +73,15 @@ class Account:
 			db.query(sql[:-1], tag_list)
 
 	@staticmethod
-	def handle_user_tags(user, tags):
-		if not user or not tags:
-			return False
-		Account.insert_unexistant_tags(tags)
+	def update_users_tags(user, new_tags):
 		all_tags = db.get_all_rows("SELECT * FROM `tags`")
+		Account.insert_unexistant_tags(new_tags, all_tags)
+
+		sql = "DELETE FROM `users_tags` WHERE user_id=%s"
+		db.query(sql, [user["id"]])
 		sql = "INSERT INTO `users_tags` VALUES"
 		tag_list = []
-		for tag in tags:
+		for tag in new_tags:
 			sql += " (%s, %s),"
 			tag_id = next(item["id"] for item in all_tags if item["name"] == tag)
 			tag_list.append(user["id"])
@@ -164,13 +178,14 @@ class Account:
 					errors.append("User with this E-mail already exists")
 				else:
 					email_confirmed = False
-			avatar_filename = user["avatar"]
+			new_avatar = user["avatar"]
 			if "avatar" in files and Account.check_img_extension(files["avatar"].filename):
-				avatar_filename = secure_filename(files["avatar"].filename)
-				avatar_filename = os.path.join(app.config['UPLOAD_FOLDER'], avatar_filename)
-				files["avatar"].save(avatar_filename)
+				new_avatar = secure_filename(files["avatar"].filename)
+				new_avatar = os.path.join(app.config['UPLOAD_FOLDER'], new_avatar)
+				files["avatar"].save(new_avatar)
 			if len(errors) == 0:
-				Account.handle_user_tags(user, tags)
+				if not tags or user["tags"] != tags:
+					Account.update_users_tags(user, tags)
 				sql = ("UPDATE `users` "
 					   "SET email=%s, name=%s, surname=%s, gender=%s, preferences=%s, biography=%s, confirmed=%s, avatar=%s "
 					   "WHERE login=%s")
@@ -182,7 +197,7 @@ class Account:
 					form["preferences"],
 					form["biography"],
 					email_confirmed,
-					avatar_filename,
+					new_avatar,
 					user["login"]
 				])
 				if not email_confirmed:
@@ -191,3 +206,6 @@ class Account:
 		except KeyError:
 			errors.append("You haven't set some values")
 		return errors
+
+
+# 	todo redo errors implementation(Return after the first error)

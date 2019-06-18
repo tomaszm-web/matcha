@@ -225,6 +225,15 @@ header {
 	background-color: #000;
 }
 
+.profile__info {
+	width: 40%;
+}
+
+.profile__info .progress {
+	height: 18px;
+	margin-top: 5px;
+}
+
 /*Footer*/
 footer {
 	background-color: #3B354D;
