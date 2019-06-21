@@ -38,6 +38,7 @@ class Account:
 			   "FROM `users` WHERE login=%s")
 		user = db.get_row(sql, [login])
 		user["tags"] = Account.get_tags(user["id"])
+		user["liked_users"] = Account.get_liked_users(user["login"])
 		return user
 
 	@staticmethod
@@ -207,5 +208,16 @@ class Account:
 			errors.append("You haven't set some values")
 		return errors
 
+	@staticmethod
+	def get_liked_users(user_login):
+		sql = "SELECT * FROM `likes` WHERE like_owner = %s"
+		response = db.get_all_rows(sql, [user_login])
+		liked_users = [k["liked_user"] for k in response]
+		return liked_users
+
+	@staticmethod
+	def like_user(like_owner, like_to):
+		sql = "INSERT INTO `likes` SET like_owner = %s, liked_user = %s"
+		db.query(sql, [like_owner, like_to])
 
 # 	todo redo errors implementation(Return after the first error)

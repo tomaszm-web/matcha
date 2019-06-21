@@ -138,11 +138,9 @@ $(document).ready(function () {
 	});
 
 	$('.likeUser').click(function () {
-		axios({
-			method: 'post',
-			url: location.origin + '/like_user',
-			data: {
-				"liked_user": $(this).siblings(':first-child').text()
+		axios.get(location.origin + '/like_user', {
+			params: {
+				liked_user: $(this).siblings(':first-child').text()
 			}
 		}).then(() => {
 			$(this).attr('disabled', true)

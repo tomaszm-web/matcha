@@ -20,7 +20,10 @@ from app.models import Account
 def index():
 	session["csrf_token"] = secrets.token_hex(15)
 	users = Account.get_all_users()
-	return render_template('index.html', users=users, csrf_token=session["csrf_token"])
+	if "user" in session:
+		user = Account.get_user_info(session["user"])
+		flash(user["liked_users"])
+	return render_template('index.html', user=user, users=users, csrf_token=session["csrf_token"])
 
 
 @app.route('/registration', methods=["POST"])
@@ -78,6 +81,12 @@ def change():
 	if len(errors) == 0:
 		flash("Your profile's info was successfully updated")
 	return redirect(url_for('profile'))
+
+
+@app.route('/like_user', methods=["GET"])
+def like_user():
+	Account.like_user(session["user"], request.args["liked_user"])
+	return "Success"
 
 
 @app.before_request
