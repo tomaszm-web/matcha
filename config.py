@@ -26,6 +26,9 @@ class Config(object):
 	# Upload folder
 	UPLOAD_FOLDER = "uploads"
 
+	# Google Maps Key
+	GOOGLEMAPS_KEY = "AIzaSyAjzkW8XWRsKcQhs7hcY-Rc7wPSSSIQVQM"
+
 
 class ProductionConfig(Config):
 	DEBUG = False

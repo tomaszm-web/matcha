@@ -33,10 +33,16 @@ class Account:
 		return tags
 
 	@staticmethod
-	def get_user_info(login):
-		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences, biography, avatar "
-			   "FROM `users` WHERE login=%s")
-		user = db.get_row(sql, [login])
+	def get_user_info(login=None, id=None):
+		if not login and not id:
+			return None
+		sql = "SELECT id, login, email, confirmed, name, surname, gender, preferences, biography, avatar FROM `users`"
+		if login:
+			sql += " WHERE login=%s"
+			user = db.get_row(sql, [login])
+		elif id:
+			sql += " WHERE id=%s"
+			user = db.get_row(sql, [id])
 		user["tags"] = Account.get_tags(user["id"])
 		user["liked_users"] = Account.get_liked_users(user["login"])
 		return user
@@ -117,18 +123,21 @@ class Account:
 	@staticmethod
 	def login(form):
 		errors = []
-		sql = "SELECT * FROM `users` WHERE login=%s"
-		cur = db.query(sql, (form["login"]))
-		user = cur.fetchone()
-		if not user:
-			errors.append("Wrong login!")
-		elif not check_password_hash(user["password"], form["pass"]):
-			errors.append("Wrong password!")
-		elif not user["confirmed"]:
-			errors.append("You should confirm your E-mail first!")
-		else:
-			session["user"] = form["login"]
-			flash("You successfully logged in!")
+		try:
+			sql = "SELECT * FROM `users` WHERE login=%s"
+			cur = db.query(sql, (form["login"]))
+			user = cur.fetchone()
+			if not user:
+				errors.append("Wrong login!")
+			elif not check_password_hash(user["password"], form["pass"]):
+				errors.append("Wrong password!")
+			elif not user["confirmed"]:
+				errors.append("You should confirm your E-mail first!")
+			else:
+				session["user"] = form["login"]
+				flash("You successfully logged in!", 'success')
+		except KeyError:
+			errors.append("You haven't set some values")
 		return errors
 
 	@staticmethod
@@ -163,7 +172,7 @@ class Account:
 				else:
 					sql = "UPDATE `users` SET password=%s WHERE email=%s"
 					db.query(sql, (generate_password_hash(form["pass"]), form["email"]))
-					flash("You successfully updated your password!")
+					flash("You successfully updated your password!", 'success')
 		except KeyError:
 			errors.append("You haven't set some values")
 		return errors
@@ -203,7 +212,7 @@ class Account:
 				])
 				if not email_confirmed:
 					Account.email_confirmation(form["email"], session["user"], user["token"])
-					flash("You will have to confirm your new E-mail!")
+					flash("You will have to confirm your new E-mail!", 'success')
 		except KeyError:
 			errors.append("You haven't set some values")
 		return errors

@@ -11,7 +11,7 @@ from flask import (
 )
 import secrets
 import json
-from app import app
+from app import app, Map
 from app.models import Account
 
 
@@ -22,8 +22,27 @@ def index():
 	users = Account.get_all_users()
 	if "user" in session:
 		user = Account.get_user_info(session["user"])
-		flash(user["liked_users"])
-	return render_template('index.html', user=user, users=users, csrf_token=session["csrf_token"])
+	else:
+		user = None
+	return render_template('index.html', current_user=user, users=users, csrf_token=session["csrf_token"])
+
+
+@app.route('/settings')
+def settings():
+	if "user" not in session:
+		flash("You should log in to access your profile", 'danger')
+		return redirect(url_for('index'))
+	user = Account.get_user_info(session["user"])
+	return render_template('settings.html', current_user=user, csrf_token=session["csrf_token"])
+
+
+@app.route('/profile', methods=["GET"])
+def profile():
+	if "user_id" not in request.args:
+		flash("Invalid profile", 'danger')
+		return redirect(url_for('index'))
+	user = Account.get_user_info(id=request.args["user_id"])
+	return render_template('profile.html', user=user)
 
 
 @app.route('/registration', methods=["POST"])
@@ -41,19 +60,19 @@ def login():
 @app.route('/logout', methods=["GET"])
 def logout():
 	if "user" in session:
-		flash("You successfully logged out!")
+		flash("You successfully logged out!", 'success')
 		session.pop("user", None)
 	else:
-		flash("You should log in first, to be able to log out!")
+		flash("You should log in first, to be able to log out!", 'danger')
 	return redirect(url_for('index'))
 
 
 @app.route('/confirmation', methods=["GET"])
 def confirmation():
 	if Account.confirmation(request.args["login"], request.args["token"]):
-		flash("Your E-mail was successfully confirmed!")
+		flash("Your E-mail was successfully confirmed!", 'success')
 	else:
-		flash("Something went wrong. Try again!")
+		flash("Something went wrong. Try again!", 'danger')
 	return redirect(url_for('index'))
 
 
@@ -63,23 +82,14 @@ def reset():
 	return json.dumps(errors)
 
 
-@app.route('/profile')
-def profile():
-	if "user" not in session:
-		flash("You should log in to access your profile")
-		return redirect(url_for('index'))
-	user = Account.get_user_info(session["user"])
-	return render_template('profile.html', user=user, csrf_token=session["csrf_token"])
-
-
 @app.route('/change_profile_info', methods=["POST"])
 def change():
 	selected_tags = request.form.getlist("tags")
 	errors = Account.change(request.form, request.files, selected_tags)
 	for error in errors:
-		flash(error)
+		flash(error, 'danger')
 	if len(errors) == 0:
-		flash("Your profile's info was successfully updated")
+		flash("Your profile's info was successfully updated", 'success')
 	return redirect(url_for('profile'))
 
 
@@ -101,6 +111,5 @@ def csrf_protect():
 def uploaded_file(filename):
 	return send_from_directory("../" + app.config['UPLOAD_FOLDER'], filename)
 
-# todo Create tags system
 # todo Create Gps positioning
 # todo Create Fame Rating

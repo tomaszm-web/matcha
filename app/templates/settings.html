@@ -1,0 +1,82 @@
+{% extends "layout.html" %}
+{% block content %}
+	<section id="profile">
+		<div class="container">
+			<form action="/change_profile_info" method="POST" class="row settings-form" enctype="multipart/form-data">
+				<div class="col-12">
+					<h2>Account details</h2>
+				</div>
+				<input type="hidden" name="csrf_token" value="%% csrf_token %%">
+				<div class="col-12 d-flex align-items-center">
+					<label class="profile__avatar" style="background-image: url(%% current_user.avatar %%)">
+						<i class="fa fa-upload"></i>
+						<input type="file" name="avatar" accept="image/*">
+					</label>
+					<div class="profile__info">
+						<code>%% current_user.login %%</code>
+						<div class="progress">
+							<div class="progress-bar" style="width: 70%">Your Fame Rating: 70%</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-6">
+					<label class="form-group">
+						E-mail:
+						<input class="form-control" type="email" name="email" value="%% current_user.email %%" required
+							   maxlength="30">
+					</label>
+					<label class="form-group">
+						Name:
+						<input class="form-control" type="text" name="name" value="%% current_user.name %%" required
+							   maxlength="20">
+					</label>
+					<label class="form-group">
+						Last Name:
+						<input class="form-control" type="text" name="surname" value="%% current_user.surname %%"
+							   required
+							   maxlength="20">
+					</label>
+					<label class="form-group">
+						Biography:
+						<textarea name="biography" placeholder="Type a few words about you" class="form-control"
+								  required>%% current_user.biography %%</textarea>
+					</label>
+				</div>
+				<div class="col-6">
+					<label class="form-group">
+						Gender:
+						<select class="form-control" name="gender" required>
+							<option value="male" {% print('selected') if current_user.gender == "male" %}>Male</option>
+							<option value="female" {% print('selected') if current_user.gender == "female" %}>Female
+							</option>
+						</select>
+					</label>
+					<label class="form-group">
+						Sexual preferences:
+						<select class="form-control" name="preferences" required>
+							<option value="bisexual" {% print('selected') if current_user.preferences == "bisexual" %}>
+								Bisexual
+							</option>
+							<option value="girls" {% print('selected') if current_user.preferences == "girls" %}>Girls
+							</option>
+							<option value="boys" {% print('selected') if current_user.preferences == "boys" %}>Boys
+							</option>
+						</select>
+					</label>
+					<label class="form-group">
+						Interests tags:
+						<select name="tags" class="form-control multiple-tags" multiple>
+							{% for tag in current_user["tags"] %}
+								<option value="%% tag['name'] %%" selected>#%% tag['name'] %%</option>
+							{% endfor %}
+						</select>
+					</label>
+				</div>
+				<div class="col align-self-center">
+					<button class="btn btn-success">Apply changes</button>
+					<a href="#" data-toggle="modal" data-target="#reset" class="btn btn-primary">Change password</a>
+				</div>
+			</form>
+		</div>
+	</section>
+{% endblock %}

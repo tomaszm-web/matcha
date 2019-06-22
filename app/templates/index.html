@@ -28,7 +28,7 @@
 							<div class="card-body">
 								<h5 class="card-title">%% user.login %%</h5>
 								<p class="card-text">%% user.biography %%</p>
-								<button class="btn btn-danger likeUser" {% print('disabled') if user.login in user.liked_users %}>
+								<button class="btn btn-danger likeUser" {% print('disabled') if user.login in current_user.liked_users %}>
 									<i class="fas fa-thumbs-up"></i>Like
 								</button>
 							</div>

@@ -3,6 +3,7 @@ from flask import Flask
 from app.database import Database
 from flask_mail import Mail
 from config import DevelopmentConfig
+from flask_googlemaps import GoogleMaps, Map
 
 
 class CustomFlask(Flask):
@@ -15,6 +16,7 @@ class CustomFlask(Flask):
 
 app = CustomFlask(__name__)
 app.config.from_object(DevelopmentConfig)
+GoogleMaps(app)
 db = Database(app)
 mail = Mail(app)
 from app import routes, models

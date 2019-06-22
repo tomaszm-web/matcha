@@ -2,6 +2,7 @@ blinker==1.4
 cffi==1.12.3
 Click==7.0
 Flask==1.0.3
+Flask-GoogleMaps==0.2.6
 Flask-Mail==0.9.1
 Flask-pymysql==0.2.3
 itsdangerous==1.1.0
