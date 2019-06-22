@@ -133,7 +133,7 @@ $(document).ready(function () {
 	};
 
 	$('.multiple-tags').select2({
-		placeholder: "Select some tags",
+		placeholder: "Interest tags",
 		tags: true
 	});
 

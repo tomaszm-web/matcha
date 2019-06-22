@@ -3,60 +3,38 @@
 	<section id="profile">
 		<div class="container">
 			<div class="row">
-				<div class="col"><h2>Account details</h2></div>
-			</div>
-			<div class="row">
-				<div class="col-12 d-flex align-items-center">
-					<img src="%% user.avatar %%" alt="Matcha" class="img-round">
-					<div class="profile__info">
-						<code>@%% user.login %%</code>
-						<div class="progress">
-							<div class="progress-bar" style="width: 70%">Your Fame Rating: 70%</div>
-						</div>
+				<div class="col-6">
+					<img src="%% user.avatar %%" alt="Matcha" class="img-fluid">
+				</div>
+				<div class="col-6">
+					<h4 class="profile__login">@%% user.login %%</h4>
+					<div class="profile__title">Name:</div>
+					<div class="profile__name">
+						%% user.name %%
+						%% user.surname %%
 					</div>
-				</div>
-				<div class="col-6">
-					E-mail:
-					<input class="" type="email" name="email" value="%% user.email %%" required
-						   maxlength="30">
-					Name:
-					<input class="" type="text" name="name" value="%% user.name %%" required
-						   maxlength="20">
-					Last Name:
-					<input class="" type="text" name="surname" value="%% user.surname %%"
-						   required
-						   maxlength="20">
-					Biography:
-					<textarea name="biography" placeholder="Type a few words about you" class=""
-							  required>%% user.biography %%</textarea>
-				</div>
-				<div class="col-6">
-					Gender:
-					<select class="" name="gender" required>
-						<option value="male" {% print('selected') if user.gender == "male" %}>Male</option>
-						<option value="female" {% print('selected') if user.gender == "female" %}>Female
-						</option>
-					</select>
-					Sexual preferences:
-					<select class="" name="preferences" required>
-						<option value="bisexual" {% print('selected') if user.preferences == "bisexual" %}>
-							Bisexual
-						</option>
-						<option value="girls" {% print('selected') if user.preferences == "girls" %}>Girls
-						</option>
-						<option value="boys" {% print('selected') if user.preferences == "boys" %}>Boys
-						</option>
-					</select>
-					Interests tags:
-					<select name="tags" class=" multiple-tags" multiple>
+					<div class="profile__title">Fame Rating:</div>
+					<div class="progress profile__fame">
+						<div class="progress-bar" style="width: 70%">Your Fame Rating: 70%</div>
+					</div>
+					<div class="profile__title">Preferences:</div>
+					<div class="profile__preferences">
+						%% user.preferences %%
+					</div>
+					<div class="profile__title">Biography:</div>
+					<div class="profile__bio">
+						%% user.biography %%
+					</div>
+					<div class="profile__title">E-mail:</div>
+					<div class="profile__email">
+						%% user.email %%
+					</div>
+					<div class="profile__title">Interest tags:</div>
+					<select class="form-control multiple-tags profile__tags" disabled multiple>#}
 						{% for tag in user["tags"] %}
 							<option value="%% tag['name'] %%" selected>#%% tag['name'] %%</option>
 						{% endfor %}
 					</select>
-				</div>
-				<div class="col align-self-center">
-					<button class="btn btn-success">Apply changes</button>
-					<a href="#" data-toggle="modal" data-target="#reset" class="btn btn-primary">Change password</a>
 				</div>
 			</div>
 		</div>

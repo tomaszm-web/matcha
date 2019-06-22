@@ -64,11 +64,10 @@ class Account:
 				   render_template('signup_email.html', login=login, token=token))
 
 	@staticmethod
-	def insert_unexistant_tags(tags, all_tags=None):
+	def insert_unexistant_tags(tags):
 		if not tags:
 			return False
-		if not all_tags:
-			all_tags = db.get_all_rows("SELECT * FROM `tags`")
+		all_tags = db.get_all_rows("SELECT * FROM `tags`")
 		all_tags_names = [tag["name"] for tag in all_tags]
 		sql = "INSERT INTO `tags` (name) VALUES"
 		tag_list = []
@@ -81,12 +80,12 @@ class Account:
 
 	@staticmethod
 	def update_users_tags(user, new_tags):
+		Account.insert_unexistant_tags(new_tags)
 		all_tags = db.get_all_rows("SELECT * FROM `tags`")
-		Account.insert_unexistant_tags(new_tags, all_tags)
 
 		sql = "DELETE FROM `users_tags` WHERE user_id=%s"
 		db.query(sql, [user["id"]])
-		sql = "INSERT INTO `users_tags` VALUES"
+		sql = "INSERT INTO `users_tags` (user_id, tag_id) VALUES"
 		tag_list = []
 		for tag in new_tags:
 			sql += " (%s, %s),"

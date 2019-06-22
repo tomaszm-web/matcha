@@ -231,11 +231,32 @@ header {
 
 .profile__info {
 	width: 40%;
+	font-size: 17px;
 }
 
 .profile__info .progress {
 	height: 18px;
 	margin-top: 5px;
+}
+
+.profile__title {
+	margin-top: 15px;
+	font-weight: bold;
+}
+
+.profile__bio {
+	font-size: 16px;
+	margin: 10px 0;
+}
+
+.profile__fame {
+	margin: 10px 0;
+	background-color: #fff;
+}
+
+.profile__login {
+	margin-bottom: 30px;
+	font-weight: bold;
 }
 
 /*Footer*/

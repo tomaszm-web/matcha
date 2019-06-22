@@ -90,7 +90,7 @@ def change():
 		flash(error, 'danger')
 	if len(errors) == 0:
 		flash("Your profile's info was successfully updated", 'success')
-	return redirect(url_for('profile'))
+	return redirect(url_for('settings'))
 
 
 @app.route('/like_user', methods=["GET"])
