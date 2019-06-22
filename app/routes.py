@@ -45,6 +45,14 @@ def profile():
 	return render_template('profile.html', user=user)
 
 
+@app.route('/chat', methods=["GET"])
+def chat():
+	if "recipient_id" not in request.args:
+		flash("Wrong user id", 'danger')
+		return redirect(url_for('index'))
+	return render_template('chat.html')
+
+
 @app.route('/registration', methods=["POST"])
 def registration():
 	errors = Account.registration(request.form)
@@ -97,6 +105,13 @@ def change():
 def like_user():
 	Account.like_user(session["user"], request.args["liked_user"])
 	return "Success"
+
+
+# Chat
+@app.route('/send_message/<recipient>', methods=["GET", "POST"])
+def send_message(recipient):
+	''' Function to send message to specific user '''
+	pass
 
 
 @app.before_request
