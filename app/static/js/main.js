@@ -1,6 +1,6 @@
 $(document).ready(function () {
 	let parts = window.location.search.substr(1).split("&");
-	let $_GET = {};
+	var $_GET = {};
 	for (let i = 0; i < parts.length; i++) {
 		let temp = parts[i].split("=");
 		$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
@@ -148,4 +148,51 @@ $(document).ready(function () {
 			console.log("Something went wrong! Try again")
 		});
 	});
+
+	/*--------Chat--------*/
+	if (document.getElementById('chat')) {
+		const chat = new Vue({
+			el: '#chat',
+			data: {
+				messages: null,
+				sender_id: null,
+				recipient_id: null,
+				csrf_token: null
+			},
+			created() {
+				this.csrf_token = $(".sendMessageForm input[name='_csrf_token']").attr('value');
+				this.recipient_id = $_GET['recipient_id'];
+				this.sender_id = $(".sendMessageForm input[name='sender_id']").val();
+				this.showMessages();
+			},
+			methods: {
+				showMessages() {
+					axios.get(location.origin + '/get_messages', {
+						params: {
+							sender_id: this.sender_id,
+							recipient_id: this.recipient_id,
+							_csrf_token: this.csrf_token
+						}
+					}).then((response) => {
+						this.messages = response.data;
+					})
+				},
+				sendMessage(e) {
+					let url = location.origin + '/send_message/' + $_GET['recipient_id'];
+					let data = new FormData(e.target);
+					data._csrf_token = this.csrf_token;
+					axios.post(url, data).then((response) => {
+						if (response.data !== "Error") {
+							e.target.reset();
+							this.csrf_token = response.data;
+							console.log(response.data);
+							this.showMessages();
+						}
+					})
+				}
+			}
+		});
+		console.log(chat);
+	}
 });
+

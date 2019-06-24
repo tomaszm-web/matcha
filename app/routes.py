@@ -9,22 +9,20 @@ from flask import (
 	redirect,
 	send_from_directory
 )
-import secrets
 import json
 from app import app, Map
-from app.models import Account
+from app.models import Account, Chat
 
 
 @app.route('/')
 @app.route('/index')
 def index():
-	session["csrf_token"] = secrets.token_hex(15)
 	users = Account.get_all_users()
 	if "user" in session:
 		user = Account.get_user_info(session["user"])
 	else:
 		user = None
-	return render_template('index.html', current_user=user, users=users, csrf_token=session["csrf_token"])
+	return render_template('index.html', current_user=user, users=users)
 
 
 @app.route('/settings')
@@ -33,7 +31,7 @@ def settings():
 		flash("You should log in to access your profile", 'danger')
 		return redirect(url_for('index'))
 	user = Account.get_user_info(session["user"])
-	return render_template('settings.html', current_user=user, csrf_token=session["csrf_token"])
+	return render_template('settings.html', current_user=user)
 
 
 @app.route('/profile', methods=["GET"])
@@ -47,10 +45,12 @@ def profile():
 
 @app.route('/chat', methods=["GET"])
 def chat():
-	if "recipient_id" not in request.args:
+	recipient = Account.get_user_info(id=request.args["recipient_id"])
+	if not recipient:
 		flash("Wrong user id", 'danger')
 		return redirect(url_for('index'))
-	return render_template('chat.html')
+	user = Account.get_user_info(session["user"])
+	return render_template('chat.html', user=user, recipient=recipient)
 
 
 @app.route('/registration', methods=["POST"])
@@ -108,18 +108,20 @@ def like_user():
 
 
 # Chat
-@app.route('/send_message/<recipient>', methods=["GET", "POST"])
-def send_message(recipient):
-	''' Function to send message to specific user '''
-	pass
+@app.route('/send_message/<recipient_id>', methods=["GET", "POST"])
+def send_message(recipient_id):
+	if not recipient_id:
+		return "Error"
+	Chat.send_message(request.form["sender_id"], recipient_id, request.form["text"])
+	return session['csrf_token']
 
 
-@app.before_request
-def csrf_protect():
-	if request.method == "POST":
-		token = session['csrf_token']
-		if not token or token != request.form.get('csrf_token'):
-			abort(403)
+@app.route('/get_messages', methods=["GET"])
+def get_messages():
+	if 'sender_id' not in request.args or 'recipient_id' not in request.args:
+		return "[]"
+	messages = Chat.get_messages(request.args['sender_id'], request.args['recipient_id'])
+	return json.dumps(messages, default=str)
 
 
 @app.route('/uploads/<filename>')

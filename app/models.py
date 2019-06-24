@@ -1,4 +1,5 @@
 import os
+import json
 import secrets
 from flask import render_template, url_for, flash, redirect, session, abort
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -227,5 +228,19 @@ class Account:
 	def like_user(like_owner, like_to):
 		sql = "INSERT INTO `likes` SET like_owner = %s, liked_user = %s"
 		db.query(sql, [like_owner, like_to])
+
+
+class Chat:
+	@staticmethod
+	def send_message(sender_id, recipient_id, message_text):
+		sql = "INSERT INTO `messages` SET sender_id=%s, recipient_id=%s, body=%s"
+		db.query(sql, (sender_id, recipient_id, message_text))
+
+	@staticmethod
+	def get_messages(user_id, recipient_id):
+		sql = ("SELECT * FROM `messages` WHERE (sender_id=%s AND recipient_id=%s)"
+			   "OR (sender_id=%s AND recipient_id=%s) ORDER BY timestamp")
+		messages = db.get_all_rows(sql, (user_id, recipient_id, recipient_id, user_id))
+		return messages
 
 # 	todo redo errors implementation(Return after the first error)

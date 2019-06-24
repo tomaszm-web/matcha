@@ -65,7 +65,7 @@
 			</div>
 			<div class="modal-body">
 				<form class="signUpForm" @submit.prevent="sendForm">
-					<input type="hidden" name="csrf_token" value="%% csrf_token %%">
+					<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">
 					<input class="form-control" type="text" name="login" placeholder="Login" required maxlength="30">
 					<input class="form-control" type="text" name="name" placeholder="First name" required
 						   maxlength="30">
@@ -101,7 +101,7 @@
 			</div>
 			<div class="modal-body">
 				<form @submit.prevent="sendForm">
-					<input type="hidden" name="csrf_token" value="%% csrf_token %%">
+					<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">
 					<input class="form-control" type="text" name="login" placeholder="Login" required maxlength="30">
 					<input class="form-control" type="password" name="pass" placeholder="Password" required>
 					<ul class="errors" v-if="errors.length">
@@ -130,7 +130,7 @@
 			<div class="modal-body">
 				<form @submit.prevent="sendForm">
 					<input type="hidden" name="action" v-model="action" value="{{ action }}">
-					<input type="hidden" name="csrf_token" value="%% csrf_token %%">
+					<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">
 					<input class="form-control" v-show="action == 'check'" v-model="email" type="email" name="email"
 						   placeholder="E-mail" maxlength="30" required>
 					<input class="form-control" v-show="action == 'reset'" v-model="pass" type="password" name="pass"
