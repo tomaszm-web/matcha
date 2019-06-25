@@ -92,11 +92,14 @@ def reset():
 
 @app.route('/change_profile_info', methods=["POST"])
 def change():
-	selected_tags = request.form.getlist("tags")
-	errors = Account.change(request.form, request.files, selected_tags)
-	for error in errors:
-		flash(error, 'danger')
-	if len(errors) == 0:
+	try:
+		Account.change(request.form, request.files)
+	except Exception as e:
+		if type(e).__name__ == "KeyError":
+			flash("You haven't set some values", 'danger')
+		else:
+			flash(str(e), 'danger')
+	else:
 		flash("Your profile's info was successfully updated", 'success')
 	return redirect(url_for('settings'))
 
@@ -113,7 +116,7 @@ def send_message(recipient_id):
 	if not recipient_id:
 		return "Error"
 	Chat.send_message(request.form["sender_id"], recipient_id, request.form["text"])
-	return session['csrf_token']
+	return "Success"
 
 
 @app.route('/get_messages', methods=["GET"])
@@ -124,9 +127,13 @@ def get_messages():
 	return json.dumps(messages, default=str)
 
 
+@app.route('/uploads/<userdir>/<filename>')
 @app.route('/uploads/<filename>')
-def uploaded_file(filename):
-	return send_from_directory("../" + app.config['UPLOAD_FOLDER'], filename)
+def uploaded_file(filename, userdir=None):
+	if userdir:
+		return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}/{userdir}", filename)
+	return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}", filename)
+
 
 # todo Create Gps positioning
 # todo Create Fame Rating

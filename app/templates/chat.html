@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block content %}
+	<section id="chat">
+		<div class="container">
+			<div class="row">
+				<div class="col">
+					<h2>Chat</h2>
+				</div>
+			</div>
+			<div class="row justify-content-center">
+				<div class="col-10">
+					<div class="chat">
+						<div class="chat__message" v-for="message in messages"
+							 v-bind:class="{ 'right-align': message.sender_id == sender_id }">
+							<img src="%% recipient.avatar %%" alt="Matcha" class="chat__img img-round">
+							<div class="d-flex flex-column">
+								<div class="d-flex align-items-center">
+									<div class="chat__login text-info">
+										@{{ message.sender_id == sender_id ? '%% user.login %%' : '%% recipient.login %%' }}
+									</div>
+									<div class="chat__timestamp text-info">{{ message.timestamp }}</div>
+								</div>
+								<div class="chat__text card-body bg-light">{{ message.body }}</div>
+							</div>
+						</div>
+						{#						<div class="chat__message justify-content-end text-right">#}
+						{#							<div class="d-flex flex-column">#}
+						{#								<div class="d-flex align-items-center justify-content-between">#}
+						{#									<div class="chat__timestamp text-info">17.08.2008</div>#}
+						{#									<p class="chat__login text-info">@%% user.login %%</p>#}
+						{#								</div>#}
+						{#								<div class="chat__text card-body bg-light">Message Message Message</div>#}
+						{#							</div>#}
+						{#							<img src="/static/img/default_avatar.png" alt="Matcha" class="chat__img img-round">#}
+						{#						</div>#}
+					</div>
+					<form class="sendMessageForm" @submit.prevent="sendMessage">
+						{#						<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">#}
+						<input type="hidden" name="sender_id" value="%% user.id %%">
+						<textarea name="text" placeholder="Type your text here"
+								  class="form-control chat__textarea" required maxlength="256"></textarea>
+						<button class="btn btn-block btn-primary">Send message</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</section>
+{% endblock %}

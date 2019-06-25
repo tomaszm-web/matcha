@@ -20,5 +20,4 @@ app.config.from_object(DevelopmentConfig)
 GoogleMaps(app)
 db = Database(app)
 mail = Mail(app)
-csrf(app)
 from app import routes, models

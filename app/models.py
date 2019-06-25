@@ -31,21 +31,23 @@ class Account:
 			   "INNER JOIN `users_tags` ON tags.id = users_tags.tag_id "
 			   "WHERE users_tags.user_id = %s")
 		tags = db.get_all_rows(sql, [user_id])
+		tags = [k['name'] for k in tags]
 		return tags
 
 	@staticmethod
 	def get_user_info(login=None, id=None):
 		if not login and not id:
 			return None
-		sql = "SELECT id, login, email, confirmed, name, surname, gender, preferences, biography, avatar FROM `users`"
+		sql = "SELECT id, login, email, confirmed, name, surname, gender, preferences, biography, avatar, photos FROM `users`"
 		if login:
 			sql += " WHERE login=%s"
 			user = db.get_row(sql, [login])
 		elif id:
 			sql += " WHERE id=%s"
 			user = db.get_row(sql, [id])
-		user["tags"] = Account.get_tags(user["id"])
-		user["liked_users"] = Account.get_liked_users(user["login"])
+		user['tags'] = Account.get_tags(user["id"])
+		user['liked_users'] = Account.get_liked_users(user["login"])
+		user['photos'] = json.loads(user['photos'])
 		return user
 
 	@staticmethod
@@ -81,6 +83,8 @@ class Account:
 
 	@staticmethod
 	def update_users_tags(user, new_tags):
+		if new_tags and user['tags'] == new_tags:
+			return
 		Account.insert_unexistant_tags(new_tags)
 		all_tags = db.get_all_rows("SELECT * FROM `tags`")
 
@@ -178,44 +182,73 @@ class Account:
 		return errors
 
 	@staticmethod
-	def change(form, files=None, tags=None):
-		errors = []
-		email_confirmed = True
-		try:
-			user = Account.get_user_info(session["user"])
-			if user["email"] != form["email"]:
-				if Account.check_email_existant(form["email"]):
-					errors.append("User with this E-mail already exists")
-				else:
-					email_confirmed = False
-			new_avatar = user["avatar"]
-			if "avatar" in files and Account.check_img_extension(files["avatar"].filename):
-				new_avatar = secure_filename(files["avatar"].filename)
-				new_avatar = os.path.join(app.config['UPLOAD_FOLDER'], new_avatar)
-				files["avatar"].save(new_avatar)
-			if len(errors) == 0:
-				if not tags or user["tags"] != tags:
-					Account.update_users_tags(user, tags)
-				sql = ("UPDATE `users` "
-					   "SET email=%s, name=%s, surname=%s, gender=%s, preferences=%s, biography=%s, confirmed=%s, avatar=%s "
-					   "WHERE login=%s")
-				db.query(sql, [
-					form["email"],
-					form["name"],
-					form["surname"],
-					form["gender"],
-					form["preferences"],
-					form["biography"],
-					email_confirmed,
-					new_avatar,
-					user["login"]
-				])
-				if not email_confirmed:
-					Account.email_confirmation(form["email"], session["user"], user["token"])
-					flash("You will have to confirm your new E-mail!", 'success')
-		except KeyError:
-			errors.append("You haven't set some values")
-		return errors
+	def upload_photo(user_dir, photo):
+		if photo and Account.check_img_extension(photo.filename):
+			photo_path = secure_filename(photo.filename)
+			photo_path = os.path.join(user_dir, photo_path)
+			if not os.path.exists(user_dir):
+				os.mkdir(user_dir)
+			if not os.path.exists(photo_path):
+				photo.save(photo_path)
+			return photo_path
+		return False
+
+	@staticmethod
+	def update_user_files(user, files, to_update):
+		if not files:
+			return False
+		user_dir = os.path.join(app.config['UPLOAD_FOLDER'], user['login'])
+		avatar_path = Account.upload_photo(user_dir, files['avatar'])
+		files_differ = user['avatar'] and avatar_path and avatar_path != user['avatar']
+		if files_differ and avatar_path in user['photos'] and os.path.exists(user['avatar']):
+			os.remove(user['avatar'])
+		if avatar_path:
+			to_update['sql'] += ', avatar=%s' if len(to_update['values']) else 'avatar=%s'
+			to_update['values'].append(avatar_path)
+
+		photos_filenames = []
+		photos = files.getlist('photos[]')
+		for i, photo in enumerate(photos):
+			photo_path = Account.upload_photo(user_dir, photo)
+			photos_filenames.append(photo_path if photo_path else user['photos'][i])
+		for i, photo in enumerate(user['photos']):
+			files_differ = photo and photos_filenames[i] and photo != photos_filenames[i]
+			if files_differ and photo != user['avatar'] and os.path.exists(user['avatar']):
+				os.remove(user['photos'][i])
+		if len(photos_filenames):
+			to_update['sql'] += ', photos=%s' if len(to_update['values']) else 'photos=%s'
+			to_update['values'].append(json.dumps(photos_filenames))
+
+	@staticmethod
+	def get_changed_values(prev_val, new_val):
+		sql = ''
+		values = []
+		ignored_values = ['login', 'tags']
+		for key, val in new_val.items():
+			if key not in ignored_values and prev_val[key] != val:
+				sql += (key + '=%s, ')
+				values.append(val)
+		if 'email' in values:
+			sql += "confirmed='0', "
+		if len(values):
+			sql = sql[:-2]
+		return {'sql': sql, 'values': values}
+
+	@staticmethod
+	def change(form, files=None):
+		user = Account.get_user_info(session["user"])
+		to_update = Account.get_changed_values(user, form)
+		if 'email' in to_update['values'] and Account.check_email_existant(form["email"]):
+			raise Exception("User with his E-mail already exists")
+		Account.update_users_tags(user, form.getlist('tags'))
+		Account.update_user_files(user, files, to_update)
+		if len(to_update['values']) > 0:
+			sql = "UPDATE `users` SET " + to_update['sql'] + " WHERE id=%s"
+			to_update['values'].append(user['id'])
+			db.query(sql, to_update['values'])
+		if 'confirmed' in to_update:
+			Account.email_confirmation(form["email"], session["user"], user["token"])
+			flash("You will have to confirm your new E-mail!", 'success')
 
 	@staticmethod
 	def get_liked_users(user_login):

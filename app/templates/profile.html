@@ -25,14 +25,10 @@
 					<div class="profile__bio">
 						%% user.biography %%
 					</div>
-					<div class="profile__title">E-mail:</div>
-					<div class="profile__email">
-						%% user.email %%
-					</div>
 					<div class="profile__title">Interest tags:</div>
 					<select class="form-control multiple-tags profile__tags" disabled multiple>#}
 						{% for tag in user["tags"] %}
-							<option value="%% tag['name'] %%" selected>#%% tag['name'] %%</option>
+							<option value="%% tag %%" selected>#%% tag %%</option>
 						{% endfor %}
 					</select>
 				</div>
