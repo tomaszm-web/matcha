@@ -199,9 +199,6 @@ class Account:
 			return False
 		user_dir = os.path.join(app.config['UPLOAD_FOLDER'], user['login'])
 		avatar_path = Account.upload_photo(user_dir, files['avatar'])
-		files_differ = user['avatar'] and avatar_path and avatar_path != user['avatar']
-		if files_differ and avatar_path in user['photos'] and os.path.exists(user['avatar']):
-			os.remove(user['avatar'])
 		if avatar_path:
 			to_update['sql'] += ', avatar=%s' if len(to_update['values']) else 'avatar=%s'
 			to_update['values'].append(avatar_path)
@@ -211,10 +208,6 @@ class Account:
 		for i, photo in enumerate(photos):
 			photo_path = Account.upload_photo(user_dir, photo)
 			photos_filenames.append(photo_path if photo_path else user['photos'][i])
-		for i, photo in enumerate(user['photos']):
-			files_differ = photo and photos_filenames[i] and photo != photos_filenames[i]
-			if files_differ and photo != user['avatar'] and os.path.exists(user['avatar']):
-				os.remove(user['photos'][i])
 		if len(photos_filenames):
 			to_update['sql'] += ', photos=%s' if len(to_update['values']) else 'photos=%s'
 			to_update['values'].append(json.dumps(photos_filenames))

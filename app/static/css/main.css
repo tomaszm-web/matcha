@@ -271,6 +271,20 @@ header {
 	margin-right: 20px;
 }
 
+.carousel {
+	height: 100%;
+}
+
+.carousel-inner {
+	height: 100%;
+	display: flex;
+	align-items: center;
+}
+
+.carousel-item {
+	text-align: center;
+}
+
 /**/
 #chat {
 	padding: 80px 0;
