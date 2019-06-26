@@ -46,7 +46,7 @@ class Account:
 			sql += " WHERE id=%s"
 			user = db.get_row(sql, [id])
 		user['tags'] = Account.get_tags(user["id"])
-		user['liked_users'] = Account.get_liked_users(user["login"])
+		user['liked_users'] = Account.get_liked_users(user['id'])
 		user['photos'] = json.loads(user['photos'])
 		return user
 
@@ -245,7 +245,7 @@ class Account:
 
 	@staticmethod
 	def get_liked_users(user_login):
-		sql = "SELECT * FROM `likes` WHERE like_owner = %s"
+		sql = "SELECT * FROM `likes` WHERE like_owner=%s"
 		response = db.get_all_rows(sql, [user_login])
 		liked_users = [k["liked_user"] for k in response]
 		return liked_users

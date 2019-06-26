@@ -7,8 +7,8 @@ from flask import (
 	abort,
 	flash,
 	redirect,
-	send_from_directory
-)
+	send_from_directory,
+	jsonify)
 import json
 from app import app, Map
 from app.models import Account, Chat
@@ -106,8 +106,8 @@ def change():
 
 @app.route('/like_user', methods=["GET"])
 def like_user():
-	Account.like_user(session["user"], request.args["liked_user"])
-	return "Success"
+	Account.like_user(request.args['like_owner'], request.args['liked_user'])
+	return jsonify({"success": True})
 
 
 # Chat

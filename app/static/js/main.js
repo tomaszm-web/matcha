@@ -140,10 +140,12 @@ $(document).ready(function () {
 	$('.likeUser').click(function () {
 		axios.get(location.origin + '/like_user', {
 			params: {
-				liked_user: $(this).siblings(':first-child').text()
+				like_owner: $(this).attr('data-user-id'),
+				liked_user: $(this).attr('data-liked-user-id')
 			}
-		}).then(() => {
-			$(this).attr('disabled', true)
+		}).then((response) => {
+			if (response.data.success)
+				$(this).attr('disabled', true)
 		}).catch(() => {
 			console.log("Something went wrong! Try again")
 		});
