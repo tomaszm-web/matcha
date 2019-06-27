@@ -106,10 +106,8 @@ def change():
 
 @app.route('/like_user', methods=["GET"])
 def like_user():
-	Account.like_user(request.args['like_owner'], request.args['liked_user'])
-	response = requests.get(url_for('send_notification', sender_id=request.args['liked_user'], message='You recieved a new like',
-						 _external=True))
-	return response.content
+	Account.like_user(request.args['like_owner'], request.args['liked_user'], request.args['unlike'])
+	return jsonify({'success': True})
 
 
 # Chat

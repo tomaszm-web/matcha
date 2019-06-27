@@ -137,15 +137,16 @@ $(document).ready(function () {
 		tags: true
 	});
 
-	$('.likeUser').click(function () {
+	$('.likeUser').click(function() {
 		axios.get(location.origin + '/like_user', {
 			params: {
+				unlike: $(this).hasClass('liked'),
 				like_owner: $(this).attr('data-user-id'),
 				liked_user: $(this).attr('data-liked-user-id')
 			}
 		}).then((response) => {
 			if (response.data.success)
-				$(this).attr('disabled', true)
+				$(this).toggleClass('liked')
 		}).catch(() => {
 			console.log("Something went wrong! Try again")
 		});

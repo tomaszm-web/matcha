@@ -30,9 +30,8 @@
 							<div class="card-body">
 								<h5 class="card-title">%% user.login %%</h5>
 								<p class="card-text">%% user.biography %%</p>
-								<button class="btn btn-danger likeUser"
-										data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%"
-										{% print('disabled') if user.id in cur_user.liked_users %}>
+								<button class="btn btn-danger likeUser {% print('liked') if user.id in cur_user.liked_users %}"
+										data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%">
 									<i class="fas fa-thumbs-up"></i>Like
 								</button>
 							</div>

@@ -253,8 +253,16 @@ class Account:
 		return liked_users
 
 	@staticmethod
-	def like_user(like_owner, like_to):
-		sql = "INSERT INTO `likes` SET like_owner = %s, liked_user = %s"
+	def like_user(like_owner, like_to, unlike):
+		if unlike:
+			sql = "DELETE FROM `likes` WHERE like_owner=%s AND liked_user=%s"
+			Notif.send_notification(like_to, "You've been unliked")
+		else:
+			sql = "SELECT * FROM `likes` WHERE like_owner=%s AND liked_user=%s"
+			response = db.query(sql, [like_to, like_owner])
+			if response.rowcount > 0:
+				Notif.send_notification(like_to, "You've been liked in return")
+			sql = "INSERT INTO `likes` SET like_owner=%s, liked_user=%s"
 		db.query(sql, [like_owner, like_to])
 
 

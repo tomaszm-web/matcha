@@ -32,7 +32,8 @@
 						{{ notifications.length }}
 					</a>
 					<div class="dropdown-menu dropdown-menu-right notifications" aria-labelledby="user-notif">
-						<div class="message" v-for="notif in notifications">{{ notif }}</div>
+						<div class="dropdown-header">Notifications:</div>
+						<div class="message text-info" v-for="notif in notifications">{{ notif }}</div>
 						<div class="message" v-if="!notifications.length">No notifications yet</div>
 					</div>
 				</div>
@@ -188,7 +189,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/js/select2.min.js"></script>
 <script src="static/js/main.js"></script>
 <script>
-	if (document.getElementById('user-notif')) {
+	let elem;
+	if ((elem = document.getElementById('user-notif'))) {
 		notifs = new Vue({
 			el: '#notifications',
 			data: {
