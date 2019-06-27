@@ -39,8 +39,9 @@ def profile():
 	if "user_id" not in request.args:
 		flash("Invalid profile", 'danger')
 		return redirect(url_for('index'))
+	cur_user = Account.get_user_info(session['user'])
 	user = Account.get_user_info(id=request.args["user_id"])
-	return render_template('profile.html', cur_user=user)
+	return render_template('profile.html', cur_user=cur_user, user=user)
 
 
 @app.route('/chat', methods=["GET"])

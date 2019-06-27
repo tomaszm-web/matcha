@@ -296,6 +296,10 @@ header {
 	margin-right: 20px;
 }
 
+#profile .likeUser {
+	margin-top: 15px;
+}
+
 .carousel {
 	height: 100%;
 }
