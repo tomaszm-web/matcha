@@ -17,26 +17,37 @@
 	<div class="container">
 		<div class="row align-items-center">
 			<div class="col-1 text-center"><img src="static/img/logo.png" alt="Matcha"></div>
-			<div class="col-10">
+			<div class="col-9">
 				<nav class="main-menu">
 					<ul class="main-menu__list justify-content-center">
 						<li class="main-menu__item"><a href="%% url_for('index') %%">Main</a></li>
 						<li class="main-menu__item"><a href="%% url_for('settings') %%">Profile Settings</a></li>
-						<li class="main-menu__item"><a href="#">Lorem</a></li>
-						<li class="main-menu__item"><a href="#">Lorem</a></li>
 					</ul>
 				</nav>
 			</div>
-			<div class="col-1 text-center">
-				<a href="#" class="profile-link" data-toggle="dropdown" id="user-profile"
-				   style="background-image: url(%% user.avatar if user else 'static/img/default_avatar.png' %%)"></a>
-				<div class="dropdown-menu dropdown-menu-right" aria-labelledby="user-profile">
-					{% if "user" not in session %}
-						<a href="#" class="btn btn-transparent" data-toggle="modal" data-target="#signUp">Sign up</a>
-						<a href="#" class="btn btn-transparent" data-toggle="modal" data-target="#logIn">Log in</a>
-					{% else %}
-						<a href="/logout" class="btn btn-transparent">Log out</a>
-					{% endif %}
+			<div class="col-2 text-right d-flex align-items-center">
+				<div class="dropdown" id="notifications">
+					<a href="#" class="text-success" data-toggle="dropdown" id="user-notif">
+						<i class="fas fa-bell"></i>
+						{{ notifications.length }}
+					</a>
+					<div class="dropdown-menu dropdown-menu-right notifications" aria-labelledby="user-notif">
+						<div class="message" v-for="notif in notifications">{{ notif }}</div>
+						<div class="message" v-if="!notifications.length">No notifications yet</div>
+					</div>
+				</div>
+				<div class="dropdown">
+					<a href="#" class="profile-link" data-toggle="dropdown" id="user-profile"
+					   style="background-image: url(%% cur_user.avatar if cur_user else 'static/img/default_avatar.png' %%)"></a>
+					<div class="dropdown-menu dropdown-menu-right" aria-labelledby="user-profile">
+						{% if "user" not in session %}
+							<a href="#" class="btn btn-transparent" data-toggle="modal" data-target="#signUp">Sign
+								up</a>
+							<a href="#" class="btn btn-transparent" data-toggle="modal" data-target="#logIn">Log in</a>
+						{% else %}
+							<a href="/logout" class="btn btn-transparent">Log out</a>
+						{% endif %}
+					</div>
 				</div>
 			</div>
 		</div>
@@ -65,7 +76,7 @@
 			</div>
 			<div class="modal-body">
 				<form class="signUpForm" @submit.prevent="sendForm">
-{#					<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">#}
+					{#					<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">#}
 					<input class="form-control" type="text" name="login" placeholder="Login" required maxlength="30">
 					<input class="form-control" type="text" name="name" placeholder="First name" required
 						   maxlength="30">
@@ -101,7 +112,7 @@
 			</div>
 			<div class="modal-body">
 				<form @submit.prevent="sendForm">
-{#					<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">#}
+					{#					<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">#}
 					<input class="form-control" type="text" name="login" placeholder="Login" required maxlength="30">
 					<input class="form-control" type="password" name="pass" placeholder="Password" required>
 					<ul class="errors" v-if="errors.length">
@@ -130,7 +141,7 @@
 			<div class="modal-body">
 				<form @submit.prevent="sendForm">
 					<input type="hidden" name="action" v-model="action" value="{{ action }}">
-{#					<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">#}
+					{#					<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">#}
 					<input class="form-control" v-show="action == 'check'" v-model="email" type="email" name="email"
 						   placeholder="E-mail" maxlength="30" required>
 					<input class="form-control" v-show="action == 'reset'" v-model="pass" type="password" name="pass"
@@ -176,4 +187,29 @@
 <script src="https://cdn.jsdelivr.net/npm/vue"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/js/select2.min.js"></script>
 <script src="static/js/main.js"></script>
+<script>
+	if (document.getElementById('user-notif')) {
+		notifs = new Vue({
+			el: '#notifications',
+			data: {
+				notifications: []
+			},
+			created() {
+				this.getNotifications()
+			},
+			methods: {
+				getNotifications() {
+					axios.get(location.origin + '/get_notifications', {
+						params: {user_id: %% cur_user.id %%}
+				}).
+					then((response) => {
+						if (response.data.success)
+							this.notifications = response.data.notifications
+					})
+				}
+			}
+		});
+		setInterval(notifs.getNotifications, 10000);
+	}
+</script>
 </html>

@@ -8,12 +8,12 @@
 				</div>
 				{#				<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">#}
 				<div class="col-12 d-flex align-items-center">
-					<label class="profile__avatar" style="background-image: url(%% current_user.avatar %%)">
+					<label class="profile__avatar" style="background-image: url(%% cur_user.avatar %%)">
 						<i class="fa fa-upload"></i>
 						<input type="file" name="avatar" accept="image/*">
 					</label>
 					<div class="profile__info">
-						<code>%% current_user.login %%</code>
+						<code>%% cur_user.login %%</code>
 						<div class="progress">
 							<div class="progress-bar" style="width: 70%">Your Fame Rating: 70%</div>
 						</div>
@@ -22,58 +22,63 @@
 				<div class="col-6">
 					<label class="form-group">
 						E-mail:
-						<input class="form-control" type="email" name="email" value="%% current_user.email %%" required
+						<input class="form-control" type="email" name="email" value="%% cur_user.email %%" required
 							   maxlength="30">
 					</label>
 					<label class="form-group">
 						Name:
-						<input class="form-control" type="text" name="name" value="%% current_user.name %%" required
+						<input class="form-control" type="text" name="name" value="%% cur_user.name %%" required
 							   maxlength="20">
 					</label>
 					<label class="form-group">
 						Last Name:
-						<input class="form-control" type="text" name="surname" value="%% current_user.surname %%"
+						<input class="form-control" type="text" name="surname" value="%% cur_user.surname %%"
 							   required
 							   maxlength="20">
 					</label>
 					<label class="form-group">
+						Age:
+						<input type="number" name="age" class="form-control" value="%% cur_user.age %%" min="0"
+							   max="100">
+					</label>
+					<label class="form-group">
 						Biography:
 						<textarea name="biography" placeholder="Type a few words about you" class="form-control"
-								  required>%% current_user.biography %%</textarea>
+								  required>%% cur_user.biography %%</textarea>
 					</label>
 				</div>
 				<div class="col-6">
 					<label class="form-group">
 						Gender:
 						<select class="form-control" name="gender" required>
-							<option value="male" {% print('selected') if current_user.gender == "male" %}>Male</option>
-							<option value="female" {% print('selected') if current_user.gender == "female" %}>Female
+							<option value="male" {% print('selected') if cur_user.gender == "male" %}>Male</option>
+							<option value="female" {% print('selected') if cur_user.gender == "female" %}>Female
 							</option>
 						</select>
 					</label>
 					<label class="form-group">
 						Sexual preferences:
 						<select class="form-control" name="preferences" required>
-							<option value="bisexual" {% print('selected') if current_user.preferences == "bisexual" %}>
+							<option value="bisexual" {% print('selected') if cur_user.preferences == "bisexual" %}>
 								Bisexual
 							</option>
-							<option value="girls" {% print('selected') if current_user.preferences == "girls" %}>Girls
+							<option value="girls" {% print('selected') if cur_user.preferences == "girls" %}>Girls
 							</option>
-							<option value="boys" {% print('selected') if current_user.preferences == "boys" %}>Boys
+							<option value="boys" {% print('selected') if cur_user.preferences == "boys" %}>Boys
 							</option>
 						</select>
 					</label>
 					<label class="form-group">
 						Interests tags:
 						<select name="tags" class="form-control multiple-tags" multiple>
-							{% for tag in current_user.tags %}
+							{% for tag in cur_user.tags %}
 								<option value="%% tag %%" selected>#%% tag %%</option>
 							{% endfor %}
 						</select>
 					</label>
 					<label class="form-group">
 						Profile photos:
-						{% for photo in current_user.photos %}
+						{% for photo in cur_user.photos %}
 							<div class="profile__photo">
 								{% if photo %}
 									<img src="%% photo %%" alt="Matcha">

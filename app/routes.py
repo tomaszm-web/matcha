@@ -9,9 +9,9 @@ from flask import (
 	redirect,
 	send_from_directory,
 	jsonify)
-import json
+import requests
 from app import app, Map
-from app.models import Account, Chat
+from app.models import Account, Chat, Notif
 
 
 @app.route('/')
@@ -22,7 +22,7 @@ def index():
 		user = Account.get_user_info(session["user"])
 	else:
 		user = None
-	return render_template('index.html', current_user=user, users=users)
+	return render_template('index.html', cur_user=user, users=users)
 
 
 @app.route('/settings')
@@ -31,7 +31,7 @@ def settings():
 		flash("You should log in to access your profile", 'danger')
 		return redirect(url_for('index'))
 	user = Account.get_user_info(session["user"])
-	return render_template('settings.html', current_user=user)
+	return render_template('settings.html', cur_user=user)
 
 
 @app.route('/profile', methods=["GET"])
@@ -40,7 +40,7 @@ def profile():
 		flash("Invalid profile", 'danger')
 		return redirect(url_for('index'))
 	user = Account.get_user_info(id=request.args["user_id"])
-	return render_template('profile.html', user=user)
+	return render_template('profile.html', cur_user=user)
 
 
 @app.route('/chat', methods=["GET"])
@@ -50,19 +50,19 @@ def chat():
 		flash("Wrong user id", 'danger')
 		return redirect(url_for('index'))
 	user = Account.get_user_info(session["user"])
-	return render_template('chat.html', user=user, recipient=recipient)
+	return render_template('chat.html', cur_user=user, recipient=recipient)
 
 
 @app.route('/registration', methods=["POST"])
 def registration():
 	errors = Account.registration(request.form)
-	return json.dumps(errors)
+	return jsonify(errors)
 
 
 @app.route('/login', methods=["POST"])
 def login():
 	errors = Account.login(request.form)
-	return json.dumps(errors)
+	return jsonify(errors)
 
 
 @app.route('/logout', methods=["GET"])
@@ -87,7 +87,7 @@ def confirmation():
 @app.route('/reset', methods=["POST"])
 def reset():
 	errors = Account.reset(request.form, action=request.form["action"])
-	return json.dumps(errors)
+	return jsonify(errors)
 
 
 @app.route('/change_profile_info', methods=["POST"])
@@ -107,7 +107,9 @@ def change():
 @app.route('/like_user', methods=["GET"])
 def like_user():
 	Account.like_user(request.args['like_owner'], request.args['liked_user'])
-	return jsonify({"success": True})
+	response = requests.get(url_for('send_notification', sender_id=request.args['liked_user'], message='You recieved a new like',
+						 _external=True))
+	return response.content
 
 
 # Chat
@@ -122,18 +124,37 @@ def send_message(recipient_id):
 @app.route('/get_messages', methods=["GET"])
 def get_messages():
 	if 'sender_id' not in request.args or 'recipient_id' not in request.args:
-		return "[]"
+		return jsonify([])
 	messages = Chat.get_messages(request.args['sender_id'], request.args['recipient_id'])
-	return json.dumps(messages, default=str)
+	return jsonify(messages, default=str)
 
 
+# Notifications
+@app.route('/send_notification', methods=["GET"])
+def send_notification():
+	try:
+		Notif.send_notification(request.args['sender_id'], request.args['message'])
+		return jsonify({'success': True})
+	except KeyError:
+		return jsonify({'success': False})
+
+
+@app.route('/get_notifications', methods=["GET"])
+def get_notifications():
+	try:
+		notifications = Notif.get_notifications(request.args['user_id'])
+		return jsonify({'success': True, 'notifications': notifications})
+	except KeyError:
+		return jsonify({'success': False})
+
+
+# Files
 @app.route('/uploads/<userdir>/<filename>')
 @app.route('/uploads/<filename>')
 def uploaded_file(filename, userdir=None):
 	if userdir:
 		return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}/{userdir}", filename)
 	return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}", filename)
-
 
 # todo Create Gps positioning
 # todo Create Fame Rating

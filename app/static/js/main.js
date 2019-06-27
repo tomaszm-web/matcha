@@ -187,7 +187,6 @@ $(document).ready(function () {
 				}
 			}
 		});
-		console.log(chat);
 		setInterval(chat.showMessages, 5000);
 	}
 });

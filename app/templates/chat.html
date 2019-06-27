@@ -16,7 +16,7 @@
 							<div class="d-flex flex-column">
 								<div class="d-flex align-items-center">
 									<div class="chat__login text-info">
-										@{{ message.sender_id == sender_id ? '%% user.login %%' : '%% recipient.login %%' }}
+										@{{ message.sender_id == sender_id ? '%% cur_user.login %%' : '%% recipient.login %%' }}
 									</div>
 									<div class="chat__timestamp text-info">{{ message.timestamp }}</div>
 								</div>
@@ -27,7 +27,7 @@
 						{#							<div class="d-flex flex-column">#}
 						{#								<div class="d-flex align-items-center justify-content-between">#}
 						{#									<div class="chat__timestamp text-info">17.08.2008</div>#}
-						{#									<p class="chat__login text-info">@%% user.login %%</p>#}
+						{#									<p class="chat__login text-info">@%% cur_user.login %%</p>#}
 						{#								</div>#}
 						{#								<div class="chat__text card-body bg-light">Message Message Message</div>#}
 						{#							</div>#}
@@ -36,7 +36,7 @@
 					</div>
 					<form class="sendMessageForm" @submit.prevent="sendMessage">
 						{#						<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">#}
-						<input type="hidden" name="sender_id" value="%% user.id %%">
+						<input type="hidden" name="sender_id" value="%% cur_user.id %%">
 						<textarea name="text" placeholder="Type your text here"
 								  class="form-control chat__textarea" required maxlength="256"></textarea>
 						<button class="btn btn-block btn-primary">Send message</button>

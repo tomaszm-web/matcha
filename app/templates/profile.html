@@ -7,9 +7,9 @@
 					<div class="carousel slide" id="profile-photos" data-ride="carousel">
 						<div class="carousel-inner">
 							<div class="carousel-item active">
-								<img src="%% user.avatar %%" alt="Matcha" class="img-fluid">
+								<img src="%% cur_user.avatar %%" alt="Matcha" class="img-fluid">
 							</div>
-							{% for photo in user.photos %}
+							{% for photo in cur_user.photos %}
 								<div class="carousel-item">
 									<img src="%% photo %%" alt="Matcha" class="img-fluid">
 								</div>
@@ -28,11 +28,11 @@
 					</div>
 				</div>
 				<div class="col-6">
-					<h4 class="profile__login">@%% user.login %%</h4>
+					<h4 class="profile__login">@%% cur_user.login %%</h4>
 					<div class="profile__title">Name:</div>
 					<div class="profile__name">
-						%% user.name %%
-						%% user.surname %%
+						%% cur_user.name %%
+						%% cur_user.surname %%
 					</div>
 					<div class="profile__title">Fame Rating:</div>
 					<div class="progress profile__fame">
@@ -40,15 +40,15 @@
 					</div>
 					<div class="profile__title">Preferences:</div>
 					<div class="profile__preferences">
-						%% user.preferences %%
+						%% cur_user.preferences %%
 					</div>
 					<div class="profile__title">Biography:</div>
 					<div class="profile__bio">
-						%% user.biography %%
+						%% cur_user.biography %%
 					</div>
 					<div class="profile__title">Interest tags:</div>
 					<select class="form-control multiple-tags profile__tags" disabled multiple>#}
-						{% for tag in user["tags"] %}
+						{% for tag in cur_user["tags"] %}
 							<option value="%% tag %%" selected>#%% tag %%</option>
 						{% endfor %}
 					</select>

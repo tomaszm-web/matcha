@@ -38,7 +38,8 @@ class Account:
 	def get_user_info(login=None, id=None):
 		if not login and not id:
 			return None
-		sql = "SELECT id, login, email, confirmed, name, surname, gender, preferences, biography, avatar, photos FROM `users`"
+		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
+			   "biography, avatar, photos, age FROM `users`")
 		if login:
 			sql += " WHERE login=%s"
 			user = db.get_row(sql, [login])
@@ -48,6 +49,7 @@ class Account:
 		user['tags'] = Account.get_tags(user["id"])
 		user['liked_users'] = Account.get_liked_users(user['id'])
 		user['photos'] = json.loads(user['photos'])
+		user['notifications'] = Notif.get_notifications(user['id'])
 		return user
 
 	@staticmethod
@@ -268,5 +270,19 @@ class Chat:
 			   "OR (sender_id=%s AND recipient_id=%s) ORDER BY timestamp")
 		messages = db.get_all_rows(sql, (user_id, recipient_id, recipient_id, user_id))
 		return messages
+
+
+class Notif:
+	@staticmethod
+	def send_notification(user_id, message_text):
+		sql = "INSERT INTO `notifications` (user_id, message) VALUES (%s, %s)"
+		db.query(sql, (user_id, message_text))
+
+	@staticmethod
+	def get_notifications(user_id):
+		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created"
+		notifications = db.get_all_rows(sql, [user_id])
+		notifications = [k['message'] for k in notifications]
+		return notifications
 
 # 	todo redo errors implementation(Return after the first error)
