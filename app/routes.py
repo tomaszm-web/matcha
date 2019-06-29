@@ -39,7 +39,7 @@ def profile():
 	if "user_id" not in request.args:
 		flash("Invalid profile", 'danger')
 		return redirect(url_for('index'))
-	cur_user = Account.get_user_info(session['user'])
+	cur_user = Account.get_user_info(session['user']) if 'user' in session else None
 	user = Account.get_user_info(id=request.args["user_id"])
 	return render_template('profile.html', cur_user=cur_user, user=user)
 
@@ -107,7 +107,10 @@ def change():
 
 @app.route('/like_user', methods=["GET"])
 def like_user():
-	Account.like_user(request.args['like_owner'], request.args['liked_user'], request.args['unlike'])
+	try:
+		Account.like_user(request.args['like_owner'], request.args['liked_user'], request.args['unlike'])
+	except Exception as e:
+		return jsonify({'success': False, 'error_message': str(e)})
 	return jsonify({'success': True})
 
 

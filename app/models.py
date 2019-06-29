@@ -10,13 +10,13 @@ from app.mail import send_email
 
 class Account:
 	@staticmethod
-	def check_login_existant(login):
+	def check_login_existent(login):
 		sql = "SELECT * FROM `users` WHERE login=%s"
 		cur = db.query(sql, [login])
 		return cur.rowcount > 0
 
 	@staticmethod
-	def check_email_existant(email):
+	def check_email_existent(email):
 		sql = "SELECT * FROM `users` WHERE email=%s"
 		cur = db.query(sql, [email])
 		return cur.rowcount > 0
@@ -106,9 +106,9 @@ class Account:
 	def registration(form):
 		errors = []
 		try:
-			if Account.check_login_existant(form["login"]):
+			if Account.check_login_existent(form["login"]):
 				errors.append("User with this login already exists")
-			if Account.check_email_existant(form["email"]):
+			if Account.check_email_existent(form["email"]):
 				errors.append("User with this E-mail already exists")
 			if len(errors) == 0:
 				sql = "INSERT INTO `users`(login, name, surname, email, password, token) VALUES(%s, %s, %s, %s, %s, %s)"
@@ -233,7 +233,7 @@ class Account:
 	def change(form, files=None):
 		user = Account.get_user_info(session["user"])
 		to_update = Account.get_changed_values(user, form)
-		if 'email' in to_update['values'] and Account.check_email_existant(form["email"]):
+		if 'email' in to_update['values'] and Account.check_email_existent(form["email"]):
 			raise Exception("User with his E-mail already exists")
 		Account.update_users_tags(user, form.getlist('tags'))
 		Account.update_user_files(user, files, to_update)
@@ -256,12 +256,12 @@ class Account:
 	def like_user(like_owner, like_to, unlike):
 		if unlike:
 			sql = "DELETE FROM `likes` WHERE like_owner=%s AND liked_user=%s"
-			Notif.send_notification(like_to, "You've been unliked")
+			Notif.send_notification(like_to, 'unlike', Account.get_user_info(id=like_owner))
 		else:
 			sql = "SELECT * FROM `likes` WHERE like_owner=%s AND liked_user=%s"
 			response = db.query(sql, [like_to, like_owner])
 			if response.rowcount > 0:
-				Notif.send_notification(like_to, "You've been liked in return")
+				Notif.send_notification(like_to, 'like', Account.get_user_info(id=like_owner))
 			sql = "INSERT INTO `likes` SET like_owner=%s, liked_user=%s"
 		db.query(sql, [like_owner, like_to])
 
@@ -282,15 +282,26 @@ class Chat:
 
 class Notif:
 	@staticmethod
-	def send_notification(user_id, message_text):
-		sql = "INSERT INTO `notifications` (user_id, message) VALUES (%s, %s)"
-		db.query(sql, (user_id, message_text))
+	def send_notification(recipient_id, notif_type, executive_user):
+		notifications = {
+			'like': f"You have been liked by {executive_user['login']}",
+			'unlike': f"You have been unliked by {executive_user['login']}",
+			'check_profile': f"Your profile was checked by {executive_user['login']}",
+			'message': f"You received a message from {executive_user['login']}",
+			'like_back': f"You have been liked back by {executive_user['login']}"
+		}
+		links = {
+			'user_action': url_for('profile', user_id=executive_user['id']),
+			'message': url_for('chat', recipient_id_id=executive_user['id'])
+		}
+		sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"
+		link = 'message' if notif_type == 'message' else 'user_action'
+		db.query(sql, (recipient_id, notifications[notif_type], links[link]))
 
 	@staticmethod
 	def get_notifications(user_id):
 		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created"
 		notifications = db.get_all_rows(sql, [user_id])
-		notifications = [k['message'] for k in notifications]
 		return notifications
 
 # 	todo redo errors implementation(Return after the first error)
