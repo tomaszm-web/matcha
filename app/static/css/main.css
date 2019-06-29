@@ -165,12 +165,21 @@ header {
 	font-weight: 300;
 	color: white;
 	font-size: 14px;
-	padding: 10px 20px;
+	padding: 20px;
 	border-bottom: 1px solid white;
+	display: block;
+	position: relative;
 }
 
 .notifications .message:last-child {
 	border-bottom: 0;
+}
+
+.notifications .message__timestamp {
+	position: absolute;
+	right: 5px;
+	top: 5px;
+	font-size: 11px;
 }
 
 .profile-link {
