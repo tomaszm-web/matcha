@@ -52,10 +52,16 @@
 							<option value="%% tag %%" selected>#%% tag %%</option>
 						{% endfor %}
 					</select>
-					<button class="btn btn-danger likeUser {% print('liked') if user.id in cur_user.liked_users %}"
-							data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%">
-						<i class="fas fa-thumbs-up"></i>Like
-					</button>
+					{% if cur_user %}
+						<button class="btn btn-danger likeUser {% print('liked') if user.id in cur_user.liked_users %}"
+								data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%">
+							<i class="fas fa-thumbs-up"></i>Like
+						</button>
+						{% if like_each_other %}
+							<a href="%% url_for('chat', recipient_id=user.id) %%" class="btn btn-primary"><i
+									class="fas fa-comment"></i>Chat</a>
+						{% endif %}
+					{% endif %}
 				</div>
 			</div>
 		</div>

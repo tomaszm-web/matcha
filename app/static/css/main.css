@@ -159,6 +159,8 @@ header {
 
 .notifications {
 	width: 30vw;
+	max-height: 60vh;
+    overflow-y: scroll
 }
 
 .notifications .message {
@@ -309,7 +311,7 @@ header {
 	margin-right: 20px;
 }
 
-#profile .likeUser {
+#profile .btn {
 	margin-top: 15px;
 }
 

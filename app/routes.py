@@ -39,9 +39,13 @@ def profile():
 	if "user_id" not in request.args:
 		flash("Invalid profile", 'danger')
 		return redirect(url_for('index'))
-	cur_user = Account.get_user_info(session['user']) if 'user' in session else None
 	user = Account.get_user_info(id=request.args["user_id"])
-	return render_template('profile.html', cur_user=cur_user, user=user)
+	if 'user' in session:
+		cur_user = Account.get_user_info(session['user'])
+		like_each_other = user['id'] in cur_user['liked_users'] and cur_user['id'] in user['liked_users']
+		return render_template('profile.html', cur_user=cur_user, user=user, like_each_other=like_each_other)
+	else:
+		return render_template('profile.html', user=user)
 
 
 @app.route('/chat', methods=["GET"])
@@ -111,7 +115,7 @@ def like_user():
 		Account.like_user(request.args['like_owner'], request.args['liked_user'], request.args['unlike'])
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
-	return jsonify({'success': True})
+	return jsonify({'success': True, 'unlike': request.args.get('unlike')})
 
 
 # Chat

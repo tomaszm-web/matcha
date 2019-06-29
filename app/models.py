@@ -254,7 +254,7 @@ class Account:
 
 	@staticmethod
 	def like_user(like_owner, like_to, unlike):
-		if unlike:
+		if unlike == 'true':
 			sql = "DELETE FROM `likes` WHERE like_owner=%s AND liked_user=%s"
 			Notif.send_notification(like_to, 'unlike', Account.get_user_info(id=like_owner))
 		else:
