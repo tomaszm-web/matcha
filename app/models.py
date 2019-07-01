@@ -12,14 +12,14 @@ class Account:
 	@staticmethod
 	def check_login_existent(login):
 		sql = "SELECT * FROM `users` WHERE login=%s"
-		cur = db.query(sql, [login])
-		return cur.rowcount > 0
+		row_num = db.get_row_num(sql, [login])
+		return row_num > 0
 
 	@staticmethod
 	def check_email_existent(email):
 		sql = "SELECT * FROM `users` WHERE email=%s"
-		cur = db.query(sql, [email])
-		return cur.rowcount > 0
+		row_num = db.get_row_num(sql, [email])
+		return row_num > 0
 
 	@staticmethod
 	def check_img_extension(filename):
@@ -81,7 +81,7 @@ class Account:
 				sql += " (%s),"
 				tag_list.append(tag_name)
 		if len(tag_list):
-			db.query(sql[:-1], tag_list)
+			db.exec_query(sql[:-1], tag_list)
 
 	@staticmethod
 	def update_users_tags(user, new_tags):
@@ -91,7 +91,7 @@ class Account:
 		all_tags = db.get_all_rows("SELECT * FROM `tags`")
 
 		sql = "DELETE FROM `users_tags` WHERE user_id=%s"
-		db.query(sql, [user["id"]])
+		db.exec_query(sql, [user["id"]])
 		sql = "INSERT INTO `users_tags` (user_id, tag_id) VALUES"
 		tag_list = []
 		for tag in new_tags:
@@ -100,7 +100,7 @@ class Account:
 			tag_list.append(user["id"])
 			tag_list.append(tag_id)
 		if len(tag_list):
-			db.query(sql[:-1], tag_list)
+			db.exec_query(sql[:-1], tag_list)
 
 	@staticmethod
 	def registration(form):
@@ -113,7 +113,7 @@ class Account:
 			if len(errors) == 0:
 				sql = "INSERT INTO `users`(login, name, surname, email, password, token) VALUES(%s, %s, %s, %s, %s, %s)"
 				token = secrets.token_hex(10)
-				db.query(sql, (
+				db.exec_query(sql, (
 					form["login"],
 					form["name"],
 					form["surname"],
@@ -131,8 +131,7 @@ class Account:
 		errors = []
 		try:
 			sql = "SELECT * FROM `users` WHERE login=%s"
-			cur = db.query(sql, (form["login"]))
-			user = cur.fetchone()
+			user = db.get_row(sql, [form["login"]])
 			if not user:
 				errors.append("Wrong login!")
 			elif not check_password_hash(user["password"], form["pass"]):
@@ -149,10 +148,9 @@ class Account:
 	@staticmethod
 	def confirmation(login, token):
 		sql = "SELECT token FROM `users` WHERE login=%s"
-		cur = db.query(sql, (login))
-		if cur.fetchone()["token"] == token:
+		if db.get_row(sql, [login])["token"] == token:
 			sql = "UPDATE `users` SET confirmed=1 WHERE login=%s"
-			db.query(sql, (login))
+			db.exec_query(sql, (login))
 			return True
 		return False
 
@@ -161,8 +159,7 @@ class Account:
 		errors = []
 		try:
 			sql = "SELECT * FROM `users` WHERE email=%s"
-			cur = db.query(sql, (form["email"]))
-			user = cur.fetchone()
+			user = db.get_row(sql, (form["email"]))
 			if action == "check":
 				if not user:
 					errors.append("No user with such E-mail")
@@ -177,7 +174,7 @@ class Account:
 					errors.append("Wrong token!")
 				else:
 					sql = "UPDATE `users` SET password=%s WHERE email=%s"
-					db.query(sql, (generate_password_hash(form["pass"]), form["email"]))
+					db.exec_query(sql, (generate_password_hash(form["pass"]), form["email"]))
 					flash("You successfully updated your password!", 'success')
 		except KeyError:
 			errors.append("You haven't set some values")
@@ -240,7 +237,7 @@ class Account:
 		if len(to_update['values']) > 0:
 			sql = "UPDATE `users` SET " + to_update['sql'] + " WHERE id=%s"
 			to_update['values'].append(user['id'])
-			db.query(sql, to_update['values'])
+			db.exec_query(sql, to_update['values'])
 		if 'confirmed' in to_update:
 			Account.email_confirmation(form["email"], session["user"], user["token"])
 			flash("You will have to confirm your new E-mail!", 'success')
@@ -259,18 +256,17 @@ class Account:
 			Notif.send_notification(like_to, 'unlike', Account.get_user_info(id=like_owner))
 		else:
 			sql = "SELECT * FROM `likes` WHERE like_owner=%s AND liked_user=%s"
-			response = db.query(sql, [like_to, like_owner])
-			if response.rowcount > 0:
+			if db.get_row_num(sql, [like_to, like_owner]) > 0:
 				Notif.send_notification(like_to, 'like', Account.get_user_info(id=like_owner))
 			sql = "INSERT INTO `likes` SET like_owner=%s, liked_user=%s"
-		db.query(sql, [like_owner, like_to])
+		db.exec_query(sql, [like_owner, like_to])
 
 
 class Chat:
 	@staticmethod
 	def send_message(sender_id, recipient_id, message_text):
 		sql = "INSERT INTO `messages` SET sender_id=%s, recipient_id=%s, body=%s"
-		db.query(sql, (sender_id, recipient_id, message_text))
+		db.exec_query(sql, (sender_id, recipient_id, message_text))
 
 	@staticmethod
 	def get_messages(user_id, recipient_id):
@@ -296,7 +292,7 @@ class Notif:
 		}
 		sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"
 		link = 'message' if notif_type == 'message' else 'user_action'
-		db.query(sql, (recipient_id, notifications[notif_type], links[link]))
+		db.exec_query(sql, (recipient_id, notifications[notif_type], links[link]))
 
 	@staticmethod
 	def get_notifications(user_id):

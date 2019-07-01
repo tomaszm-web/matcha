@@ -164,7 +164,7 @@ $(document).ready(function () {
 			created() {
 				this.recipient_id = $_GET['recipient_id'];
 				this.sender_id = $(".sendMessageForm input[name='sender_id']").val();
-				this.showMessages();
+				// this.showMessages();
 			},
 			methods: {
 				showMessages() {
@@ -188,7 +188,7 @@ $(document).ready(function () {
 				}
 			}
 		});
-		setInterval(chat.showMessages, 5000);
+		// setInterval(chat.showMessages, 5000);
 	}
 });
 
