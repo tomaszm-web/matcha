@@ -164,7 +164,7 @@ $(document).ready(function () {
 			created() {
 				this.recipient_id = $_GET['recipient_id'];
 				this.sender_id = $(".sendMessageForm input[name='sender_id']").val();
-				// this.showMessages();
+				this.showMessages();
 			},
 			methods: {
 				showMessages() {
@@ -178,17 +178,18 @@ $(document).ready(function () {
 					})
 				},
 				sendMessage(e) {
-					let url = location.origin + '/send_message/' + $_GET['recipient_id'];
+					let url = location.origin + '/send_message';
 					let data = new FormData(e.target);
+					data.append('recipient_id', $_GET['recipient_id']);
 					axios.post(url, data).then((response) => {
-						if (response.data !== "Error") {
+						if (response.data.success) {
 							e.target.reset();
 						}
 					})
 				}
 			}
 		});
-		// setInterval(chat.showMessages, 5000);
+		setInterval(chat.showMessages, 5000);
 	}
 });
 
