@@ -161,9 +161,9 @@ def get_messages():
 		db = Database(app)
 		live_chat = Chat(db)
 		messages = live_chat.get_messages(request.args['sender_id'], request.args['recipient_id'])
-		return jsonify({'success': True, 'messages': messages}, default=str)
-	except Exception:
-		return jsonify({'success': False})
+		return jsonify({'success': True, 'messages': messages})
+	except Exception as e:
+		return jsonify({'success': False, 'cause': str(e)})
 
 
 # Notifications

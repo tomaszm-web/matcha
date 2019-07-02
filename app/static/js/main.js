@@ -137,7 +137,7 @@ $(document).ready(function () {
 		tags: true
 	});
 
-	$('.likeUser').click(function() {
+	$('.likeUser').click(function () {
 		axios.get(location.origin + '/like_user', {
 			params: {
 				unlike: $(this).hasClass('liked'),
@@ -174,7 +174,9 @@ $(document).ready(function () {
 							recipient_id: this.recipient_id,
 						}
 					}).then((response) => {
-						this.messages = response.data;
+						this.messages = response.data.messages;
+						const elem = document.querySelector('#chat .chat');
+						elem.scrollTop = elem.scrollHeight;
 					})
 				},
 				sendMessage(e) {
