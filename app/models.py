@@ -1,7 +1,7 @@
 import os
 import json
 import secrets
-from flask import render_template, url_for, flash, redirect, session, abort
+from flask import render_template, url_for, flash, redirect, session, abort, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from app.mail import send_email
@@ -28,6 +28,20 @@ class Account:
 	def check_img_extension(self, filename):
 		return '.' in filename and filename.rsplit('.', 1)[1] in ["png", "jpg", "jpeg"]
 
+	def get_fame_rating(self, user_id):
+		sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
+		response = self.db.get_all_rows(sql)
+		max_likes_num = None
+		user_like_num = None
+		for row in response:
+			if not max_likes_num or max_likes_num < row['like_num']:
+				max_likes_num = row['like_num']
+			if row['liked_user'] == user_id:
+				user_like_num = row['like_num']
+		if not max or not user_like_num:
+			return 0
+		return user_like_num / max_likes_num * 100
+
 	def get_tags(self, user_id):
 		sql = ("SELECT tags.name FROM `tags` "
 			   "INNER JOIN `users_tags` ON tags.id = users_tags.tag_id "
@@ -49,13 +63,34 @@ class Account:
 			user = self.db.get_row(sql, [id])
 		user['tags'] = self.get_tags(user["id"])
 		user['liked_users'] = self.get_liked_users(user['id'])
+		user['checked_users'] = self.get_checked_users(user['id'])
 		user['photos'] = json.loads(user['photos'])
+		user['fame'] = self.get_fame_rating(user['id'])
 		# user['notifications'] = Notif.get_notifications(user['id'])
 		return user
 
-	def get_all_users(self, sorted=None):
-		sql = "SELECT id, login, name, surname, gender, preferences, biography, avatar FROM `users`"
-		users = self.db.get_all_rows(sql)
+	def handle_filters(self, user):
+		# todo Fame rating, location
+		match = {}
+		if user['preferences'] == 'heterosexual':
+			match['gender'] = 'female' if user['gender'] == 'male' else 'male'
+			match['preferences'] = ['heterosexual', 'bisexual']
+		else:
+			if user['preferences'] == 'homosexual':
+				match['gender'] = user['gender']
+			match['preferences'] = ['homosexual', 'bisexual']
+		return match
+
+	def get_all_users(self, user_match=None):
+		# todo sort by age, fame rating
+		if user_match:
+			match = self.handle_filters(user_match)
+			sql = ("SELECT id, login, name, surname, gender, preferences, biography, avatar FROM `users`"
+				   "ORDER BY ABS(%s - age)")
+			users = self.db.get_all_rows(sql, [user_match['age']])
+		else:
+			sql = "SELECT id, login, name, surname, gender, preferences, biography, avatar FROM `users`"
+			users = self.db.get_all_rows(sql)
 		for user in users:
 			user["tags"] = self.get_tags(user["id"])
 		return users
@@ -142,9 +177,10 @@ class Account:
 
 	def confirmation(self, login, token):
 		sql = "SELECT token FROM `users` WHERE login=%s"
-		if self.db.get_row(sql, [login])["token"] == token:
-			sql = "UPDATE `users` SET confirmed=1 WHERE login=%s"
-			self.db.query(sql, (login))
+		user = self.db.get_row(sql, [login])
+		if user and user["token"] == token:
+			sql = "UPDATE `users` SET confirmed='1' WHERE login=%s"
+			self.db.query(sql, [login])
 			return True
 		return False
 
@@ -237,17 +273,29 @@ class Account:
 		liked_users = [k["liked_user"] for k in response]
 		return liked_users
 
+	def get_checked_users(self, user_login):
+		sql = "SELECT * FROM `checked_profile` WHERE checking=%s"
+		response = self.db.get_all_rows(sql, [user_login])
+		liked_users = [k["checked_user"] for k in response]
+		return liked_users
+
 	def like_user(self, like_owner, like_to, unlike):
-		pass
-# if unlike == 'true':
-# 	sql = "DELETE FROM `likes` WHERE like_owner=%s AND liked_user=%s"
-# 	Notif.send_notification(like_to, 'unlike', self.get_user_info(id=like_owner))
-# else:
-# 	sql = "SELECT * FROM `likes` WHERE like_owner=%s AND liked_user=%s"
-# 	if self.db.get_row_num(sql, [like_to, like_owner]) > 0:
-# 		Notif.send_notification(like_to, 'like', self.get_user_info(id=like_owner))
-# 	sql = "INSERT INTO `likes` SET like_owner=%s, liked_user=%s"
-# self.db.query(sql, [like_owner, like_to])
+		if unlike == 'true':
+			sql = "DELETE FROM `likes` WHERE like_owner=%s AND liked_user=%s"
+			action = 'unlike'
+		else:
+			sql = "SELECT * FROM `likes` WHERE like_owner=%s AND liked_user=%s"
+			if self.db.get_row_num(sql, [like_to, like_owner]) > 0:
+				action = 'like_back'
+			else:
+				action = 'like'
+			sql = "INSERT INTO `likes` SET like_owner=%s, liked_user=%s"
+		self.db.query(sql, [like_owner, like_to])
+		return action
+
+	def check_user(self, checking, checked_user):
+		sql = "INSERT INTO `checked_profile` SET checking=%s, checked_user=%s"
+		self.db.query(sql, [checking, checked_user])
 
 
 class Chat:
@@ -263,8 +311,8 @@ class Chat:
 
 	def get_messages(self, user_id, recipient_id):
 		sql = ("SELECT * FROM `messages` WHERE (sender_id=%s AND recipient_id=%s)"
-			   "OR (sender_id=%s AND recipient_id=%s) ORDER BY timestamp")
-		messages = self.db.get_all_rows(sql, [user_id, recipient_id, recipient_id, user_id])
+			   "OR (sender_id=%s AND recipient_id=%s) ORDER BY timestamp DESC")
+		messages = self.db.get_all_rows(sql, (user_id, recipient_id, recipient_id, user_id))
 		return messages
 
 
@@ -292,6 +340,6 @@ class Notif:
 		self.db.query(sql, (recipient_id, notifications[notif_type], links[link]))
 
 	def get_notifications(self, user_id):
-		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created"
+		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created DESC"
 		notifications = self.db.get_all_rows(sql, [user_id])
 		return notifications

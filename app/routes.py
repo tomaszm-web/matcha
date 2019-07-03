@@ -20,12 +20,13 @@ def index():
 	db = Database(app)
 	account = Account(db)
 	notif = Notif(db)
-	users = account.get_all_users()
 	if 'user' in session:
 		cur_user = account.get_user_info(session["user"])
 		cur_user['notifications'] = notif.get_notifications(cur_user['id'])
-		return render_template('index.html', cur_user=cur_user, users=users)
-	return render_template('index.html', users=users, cur_user=None)
+	else:
+		cur_user = None
+	users = account.get_all_users(user_match=cur_user)
+	return render_template('index.html', users=users, cur_user=cur_user)
 
 
 @app.route('/settings')
@@ -44,12 +45,16 @@ def settings():
 def profile():
 	db = Database(app)
 	account = Account(db)
+	notif = Notif(db)
 	if "user_id" not in request.args:
 		flash("Invalid profile", 'danger')
 		return redirect(url_for('index'))
 	user = account.get_user_info(id=request.args["user_id"])
 	if 'user' in session:
 		cur_user = account.get_user_info(session['user'])
+		if user['id'] not in cur_user['checked_users']:
+			account.check_user(cur_user['id'], user['id'])
+			notif.send_notification(user['id'], 'check_profile', cur_user)
 		like_each_other = user['id'] in cur_user['liked_users'] and cur_user['id'] in user['liked_users']
 		return render_template('profile.html', cur_user=cur_user, user=user, like_each_other=like_each_other)
 	else:
@@ -100,7 +105,7 @@ def logout():
 def confirmation():
 	db = Database(app)
 	account = Account(db)
-	if account.confirmation(request.args["login"], request.args["token"]):
+	if account.confirmation(request.args.get("login"), request.args.get("token")):
 		flash("Your E-mail was successfully confirmed!", 'success')
 	else:
 		flash("Something went wrong. Try again!", 'danger')
@@ -138,6 +143,9 @@ def like_user():
 	notif = Notif(db)
 	try:
 		action = account.like_user(request.args['like_owner'], request.args['liked_user'], request.args['unlike'])
+		if notif:
+			notif.send_notification(request.args.get('liked_user'), action,
+									account.get_user_info(id=request.args.get('like_owner')))
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
 	return jsonify({'success': True, 'unlike': request.args.get('unlike')})

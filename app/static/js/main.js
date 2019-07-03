@@ -1,6 +1,6 @@
 $(document).ready(function () {
 	let parts = window.location.search.substr(1).split("&");
-	var $_GET = {};
+	let $_GET = {};
 	for (let i = 0; i < parts.length; i++) {
 		let temp = parts[i].split("=");
 		$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
@@ -165,6 +165,8 @@ $(document).ready(function () {
 				this.recipient_id = $_GET['recipient_id'];
 				this.sender_id = $(".sendMessageForm input[name='sender_id']").val();
 				this.showMessages();
+				const elem = document.querySelector('#chat .chat');
+				elem.scrollTop = elem.scrollHeight;
 			},
 			methods: {
 				showMessages() {
@@ -175,8 +177,6 @@ $(document).ready(function () {
 						}
 					}).then((response) => {
 						this.messages = response.data.messages;
-						const elem = document.querySelector('#chat .chat');
-						elem.scrollTop = elem.scrollHeight;
 					})
 				},
 				sendMessage(e) {

@@ -15,7 +15,7 @@
 					<div class="profile__info">
 						<code>%% cur_user.login %%</code>
 						<div class="progress">
-							<div class="progress-bar" style="width: 70%">Your Fame Rating: 70%</div>
+							<div class="progress-bar" style="width: %% cur_user.fame %%%">Your Fame Rating: %% cur_user.fame %%%</div>
 						</div>
 					</div>
 				</div>
@@ -62,9 +62,11 @@
 							<option value="bisexual" {% print('selected') if cur_user.preferences == "bisexual" %}>
 								Bisexual
 							</option>
-							<option value="girls" {% print('selected') if cur_user.preferences == "girls" %}>Girls
+							<option value="heterosexual" {% print('selected') if cur_user.preferences == "heterosexual" %}>
+								Heterosexual
 							</option>
-							<option value="boys" {% print('selected') if cur_user.preferences == "boys" %}>Boys
+							<option value="homosexual" {% print('selected') if cur_user.preferences == "homosexual" %}>
+								Homosexual
 							</option>
 						</select>
 					</label>
