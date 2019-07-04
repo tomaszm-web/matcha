@@ -1,6 +1,5 @@
 import MySQLdb
 import MySQLdb.cursors
-from flask import flash
 
 
 class Database:

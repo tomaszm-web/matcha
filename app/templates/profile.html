@@ -29,24 +29,27 @@
 				</div>
 				<div class="col-6">
 					<h4 class="profile__login">@%% user.login %%</h4>
-					<div class="profile__title">Name:</div>
+					<h4 class="profile__title">Name:</h4>
 					<div class="profile__name">
 						%% user.name %%
 						%% user.surname %%
 					</div>
-					<div class="profile__title">Fame Rating:</div>
+					<h4 class="profile__title">Fame Rating:</h4>
 					<div class="progress profile__fame">
-						<div class="progress-bar" style="width: %% user.fame %%%">Your Fame Rating: %% user.fame %%%</div>
+						<div class="progress-bar" style="width: %% user.fame %%%">Your Fame Rating: %% user.fame %%%
+						</div>
 					</div>
-					<div class="profile__title">Preferences:</div>
+					<h4 class="profile__title">Age:</h4>
+					<div class="profile__age">%% user.age %%</div>
+					<h4 class="profile__title">Preferences:</h4>
 					<div class="profile__preferences">
 						%% user.preferences %%
 					</div>
-					<div class="profile__title">Biography:</div>
+					<h4 class="profile__title">Biography:</h4>
 					<div class="profile__bio">
 						%% user.biography %%
 					</div>
-					<div class="profile__title">Interest tags:</div>
+					<h4 class="profile__title">Interest tags:</h4>
 					<select class="form-control multiple-tags" disabled multiple>#}
 						{% for tag in user["tags"] %}
 							<option value="%% tag %%" selected>#%% tag %%</option>

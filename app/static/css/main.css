@@ -208,6 +208,10 @@ header {
 	padding: 80px 0;
 }
 
+#users .card {
+	margin-bottom: 20px;
+}
+
 /*Profile*/
 #profile {
 	padding: 80px 0;
@@ -280,13 +284,13 @@ header {
 }
 
 .profile__title {
-	margin-top: 15px;
 	font-weight: bold;
+	font-size: 18px;
+	margin: 15px 0 5px;
 }
 
 .profile__bio {
 	font-size: 16px;
-	margin: 10px 0;
 }
 
 .profile__fame {

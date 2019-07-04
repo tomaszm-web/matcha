@@ -28,12 +28,13 @@ class Account:
 	def check_img_extension(self, filename):
 		return '.' in filename and filename.rsplit('.', 1)[1] in ["png", "jpg", "jpeg"]
 
-	def get_fame_rating(self, user_id):
-		sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
-		response = self.db.get_all_rows(sql)
+	def get_fame_rating(self, user_id, search_in=None):
+		if not search_in:
+			sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
+			search_in = self.db.get_all_rows(sql)
 		max_likes_num = None
 		user_like_num = None
-		for row in response:
+		for row in search_in:
 			if not max_likes_num or max_likes_num < row['like_num']:
 				max_likes_num = row['like_num']
 			if row['liked_user'] == user_id:
@@ -66,33 +67,51 @@ class Account:
 		user['checked_users'] = self.get_checked_users(user['id'])
 		user['photos'] = json.loads(user['photos'])
 		user['fame'] = self.get_fame_rating(user['id'])
-		# user['notifications'] = Notif.get_notifications(user['id'])
 		return user
 
-	def handle_filters(self, user):
-		# todo Fame rating, location
-		match = {}
+	def create_filter_func(self, user_match):
+		# todo Add location sort in 1 place
+		return lambda e: (
+			abs(user_match['age'] - e['age']),
+			-e['fame'],
+			-len(set(user_match['tags']).intersection(set(e['tags'])))
+		)
+
+	def filter_by_preferences(self, sql, user):
+		matches = {}
 		if user['preferences'] == 'heterosexual':
-			match['gender'] = 'female' if user['gender'] == 'male' else 'male'
-			match['preferences'] = ['heterosexual', 'bisexual']
+			gender = 'female' if user['gender'] == 'male' else 'male'
+			matches[gender] = 'heterosexual'
+		elif user['preferences'] == 'homosexual':
+			matches[user['gender']] = 'homosexual'
 		else:
-			if user['preferences'] == 'homosexual':
-				match['gender'] = user['gender']
-			match['preferences'] = ['homosexual', 'bisexual']
-		return match
+			if user['gender'] == 'male':
+				matches['male'] = 'homosexual'
+				matches['female'] = 'heterosexual'
+			else:
+				matches['male'] = 'heterosexual'
+				matches['female'] = 'homosexual'
+		updated = {'sql': sql + ' WHERE ', 'values': []}
+		for gender, preferences in matches.items():
+			updated['sql'] += "(gender=%s AND (preferences=%s OR preferences='bisexual')) OR "
+			updated['values'].append(gender)
+			updated['values'].append(preferences)
+		updated['sql'] = updated['sql'][:-4]
+		return updated
 
 	def get_all_users(self, user_match=None):
-		# todo sort by age, fame rating
+		sql = "SELECT id, login, age, biography, avatar FROM `users`"
 		if user_match:
-			match = self.handle_filters(user_match)
-			sql = ("SELECT id, login, name, surname, gender, preferences, biography, avatar FROM `users`"
-				   "ORDER BY ABS(%s - age)")
-			users = self.db.get_all_rows(sql, [user_match['age']])
+			updated = self.filter_by_preferences(sql, user_match)
+			users = self.db.get_all_rows(updated['sql'], updated['values'])
+			sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
+			fame_table = self.db.get_all_rows(sql)
+			for user in users:
+				user['fame'] = self.get_fame_rating(user['id'], search_in=fame_table)
+				user['tags'] = self.get_tags(user['id'])
+			users = sorted(users, key=self.create_filter_func(user_match))
 		else:
-			sql = "SELECT id, login, name, surname, gender, preferences, biography, avatar FROM `users`"
 			users = self.db.get_all_rows(sql)
-		for user in users:
-			user["tags"] = self.get_tags(user["id"])
 		return users
 
 	def email_confirmation(self, email, login, token):
@@ -102,7 +121,7 @@ class Account:
 				   "You should confirm your E-mail!",
 				   render_template('signup_email.html', login=login, token=token))
 
-	def insert_unexistant_tags(self, tags):
+	def insert_nonexistent_tags(self, tags):
 		if not tags:
 			return False
 		all_tags = self.db.get_all_rows("SELECT * FROM `tags`")
@@ -119,7 +138,7 @@ class Account:
 	def update_users_tags(self, user, new_tags):
 		if new_tags and user['tags'] == new_tags:
 			return
-		self.insert_unexistant_tags(new_tags)
+		self.insert_nonexistent_tags(new_tags)
 		all_tags = self.db.get_all_rows("SELECT * FROM `tags`")
 
 		sql = "DELETE FROM `users_tags` WHERE user_id=%s"
