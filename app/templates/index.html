@@ -21,22 +21,63 @@
 				</div>
 			</div>
 			<div class="row">
-				{% for user in users %}
-					<div class="col-4">
-						<div class="card">
-							<a href="%% url_for('profile', user_id=user.id) %%">
-								<img src="%% user.avatar %%" alt="Matcha" class="card-img-top">
-							</a>
-							<div class="card-body">
-								<h5 class="card-title">%% user.login %%</h5>
-								<p class="card-text">%% user.biography %%</p>
-								<button class="btn btn-danger likeUser {% print('liked') if user.id in cur_user.liked_users %}"
-										data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%">
-									<i class="fas fa-thumbs-up"></i>Like
-								</button>
+				<div class="col">
+					<form action="#" class="filters">
+						<div class="form-row">
+							<div class="col-6">
+								<label for="age_from">Age:</label>
+								<div class="input-group">
+									<input type="number" id="age_from" class="form-control" min="1" max="100"
+										   placeholder="from">
+									<input type="number" id="age_to" class="form-control" min="1" max="100"
+										   placeholder="to">
+								</div>
+							</div>
+							<div class="col-6">
+								<label for="age_from">Fame rating:</label>
+								<div class="input-group">
+									<input type="number" id="fame_from" class="form-control" min="1" max="100"
+										   placeholder="from 1">
+									<input type="number" id="fame_to" class="form-control" min="1" max="100"
+										   placeholder="to 100">
+								</div>
+							</div>
+							<div class="col-6">
+								<label for="tags">Interests tags:</label>
+								<select name="tags" id="tags" class="form-control multiple-tags" multiple>
+								</select>
+							</div>
+							<div class="col-6">
+								<label for="city">Interests tags:</label>
+								<select name="city" id="city" class="form-control city-select">
+								</select>
+							</div>
+							<div class="col-3 align-self-end">
+								<div class="btn btn-danger">Apply changes</div>
 							</div>
 						</div>
-					</div>
+					</form>
+				</div>
+			</div>
+			<div class="row">
+				{% for user in users %}
+					{% if not cur_user or user.id != cur_user.id %}
+						<div class="col-4">
+							<div class="card">
+								<a href="%% url_for('profile', user_id=user.id) %%">
+									<img src="%% user.avatar %%" alt="Matcha" class="card-img-top">
+								</a>
+								<div class="card-body">
+									<h5 class="card-title">%% user.login %%</h5>
+									<p class="card-text">%% user.biography %%</p>
+									<button class="btn btn-danger likeUser {% print('liked') if user.id in cur_user.liked_users %}"
+											data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%">
+										<i class="fas fa-thumbs-up"></i>Like
+									</button>
+								</div>
+							</div>
+						</div>
+					{% endif %}
 				{% endfor %}
 			</div>
 		</div>

@@ -330,7 +330,7 @@ class Chat:
 
 	def get_messages(self, user_id, recipient_id):
 		sql = ("SELECT * FROM `messages` WHERE (sender_id=%s AND recipient_id=%s)"
-			   "OR (sender_id=%s AND recipient_id=%s) ORDER BY timestamp DESC")
+			   "OR (sender_id=%s AND recipient_id=%s) ORDER BY timestamp")
 		messages = self.db.get_all_rows(sql, (user_id, recipient_id, recipient_id, user_id))
 		return messages
 

@@ -137,6 +137,10 @@ $(document).ready(function () {
 		tags: true
 	});
 
+	$('.city-select').select2({
+		placeholder: "Choose city"
+	});
+
 	$('.likeUser').click(function () {
 		axios.get(location.origin + '/like_user', {
 			params: {
