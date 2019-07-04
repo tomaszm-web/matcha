@@ -113,8 +113,9 @@ $(document).ready(function () {
 					data: data
 				}).then((response) => {
 					e.target.reset();
-					this.errors.push.apply(this.errors, response.data);
-					if (!this.errors.length) {
+					if (!response.data.success) {
+						this.errors.push(response.data.error);
+					} else {
 						if (this.action === "check")
 							this.message = "Letter with link to re-initialize your password was sent to your E-mail!"
 						else if (this.action === "reset")

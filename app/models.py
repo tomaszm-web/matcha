@@ -204,29 +204,22 @@ class Account:
 		return False
 
 	def reset(self, form, action):
-		errors = []
-		try:
-			sql = "SELECT * FROM `users` WHERE email=%s"
-			user = self.db.get_row(sql, (form["email"]))
-			if action == "check":
-				if not user:
-					errors.append("No user with such E-mail")
-				else:
-					send_email("Matcha: Reset password",
-							   app.config["ADMINS"][0],
-							   [form["email"]],
-							   "It seems you want to change your password?",
-							   render_template('reset_password.html', user=user))
-			elif action == "reset":
-				if form["token"] != user["token"]:
-					errors.append("Wrong token!")
-				else:
-					sql = "UPDATE `users` SET password=%s WHERE email=%s"
-					self.db.query(sql, (generate_password_hash(form["pass"]), form["email"]))
-					flash("You successfully updated your password!", 'success')
-		except KeyError:
-			errors.append("You haven't set some values")
-		return errors
+		sql = "SELECT * FROM `users` WHERE email=%s"
+		user = self.db.get_row(sql, [form["email"]])
+		if action == "check":
+			if not user:
+				raise Exception("No user with such E-mail")
+			send_email("Matcha: Reset password",
+					   app.config["ADMINS"][0],
+					   [form["email"]],
+					   "It seems you want to change your password?",
+					   render_template('reset_password.html', user=user))
+		elif action == "reset":
+			if form["token"] != user["token"]:
+				raise Exception("Wrong token!")
+			sql = "UPDATE `users` SET password=%s WHERE email=%s"
+			self.db.query(sql, (generate_password_hash(form["pass"]), form["email"]))
+			flash("You successfully updated your password!", 'success')
 
 	def upload_photo(self, user_dir, photo):
 		if photo and self.check_img_extension(photo.filename):

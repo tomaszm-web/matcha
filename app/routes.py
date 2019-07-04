@@ -116,8 +116,11 @@ def confirmation():
 def reset():
 	db = Database(app)
 	account = Account(db)
-	errors = account.reset(request.form, action=request.form["action"])
-	return jsonify(errors)
+	try:
+		account.reset(request.form, action=request.form["action"])
+	except Exception as e:
+		return jsonify({'success': False, 'error': str(e)})
+	return jsonify({'success': True})
 
 
 @app.route('/change_profile_info', methods=["POST"])
