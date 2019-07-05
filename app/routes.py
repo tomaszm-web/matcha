@@ -137,14 +137,16 @@ def change():
 	return redirect(url_for('settings'))
 
 
-@app.route('/filter_users', methods=["POST"])
+@app.route('/filter_users', methods=["GET", "POST"])
 def filter_users():
 	db = Database(app)
 	account = Account(db)
 	cur_user = account.get_user_info(session['user']) if 'user' in session else None
-	users = account.get_all_users(cur_user, request.form)
-	# return render_template('users_list.html', cur_user=cur_user, users=users)
-	return redirect(url_for('index'))
+	if len(request.form) > 0:
+		users = account.get_all_users(cur_user, request.form)
+	else:
+		users = account.get_all_users(cur_user)
+	return render_template('users_list.html', cur_user=cur_user, users=users)
 
 @app.route('/like_user', methods=["GET"])
 def like_user():

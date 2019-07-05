@@ -6,6 +6,22 @@ $(document).ready(function () {
 		$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
 	}
 
+	if ($('.users_list')) {
+		axios.get(location.origin + '/filter_users').then((response) => {
+			$('.users_list').html(response.data);
+		});
+	}
+
+	if ($('.filters')) {
+		$('.filters').submit(function (e) {
+			e.preventDefault();
+			let data = new FormData(e.target)
+			axios.post(location.origin + '/filter_users', data).then((response) => {
+				$('.users_list').html(response.data);
+			});
+		})
+	}
+
 	/*--------Forms--------*/
 	let passRegExp = new RegExp("^(((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})");
 

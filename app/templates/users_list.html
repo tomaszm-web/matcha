@@ -1,0 +1,19 @@
+{% for user in users %}
+	{% if not cur_user or user.id != cur_user.id %}
+		<div class="col-4">
+			<div class="card">
+				<a href="%% url_for('profile', user_id=user.id) %%">
+					<img src="%% user.avatar %%" alt="Matcha" class="card-img-top">
+				</a>
+				<div class="card-body">
+					<h5 class="card-title">%% user.login %%</h5>
+					<p class="card-text">%% user.biography %%</p>
+					<button class="btn btn-danger likeUser {% print('liked') if user.id in cur_user.liked_users %}"
+							data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%">
+						<i class="fas fa-thumbs-up"></i>Like
+					</button>
+				</div>
+			</div>
+		</div>
+	{% endif %}
+{% endfor %}

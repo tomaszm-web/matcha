@@ -77,7 +77,7 @@ class Account:
 			-len(set(user_match['tags']).intersection(set(e['tags'])))
 		)
 
-	def filter_by_preferences(self, sql, user, filters=None):
+	def filter_by_preferences(self, sql, user):
 		matches = {}
 		if user['preferences'] == 'heterosexual':
 			gender = 'female' if user['gender'] == 'male' else 'male'
@@ -97,32 +97,37 @@ class Account:
 			updated['values'].append(gender)
 			updated['values'].append(preferences)
 		updated['sql'] = updated['sql'][:-4]
-		if filters:
-			if filters['age_from']:
-				updated['sql'] += (" AND age > %s")
-				updated['values'].append(filters['age_from'])
-			if filters['age_to']:
-				updated['sql'] += (" AND age < %s")
-				updated['values'].append(filters['age_to'])
 		return updated
+
+	def filter_by_criterias(self, users, filters):
+		filtered_users = []
+		for user in users:
+			filter1 = not filters['age_from'] or user['age'] >= int(filters['age_from'])
+			filter2 = not filters['age_to'] or user['age'] <= int(filters['age_to'])
+			filter3 = not filters['fame_from'] or user['fame'] >= int(filters['fame_from'])
+			filter4 = not filters['fame_to'] or user['fame'] <= int(filters['fame_to'])
+			filter5 = not filters['tags'] or len(filters['tags']) <= len(set(user['tags']).intersection(set(filters['tags'])))
+			if filter1 and filter2 and filter3 and filter4 and filter5:
+				filtered_users.append(user)
+		return filtered_users
 
 	def get_all_users(self, user_match=None, filters=None):
 		# todo FILTER by fame rating and tags and location
 		sql = "SELECT id, login, age, biography, avatar FROM `users`"
 		if user_match:
-			updated = self.filter_by_preferences(sql, user_match, filters)
-			# flash(updated['sql'], 'success')
+			updated = self.filter_by_preferences(sql, user_match)
 			users = self.db.get_all_rows(updated['sql'], updated['values'])
 			sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
 			fame_table = self.db.get_all_rows(sql)
 			for user in users:
 				user['fame'] = self.get_fame_rating(user['id'], search_in=fame_table)
 				user['tags'] = self.get_tags(user['id'])
+			if filters:
+				users = self.filter_by_criterias(users, filters)
 			users = sorted(users, key=self.create_filter_func(user_match))
 		else:
 			users = self.db.get_all_rows(sql)
 		return users
-
 
 	def email_confirmation(self, email, login, token):
 		send_email("Thank's for the signing-up to Matcha",
