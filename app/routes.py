@@ -91,8 +91,6 @@ def login():
 
 @app.route('/logout', methods=["GET"])
 def logout():
-	db = Database(app)
-	account = Account(db)
 	if "user" in session:
 		flash("You successfully logged out!", 'success')
 		session.pop("user", None)
@@ -138,6 +136,15 @@ def change():
 		flash("Your profile's info was successfully updated", 'success')
 	return redirect(url_for('settings'))
 
+
+@app.route('/filter_users', methods=["POST"])
+def filter_users():
+	db = Database(app)
+	account = Account(db)
+	cur_user = account.get_user_info(session['user']) if 'user' in session else None
+	users = account.get_all_users(cur_user, request.form)
+	# return render_template('users_list.html', cur_user=cur_user, users=users)
+	return redirect(url_for('index'))
 
 @app.route('/like_user', methods=["GET"])
 def like_user():

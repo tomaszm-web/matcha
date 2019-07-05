@@ -73,11 +73,11 @@ class Account:
 		# todo Add location sort in 1 place
 		return lambda e: (
 			abs(user_match['age'] - e['age']),
-			-e['fame'],
+			e['fame'],
 			-len(set(user_match['tags']).intersection(set(e['tags'])))
 		)
 
-	def filter_by_preferences(self, sql, user):
+	def filter_by_preferences(self, sql, user, filters=None):
 		matches = {}
 		if user['preferences'] == 'heterosexual':
 			gender = 'female' if user['gender'] == 'male' else 'male'
@@ -97,12 +97,21 @@ class Account:
 			updated['values'].append(gender)
 			updated['values'].append(preferences)
 		updated['sql'] = updated['sql'][:-4]
+		if filters:
+			if filters['age_from']:
+				updated['sql'] += (" AND age > %s")
+				updated['values'].append(filters['age_from'])
+			if filters['age_to']:
+				updated['sql'] += (" AND age < %s")
+				updated['values'].append(filters['age_to'])
 		return updated
 
-	def get_all_users(self, user_match=None):
+	def get_all_users(self, user_match=None, filters=None):
+		# todo FILTER by fame rating and tags and location
 		sql = "SELECT id, login, age, biography, avatar FROM `users`"
 		if user_match:
-			updated = self.filter_by_preferences(sql, user_match)
+			updated = self.filter_by_preferences(sql, user_match, filters)
+			# flash(updated['sql'], 'success')
 			users = self.db.get_all_rows(updated['sql'], updated['values'])
 			sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
 			fame_table = self.db.get_all_rows(sql)
@@ -113,6 +122,7 @@ class Account:
 		else:
 			users = self.db.get_all_rows(sql)
 		return users
+
 
 	def email_confirmation(self, email, login, token):
 		send_email("Thank's for the signing-up to Matcha",
