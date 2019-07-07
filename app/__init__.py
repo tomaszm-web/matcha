@@ -4,7 +4,7 @@ from app.database import Database
 from flask_mail import Mail
 from config import DevelopmentConfig
 from flask_googlemaps import GoogleMaps, Map
-from flaskext.csrf import csrf
+# from flaskext.csrf import csrf
 
 
 class CustomFlask(Flask):

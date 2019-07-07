@@ -73,7 +73,7 @@ class Account:
 		# todo Add location sort in 1 place
 		return lambda e: (
 			abs(user_match['age'] - e['age']),
-			e['fame'],
+			-e['fame'],
 			-len(set(user_match['tags']).intersection(set(e['tags'])))
 		)
 
@@ -101,12 +101,13 @@ class Account:
 
 	def filter_by_criterias(self, users, filters):
 		filtered_users = []
+		tags = filters.getlist('tags')
 		for user in users:
 			filter1 = not filters['age_from'] or user['age'] >= int(filters['age_from'])
 			filter2 = not filters['age_to'] or user['age'] <= int(filters['age_to'])
 			filter3 = not filters['fame_from'] or user['fame'] >= int(filters['fame_from'])
 			filter4 = not filters['fame_to'] or user['fame'] <= int(filters['fame_to'])
-			filter5 = not filters['tags'] or len(filters['tags']) <= len(set(user['tags']).intersection(set(filters['tags'])))
+			filter5 = not len(tags) or len(tags) == len(set(user['tags']).intersection(set(tags)))
 			if filter1 and filter2 and filter3 and filter4 and filter5:
 				filtered_users.append(user)
 		return filtered_users
