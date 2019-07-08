@@ -199,7 +199,7 @@ header {
 	color: white;
 }
 
-.likeUser.liked {
+.btn.done {
 	opacity: .65
 }
 

@@ -161,13 +161,28 @@ $(document).ready(function () {
 	$('.likeUser').click(function () {
 		axios.get(location.origin + '/like_user', {
 			params: {
-				unlike: $(this).hasClass('liked'),
+				unlike: $(this).hasClass('done'),
 				like_owner: $(this).attr('data-user-id'),
 				liked_user: $(this).attr('data-liked-user-id')
 			}
 		}).then((response) => {
 			if (response.data.success)
-				$(this).toggleClass('liked')
+				$(this).toggleClass('done')
+		}).catch(() => {
+			console.log("Something went wrong! Try again")
+		});
+	});
+
+	$('.blockUser').click(function () {
+		axios.get(location.origin + '/block_user', {
+			params: {
+				unblock: $(this).hasClass('done'),
+				user_id: $(this).attr('data-user-id'),
+				blocked_id: $(this).attr('data-blocked-user-id')
+			}
+		}).then((response) => {
+			if (response.data.success)
+				$(this).toggleClass('done')
 		}).catch(() => {
 			console.log("Something went wrong! Try again")
 		});

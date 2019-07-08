@@ -43,30 +43,40 @@
 					</div>
 					<h4 class="profile__title">Age:</h4>
 					<div class="profile__age">%% user.age %%</div>
+
+					<h4 class="profile__title">Gender:</h4>
+					<div class="profile__gender">%% user.gender %%</div>
+
 					<h4 class="profile__title">Preferences:</h4>
-					<div class="profile__preferences">
-						%% user.preferences %%
-					</div>
+					<div class="profile__preferences">%% user.preferences %%</div>
+
 					<h4 class="profile__title">Biography:</h4>
-					<div class="profile__bio">
-						%% user.biography %%
-					</div>
+					<div class="profile__bio">%% user.biography %%</div>
+
 					<h4 class="profile__title">Interest tags:</h4>
 					<select class="form-control multiple-tags" disabled multiple>#}
 						{% for tag in user["tags"] %}
 							<option value="%% tag %%" selected>#%% tag %%</option>
 						{% endfor %}
 					</select>
-					{% if cur_user %}
-						<button class="btn btn-danger likeUser {% print('liked') if user.id in cur_user.liked_users %}"
-								data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%">
-							<i class="fas fa-thumbs-up"></i>Like
-						</button>
-						{% if like_each_other %}
-							<a href="%% url_for('chat', recipient_id=user.id) %%" class="btn btn-primary"><i
-									class="fas fa-comment"></i>Chat</a>
+					<div class="btn-group">
+						{% if cur_user %}
+							<button class="btn btn-success likeUser {% print('done') if user.id in cur_user.liked_users %}"
+									data-liked-user-id="%% user.id %%"
+									data-user-id="%% cur_user.id %%">
+								<i class="fas fa-thumbs-up"></i>Like
+							</button>
+							{% if like_each_other %}
+								<a href="%% url_for('chat', recipient_id=user.id) %%" class="btn btn-primary"><i
+										class="fas fa-comment"></i>Chat</a>
+							{% endif %}
+							<button class="btn btn-danger blockUser {% print('done') if user.id in cur_user.blocked_users %}"
+									data-blocked-user-id="%% user.id %%"
+									data-user-id="%% cur_user.id %%">
+								<i class="fas fa-ban"></i>Block user
+							</button>
 						{% endif %}
-					{% endif %}
+					</div>
 				</div>
 			</div>
 		</div>

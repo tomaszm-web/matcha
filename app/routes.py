@@ -148,6 +148,7 @@ def filter_users():
 		users = account.get_all_users(cur_user)
 	return render_template('users_list.html', cur_user=cur_user, users=users)
 
+
 @app.route('/like_user', methods=["GET"])
 def like_user():
 	db = Database(app)
@@ -161,6 +162,17 @@ def like_user():
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
 	return jsonify({'success': True, 'unlike': request.args.get('unlike')})
+
+
+@app.route('/block_user', methods=["GET"])
+def block_user():
+	db = Database(app)
+	account = Account(db)
+	try:
+		account.block_user(request.args['user_id'], request.args['blocked_id'], request.args['unblock'])
+	except Exception as e:
+		return jsonify({'success': False, 'error_message': str(e)})
+	return jsonify({'success': True, 'unblock': request.args.get('unblock')})
 
 
 # Chat

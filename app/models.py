@@ -41,7 +41,7 @@ class Account:
 				user_like_num = row['like_num']
 		if not max or not user_like_num:
 			return 0
-		return user_like_num / max_likes_num * 100
+		return int(round(user_like_num / max_likes_num * 100))
 
 	def get_tags(self, user_id):
 		sql = ("SELECT tags.name FROM `tags` "
@@ -64,6 +64,7 @@ class Account:
 			user = self.db.get_row(sql, [id])
 		user['tags'] = self.get_tags(user["id"])
 		user['liked_users'] = self.get_liked_users(user['id'])
+		user['blocked_users'] = self.get_blocked_users(user['id'])
 		user['checked_users'] = self.get_checked_users(user['id'])
 		user['photos'] = json.loads(user['photos'])
 		user['fame'] = self.get_fame_rating(user['id'])
@@ -295,11 +296,17 @@ class Account:
 			self.email_confirmation(form["email"], session["user"], user["token"])
 			flash("You will have to confirm your new E-mail!", 'success')
 
-	def get_liked_users(self, user_login):
+	def get_liked_users(self, user_id):
 		sql = "SELECT * FROM `likes` WHERE like_owner=%s"
-		response = self.db.get_all_rows(sql, [user_login])
+		response = self.db.get_all_rows(sql, [user_id])
 		liked_users = [k["liked_user"] for k in response]
 		return liked_users
+
+	def get_blocked_users(self, user_id):
+		sql = "SELECT * FROM `blocked` WHERE user_id=%s"
+		response = self.db.get_all_rows(sql, [user_id])
+		blocked_users = [k["blocked_id"] for k in response]
+		return blocked_users
 
 	def get_checked_users(self, user_login):
 		sql = "SELECT * FROM `checked_profile` WHERE checking=%s"
@@ -320,6 +327,13 @@ class Account:
 			sql = "INSERT INTO `likes` SET like_owner=%s, liked_user=%s"
 		self.db.query(sql, [like_owner, like_to])
 		return action
+
+	def block_user(self, user_id, blocked_id, unblock):
+		if unblock == 'true':
+			sql = "DELETE FROM `blocked` WHERE user_id=%s AND blocked_id=%s"
+		else:
+			sql = "INSERT INTO `blocked` SET user_id=%s, blocked_id=%s"
+		self.db.query(sql, [user_id, blocked_id])
 
 	def check_user(self, checking, checked_user):
 		sql = "INSERT INTO `checked_profile` SET checking=%s, checked_user=%s"
