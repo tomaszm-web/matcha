@@ -9,7 +9,7 @@ from flask import (
 	send_from_directory,
 	jsonify)
 import requests
-from app import app, Map
+from app import app, socketio, Map
 from app.models import Account, Chat, Notif
 from .database import Database
 
@@ -174,17 +174,18 @@ def block_user():
 		return jsonify({'success': False, 'error_message': str(e)})
 	return jsonify({'success': True, 'unblock': request.args.get('unblock')})
 
-
 # Chat
-@app.route('/send_message', methods=["POST"])
-def send_message():
-	try:
-		db = Database(app)
-		live_chat = Chat(db)
-		live_chat.send_message(request.form.get("sender_id"), request.form.get('recipient_id'), request.form.get("text"))
-		return jsonify({'success': True})
-	except Exception:
-		return jsonify({'success': False})
+@socketio.on('chat event')
+def send_message(json, methods=['GET', 'POST']):
+	# try:
+	db = Database(app)
+	live_chat = Chat(db)
+	print('received chat event: ' + str(json))
+	if 'sender_id' in json and 'recipient_id' in json:
+		live_chat.send_message(json['sender_id'], json['recipient_id'], json['body'])
+		socketio.emit('chat response', json)
+	# except Exception:
+	# 	return jsonify({'success': False})
 
 
 @app.route('/get_messages', methods=["GET"])
@@ -230,4 +231,3 @@ def uploaded_file(filename, userdir=None):
 	return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}", filename)
 
 # todo Create Gps positioning
-# todo Create Fame Rating

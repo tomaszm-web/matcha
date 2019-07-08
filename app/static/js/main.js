@@ -6,6 +6,8 @@ $(document).ready(function () {
 		$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
 	}
 
+	let socket = io.connect('http://' + document.domain + ':' + location.port);
+
 	if ($('.users_list')) {
 		axios.get(location.origin + '/filter_users').then((response) => {
 			$('.users_list').html(response.data);
@@ -201,8 +203,16 @@ $(document).ready(function () {
 				this.recipient_id = $_GET['recipient_id'];
 				this.sender_id = $(".sendMessageForm input[name='sender_id']").val();
 				this.showMessages();
-				const elem = document.querySelector('#chat .chat');
-				elem.scrollTop = elem.scrollHeight;
+				// elem.scrollTop = elem.scrollHeight;
+			},
+			mounted() {
+				console.log(123);
+				var fdas = document.querySelector('#chat .chat');
+				console.dir(fdas);
+				fdas.onload = () => {
+					fdas.scrollTop = fdas.clientHeight;
+				}
+				// elem.animate({scrollTop: elem.scrollHeight}, 1000);
 			},
 			methods: {
 				showMessages() {
@@ -216,18 +226,30 @@ $(document).ready(function () {
 					})
 				},
 				sendMessage(e) {
-					let url = location.origin + '/send_message';
-					let data = new FormData(e.target);
-					data.append('recipient_id', $_GET['recipient_id']);
-					axios.post(url, data).then((response) => {
-						if (response.data.success) {
-							e.target.reset();
-						}
-					})
+					e.preventDefault();
+					socket.emit('chat event', {
+						sender_id: this.sender_id,
+						recipient_id: this.recipient_id,
+						body: e.target.text.value
+					});
+					e.target.reset();
 				}
 			}
 		});
-		setInterval(chat.showMessages, 5000);
+
+		socket.on('connect', function () {
+			socket.emit('chat event', {
+				data: 'User Connected'
+			});
+			$('.sendMessageForm').on('submit', chat.sendMessage);
+		});
+
+		socket.on('chat response', function (msg) {
+			console.log(msg);
+			chat.messages.push(msg);
+			var fdas = document.querySelector('#chat .chat');
+				console.dir(fdas);
+				fdas.scrollTop = fdas.scrollHeight;
+		});
 	}
 });
-

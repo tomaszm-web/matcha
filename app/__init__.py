@@ -5,6 +5,7 @@ from flask_mail import Mail
 from config import DevelopmentConfig
 from flask_googlemaps import GoogleMaps, Map
 # from flaskext.csrf import csrf
+from flask_socketio import SocketIO
 
 
 class CustomFlask(Flask):
@@ -17,6 +18,7 @@ class CustomFlask(Flask):
 
 app = CustomFlask(__name__)
 app.config.from_object(DevelopmentConfig)
+socketio = SocketIO(app)
 GoogleMaps(app)
 db = Database(app)
 mail = Mail(app)

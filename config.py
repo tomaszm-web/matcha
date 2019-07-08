@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 class Config(object):
 	# Определяет, включен ли режим отладки
 	# В случае если включен, flask будет показывать
@@ -28,6 +30,8 @@ class Config(object):
 
 	# Google Maps Key
 	GOOGLEMAPS_KEY = "AIzaSyAjzkW8XWRsKcQhs7hcY-Rc7wPSSSIQVQM"
+
+	# PERMANENT_SESSION_LIFETIME = timedelta(minutes=5)
 
 
 class ProductionConfig(Config):
