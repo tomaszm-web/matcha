@@ -205,14 +205,9 @@ $(document).ready(function () {
 				this.showMessages();
 				// elem.scrollTop = elem.scrollHeight;
 			},
-			mounted() {
-				console.log(123);
-				var fdas = document.querySelector('#chat .chat');
-				console.dir(fdas);
-				fdas.onload = () => {
-					fdas.scrollTop = fdas.clientHeight;
-				}
-				// elem.animate({scrollTop: elem.scrollHeight}, 1000);
+			updated: function() {
+				const el = document.querySelector('#chat .chat');
+				el.scrollTop = el.scrollHeight;
 			},
 			methods: {
 				showMessages() {
@@ -222,7 +217,8 @@ $(document).ready(function () {
 							recipient_id: this.recipient_id,
 						}
 					}).then((response) => {
-						this.messages = response.data.messages;
+						if (response.data.success)
+							this.messages = response.data.messages;
 					})
 				},
 				sendMessage(e) {
@@ -245,11 +241,7 @@ $(document).ready(function () {
 		});
 
 		socket.on('chat response', function (msg) {
-			console.log(msg);
 			chat.messages.push(msg);
-			var fdas = document.querySelector('#chat .chat');
-				console.dir(fdas);
-				fdas.scrollTop = fdas.scrollHeight;
 		});
 	}
 });

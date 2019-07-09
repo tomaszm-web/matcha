@@ -12,6 +12,7 @@ import requests
 from app import app, socketio, Map
 from app.models import Account, Chat, Notif
 from .database import Database
+from .mail import send_email
 
 
 @app.route('/')
@@ -89,10 +90,14 @@ def login():
 	return jsonify(errors)
 
 
-@app.route('/logout', methods=["GET"])
+@app.route('/logout')
 def logout():
+	db = Database(app)
+	account = Account(db)
+	notif = Notif(db)
 	if "user" in session:
 		flash("You successfully logged out!", 'success')
+		notif.send_notification(38, 'like', account.get_user_info('o4eredko'))
 		session.pop("user", None)
 	else:
 		flash("You should log in first, to be able to log out!", 'danger')
@@ -174,18 +179,18 @@ def block_user():
 		return jsonify({'success': False, 'error_message': str(e)})
 	return jsonify({'success': True, 'unblock': request.args.get('unblock')})
 
+
 # Chat
 @socketio.on('chat event')
 def send_message(json, methods=['GET', 'POST']):
-	# try:
-	db = Database(app)
-	live_chat = Chat(db)
-	print('received chat event: ' + str(json))
-	if 'sender_id' in json and 'recipient_id' in json:
-		live_chat.send_message(json['sender_id'], json['recipient_id'], json['body'])
-		socketio.emit('chat response', json)
-	# except Exception:
-	# 	return jsonify({'success': False})
+	try:
+		db = Database(app)
+		live_chat = Chat(db)
+		if 'sender_id' in json and 'recipient_id' in json:
+			live_chat.send_message(json['sender_id'], json['recipient_id'], json['body'])
+			socketio.emit('chat response', json)
+	except Exception:
+		return
 
 
 @app.route('/get_messages', methods=["GET"])
@@ -213,13 +218,18 @@ def send_notification():
 
 @app.route('/get_notifications', methods=["GET"])
 def get_notifications():
-	db = Database(app)
-	notif = Notif(db)
 	try:
+		db = Database(app)
+		notif = Notif(db)
 		notifications = notif.get_notifications(request.args['user_id'])
 		return jsonify({'success': True, 'notifications': notifications})
 	except KeyError:
 		return jsonify({'success': False})
+
+
+@socketio.on('disconnect')
+def disconnect_user():
+	redirect(url_for('logout'))
 
 
 # Files

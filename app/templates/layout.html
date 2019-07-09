@@ -167,12 +167,6 @@
 		</div>
 	</div>
 </div>
-<div class="message_holder"></div>
-<form action="" method="POST" id="form">
-      <input type="text" class="username" placeholder="User Name"/>
-      <input type="text" class="message" placeholder="Messages"/>
-      <input type="submit"/>
-</form>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
 	{% if messages %}
@@ -204,6 +198,9 @@
 		notifs = new Vue({
 			el: '#notifications',
 			data: {
+				{% if cur_user %}
+					user_id: %% cur_user.id %%,
+				{% endif %}
 				notifications: {}
 			},
 			created() {
@@ -215,7 +212,8 @@
 				length() {
 					let size = 0, key;
 					for (key in this.notifications) {
-						if (this.notifications.hasOwnProperty(key)) size++;
+						if (this.notifications.hasOwnProperty(key))
+							size++;
 					}
 					return size;
 				}
@@ -223,10 +221,8 @@
 			methods: {
 				getNotifications() {
 					axios.get(location.origin + '/get_notifications', {
-						params: {user_id: %% cur_user.id if cur_user else None %%
-					}
-				}).
-					then((response) => {
+						params: {user_id: this.user_id}
+				}).then((response) => {
 						if (response.data.success)
 							this.notifications = response.data.notifications
 					})
