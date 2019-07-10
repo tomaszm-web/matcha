@@ -113,22 +113,23 @@ class Account:
 				filtered_users.append(user)
 		return filtered_users
 
-	def get_all_users(self, user_match=None, filters=None):
+	def get_all_users(self, user_match, filters=None):
 		# todo FILTER by fame rating and tags and location
 		sql = "SELECT id, login, age, biography, avatar FROM `users`"
 		if user_match:
 			updated = self.filter_by_preferences(sql, user_match)
 			users = self.db.get_all_rows(updated['sql'], updated['values'])
-			sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
-			fame_table = self.db.get_all_rows(sql)
-			for user in users:
-				user['fame'] = self.get_fame_rating(user['id'], search_in=fame_table)
-				user['tags'] = self.get_tags(user['id'])
-			if filters:
-				users = self.filter_by_criterias(users, filters)
-			users = sorted(users, key=self.create_filter_func(user_match))
 		else:
 			users = self.db.get_all_rows(sql)
+		sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
+		fame_table = self.db.get_all_rows(sql)
+		for user in users:
+			user['fame'] = self.get_fame_rating(user['id'], search_in=fame_table)
+			user['tags'] = self.get_tags(user['id'])
+		if filters:
+			users = self.filter_by_criterias(users, filters)
+		if user_match:
+			users = sorted(users, key=self.create_filter_func(user_match))
 		return users
 
 	def email_confirmation(self, email, login, token):

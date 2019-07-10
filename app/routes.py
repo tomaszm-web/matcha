@@ -182,6 +182,7 @@ def block_user():
 
 # Chat
 @socketio.on('chat event')
+# todo Add message timestamp
 def send_message(json, methods=['GET', 'POST']):
 	try:
 		db = Database(app)
