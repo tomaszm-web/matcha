@@ -198,23 +198,20 @@
 	let elem;
 	if ((elem = document.getElementById('user-notif'))) {
 		notifs = new Vue({
-				el: '#notifications',
-				data: {
-					{% if cur_user %}
-						user_id: %% cur_user.id %%,
-					{% endif %}
-				notifications: {}
-			},
-			created()
-		{
+			el: '#notifications',
+			data: {
+				{% if cur_user %}
+					user_id: %% cur_user.id %%,
+				{% endif %}
+			notifications: {}
+		},
+		created() {
 			{% if cur_user %}
 				this.getNotifications();
 			{% endif %}
-		}
-	,
+		},
 		computed: {
-			length()
-			{
+			length() {
 				let size = 0, key;
 				for (key in this.notifications) {
 					if (this.notifications.hasOwnProperty(key))
@@ -222,11 +219,9 @@
 				}
 				return size;
 			}
-		}
-	,
+		},
 		methods: {
-			getNotifications()
-			{
+			getNotifications() {
 				axios.get(location.origin + '/get_notifications', {
 					params: {user_id: this.user_id}
 				}).then((response) => {
@@ -235,11 +230,10 @@
 				})
 			}
 		}
-	})
-		;
-		{% if cur_user %}
-			setInterval(notifs.getNotifications, 10000);
-		{% endif %}
+	});
+	{% if cur_user %}
+		setInterval(notifs.getNotifications, 10000);
+	{% endif %}
 	}
 </script>
 </html>

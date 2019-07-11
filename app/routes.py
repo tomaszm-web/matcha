@@ -9,7 +9,8 @@ from flask import (
 	send_from_directory,
 	jsonify)
 import requests
-from app import app, socketio, Map
+from app import app, socketio
+from flask_socketio import join_room, leave_room
 from app.models import Account, Chat, Notif
 from .database import Database
 from .mail import send_email
@@ -183,15 +184,12 @@ def block_user():
 # Chat
 @socketio.on('chat event')
 # todo Add message timestamp
-def send_message(json, methods=['GET', 'POST']):
-	try:
-		db = Database(app)
-		live_chat = Chat(db)
-		if 'sender_id' in json and 'recipient_id' in json:
-			live_chat.send_message(json['sender_id'], json['recipient_id'], json['body'])
-			socketio.emit('chat response', json)
-	except Exception:
-		return
+def send_message(data):
+	db = Database(app)
+	live_chat = Chat(db)
+	if 'sender_id' in data and 'recipient_id' in data and 'room' in data:
+		live_chat.send_message(data['sender_id'], data['recipient_id'], data['body'])
+		socketio.emit('chat response', data, room=data['room'])
 
 
 @app.route('/get_messages', methods=["GET"])
@@ -236,11 +234,13 @@ def disconnect_user():
 		sql = "UPDATE `users` SET online = 1, last_login = %s WHERE login=%s"
 		db.query(sql, [last_login_date, session['user']])
 
+
 @socketio.on('disconnect')
 def disconnect_user():
-	db = Database(app)
-	sql = "UPDATE `users` SET online=0 WHERE login=%s"
-	db.query(sql, [session['user']])
+	if 'user' in session:
+		db = Database(app)
+		sql = "UPDATE `users` SET online=0 WHERE login=%s"
+		db.query(sql, [session['user']])
 
 
 # Files

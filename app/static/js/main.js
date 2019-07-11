@@ -205,7 +205,7 @@ $(document).ready(function () {
 				this.showMessages();
 				// elem.scrollTop = elem.scrollHeight;
 			},
-			updated: function() {
+			updated: function () {
 				const el = document.querySelector('#chat .chat');
 				el.scrollTop = el.scrollHeight;
 			},
@@ -233,10 +233,9 @@ $(document).ready(function () {
 			}
 		});
 
-		socket.on('connect', function () {
-			socket.emit('chat event', {
-				data: 'User Connected'
-			});
+		socket.on('connect',  function() {
+			let room = '123';
+			socket.emit('room', room);
 			$('.sendMessageForm').on('submit', chat.sendMessage);
 		});
 
@@ -244,4 +243,24 @@ $(document).ready(function () {
 			chat.messages.push(msg);
 		});
 	}
+
+	/*--------GPS--------*/
+	let geoOptions = {
+		timeout: 10 * 1000
+	};
+	let startPos;
+	let geoSuccess = function (position) {startPos = position};
+	let geoError = function() {
+    	console.log('Error occurred. Error code: ' + error.code);
+		// error.code can be:
+		//   0: unknown error
+		//   1: permission denied
+		//   2: position unavailable (error response from location provider)
+		//   3: timed out
+  	};
+	navigator.geolocation.getCurrentPosition(geoSuccess, geoError, geoOptions);
+
+	axios.get("https://maps.googleapis.com/maps/api/geocode/json?latlng=50.4705531,30.464246900000003&key=AIzaSyAjzkW8XWRsKcQhs7hcY-Rc7wPSSSIQVQM").then((response) => {
+		console.log(response.data);
+	});
 });
