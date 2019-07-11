@@ -1,6 +1,7 @@
 import os
 import json
 import secrets
+from datetime import datetime
 from flask import render_template, url_for, flash, redirect, session, abort, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -55,7 +56,7 @@ class Account:
 		if not login and not id:
 			return None
 		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
-			   "biography, avatar, photos, age FROM `users`")
+			   "biography, avatar, photos, age, online, last_login FROM `users`")
 		if login:
 			sql += " WHERE login=%s"
 			user = self.db.get_row(sql, [login])
@@ -207,6 +208,9 @@ class Account:
 				errors.append("You should confirm your E-mail first!")
 			else:
 				session["user"] = form["login"]
+				last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+				sql = "UPDATE `users` SET online = 1, last_login = %s WHERE login=%s"
+				self.db.query(sql, [last_login_date, session['user']])
 				flash("You successfully logged in!", 'success')
 		except KeyError:
 			errors.append("You haven't set some values")

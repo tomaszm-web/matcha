@@ -160,7 +160,7 @@ header {
 .notifications {
 	width: 30vw;
 	max-height: 60vh;
-    overflow-y: scroll
+	overflow-y: scroll
 }
 
 .notifications .message {
@@ -318,8 +318,11 @@ header {
 }
 
 .profile__login {
-	margin-bottom: 30px;
 	font-weight: bold;
+}
+
+.profile__status {
+	font-size: 14px;
 }
 
 .profile__photo {

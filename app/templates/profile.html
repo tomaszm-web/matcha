@@ -31,6 +31,15 @@
 				</div>
 				<div class="col-6">
 					<h4 class="profile__login">@%% user.login %%</h4>
+					<div class="profile__status">
+						{% if user.online %}
+							<i class="fas fa-circle text-success"></i>
+							online
+						{% else %}
+							<i class="fas fa-circle text-danger"></i>
+							%% user.last_login if user.last_login else 'offline' %%
+						{% endif %}
+					</div>
 					<h4 class="profile__title">Name:</h4>
 					<div class="profile__name">
 						%% user.name %%
@@ -60,7 +69,7 @@
 						{% endfor %}
 					</select>
 					<div class="btn-group">
-						{% if cur_user %}
+						{% if cur_user and user.id != cur_user.id %}
 							<button class="btn btn-success likeUser {% print('done') if user.id in cur_user.liked_users %}"
 									data-liked-user-id="%% user.id %%"
 									data-user-id="%% cur_user.id %%">

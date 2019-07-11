@@ -13,6 +13,7 @@ from app import app, socketio, Map
 from app.models import Account, Chat, Notif
 from .database import Database
 from .mail import send_email
+from datetime import datetime
 
 
 @app.route('/')
@@ -93,11 +94,10 @@ def login():
 @app.route('/logout')
 def logout():
 	db = Database(app)
-	account = Account(db)
-	notif = Notif(db)
 	if "user" in session:
 		flash("You successfully logged out!", 'success')
-		notif.send_notification(38, 'like', account.get_user_info('o4eredko'))
+		sql = "UPDATE `users` SET online=0 WHERE login=%s"
+		db.query(sql, [session['user']])
 		session.pop("user", None)
 	else:
 		flash("You should log in first, to be able to log out!", 'danger')
@@ -228,9 +228,19 @@ def get_notifications():
 		return jsonify({'success': False})
 
 
+@socketio.on('connect')
+def disconnect_user():
+	if 'user' in session:
+		db = Database(app)
+		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+		sql = "UPDATE `users` SET online = 1, last_login = %s WHERE login=%s"
+		db.query(sql, [last_login_date, session['user']])
+
 @socketio.on('disconnect')
 def disconnect_user():
-	redirect(url_for('logout'))
+	db = Database(app)
+	sql = "UPDATE `users` SET online=0 WHERE login=%s"
+	db.query(sql, [session['user']])
 
 
 # Files

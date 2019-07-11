@@ -49,6 +49,8 @@
 								up</a>
 							<a href="#" class="btn btn-transparent" data-toggle="modal" data-target="#logIn">Log in</a>
 						{% else %}
+							<a href="%% url_for('profile', user_id=cur_user.id) %%" class="btn btn-transparent">My
+								profile</a>
 							<a href="/logout" class="btn btn-transparent">Log out</a>
 						{% endif %}
 					</div>
@@ -196,39 +198,45 @@
 	let elem;
 	if ((elem = document.getElementById('user-notif'))) {
 		notifs = new Vue({
-			el: '#notifications',
-			data: {
-				{% if cur_user %}
-					user_id: %% cur_user.id %%,
-				{% endif %}
+				el: '#notifications',
+				data: {
+					{% if cur_user %}
+						user_id: %% cur_user.id %%,
+					{% endif %}
 				notifications: {}
 			},
-			created() {
-				{% if cur_user %}
-					this.getNotifications();
-				{% endif %}
-			},
-			computed: {
-				length() {
-					let size = 0, key;
-					for (key in this.notifications) {
-						if (this.notifications.hasOwnProperty(key))
-							size++;
-					}
-					return size;
+			created()
+		{
+			{% if cur_user %}
+				this.getNotifications();
+			{% endif %}
+		}
+	,
+		computed: {
+			length()
+			{
+				let size = 0, key;
+				for (key in this.notifications) {
+					if (this.notifications.hasOwnProperty(key))
+						size++;
 				}
-			},
-			methods: {
-				getNotifications() {
-					axios.get(location.origin + '/get_notifications', {
-						params: {user_id: this.user_id}
-				}).then((response) => {
-						if (response.data.success)
-							this.notifications = response.data.notifications
-					})
-				}
+				return size;
 			}
-		});
+		}
+	,
+		methods: {
+			getNotifications()
+			{
+				axios.get(location.origin + '/get_notifications', {
+					params: {user_id: this.user_id}
+				}).then((response) => {
+					if (response.data.success)
+						this.notifications = response.data.notifications
+				})
+			}
+		}
+	})
+		;
 		{% if cur_user %}
 			setInterval(notifs.getNotifications, 10000);
 		{% endif %}
