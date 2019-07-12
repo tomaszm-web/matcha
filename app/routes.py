@@ -10,11 +10,13 @@ from flask import (
 	jsonify)
 import requests
 from app import app, socketio
-from flask_socketio import join_room, leave_room
+from flask_socketio import emit
 from app.models import Account, Chat, Notif
 from .database import Database
 from .mail import send_email
 from datetime import datetime
+
+connected_users = {}
 
 
 @app.route('/')
@@ -66,6 +68,8 @@ def profile():
 
 @app.route('/chat', methods=["GET"])
 def chat():
+	if 'user' not in session:
+		return redirect(url_for('index'))
 	db = Database(app)
 	account = Account(db)
 	recipient = account.get_user_info(id=request.args["recipient_id"])
@@ -182,16 +186,6 @@ def block_user():
 
 
 # Chat
-@socketio.on('chat event')
-# todo Add message timestamp
-def send_message(data):
-	db = Database(app)
-	live_chat = Chat(db)
-	if 'sender_id' in data and 'recipient_id' in data and 'room' in data:
-		live_chat.send_message(data['sender_id'], data['recipient_id'], data['body'])
-		socketio.emit('chat response', data, room=data['room'])
-
-
 @app.route('/get_messages', methods=["GET"])
 def get_messages():
 	try:
@@ -226,8 +220,31 @@ def get_notifications():
 		return jsonify({'success': False})
 
 
+# Sockets
+@socketio.on('connect', namespace='/private_chat')
+def connect_to_chat():
+	connected_users[session['user']] = request.sid
+	print(connected_users)
+
+# todo Add message timestamp
+@socketio.on('private_chat event', namespace='/private_chat')
+def send_message(data):
+	db = Database(app)
+	account = Account(db)
+	live_chat = Chat(db)
+	if 'sender_id' in data and 'recipient_id' in data and 'body' in data:
+		sender = connected_users[account.get_user_info(id=data['sender_id'])['login']]
+		recipient = connected_users[account.get_user_info(id=data['recipient_id'])['login']]
+		data['timestamp'] = datetime.now().strftime('%c')
+		live_chat.send_message(data['sender_id'], data['recipient_id'], data['body'])
+		if sender:
+			emit('private_chat response', data, room=sender)
+		if recipient:
+			emit('private_chat response', data, room=recipient)
+
+
 @socketio.on('connect')
-def disconnect_user():
+def connect_user():
 	if 'user' in session:
 		db = Database(app)
 		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')

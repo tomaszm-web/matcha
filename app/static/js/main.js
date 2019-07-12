@@ -5,8 +5,7 @@ $(document).ready(function () {
 		let temp = parts[i].split("=");
 		$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
 	}
-
-	let socket = io.connect('http://' + document.domain + ':' + location.port);
+	let socket = io.connect(location.origin);
 
 	if ($('.users_list')) {
 		axios.get(location.origin + '/filter_users').then((response) => {
@@ -195,15 +194,22 @@ $(document).ready(function () {
 		const chat = new Vue({
 			el: '#chat',
 			data: {
-				messages: null,
+				messages: {},
 				sender_id: null,
 				recipient_id: null,
+				socket: null
 			},
 			created() {
+				this.socket = io.connect(location.origin + '/private_chat');
 				this.recipient_id = $_GET['recipient_id'];
 				this.sender_id = $(".sendMessageForm input[name='sender_id']").val();
-				this.showMessages();
-				// elem.scrollTop = elem.scrollHeight;
+				this.messages = this.showMessages();
+				this.socket.on('connect', function () {
+					console.log('connected to private chat')
+				});
+				this.socket.on('private_chat response', (msg) => {
+					this.messages.push(msg)
+				});
 			},
 			updated: function () {
 				const el = document.querySelector('#chat .chat');
@@ -219,28 +225,17 @@ $(document).ready(function () {
 					}).then((response) => {
 						if (response.data.success)
 							this.messages = response.data.messages;
-					})
+					});
 				},
 				sendMessage(e) {
-					e.preventDefault();
-					socket.emit('chat event', {
+					this.socket.emit('private_chat event', {
 						sender_id: this.sender_id,
 						recipient_id: this.recipient_id,
 						body: e.target.text.value
 					});
-					e.target.reset();
+					e.target.text.value = ""
 				}
 			}
-		});
-
-		socket.on('connect',  function() {
-			let room = '123';
-			socket.emit('room', room);
-			$('.sendMessageForm').on('submit', chat.sendMessage);
-		});
-
-		socket.on('chat response', function (msg) {
-			chat.messages.push(msg);
 		});
 	}
 
@@ -249,15 +244,17 @@ $(document).ready(function () {
 		timeout: 10 * 1000
 	};
 	let startPos;
-	let geoSuccess = function (position) {startPos = position};
-	let geoError = function() {
-    	console.log('Error occurred. Error code: ' + error.code);
+	let geoSuccess = function (position) {
+		startPos = position
+	};
+	let geoError = function () {
+		console.log('Error occurred. Error code: ' + error.code);
 		// error.code can be:
 		//   0: unknown error
 		//   1: permission denied
 		//   2: position unavailable (error response from location provider)
 		//   3: timed out
-  	};
+	};
 	navigator.geolocation.getCurrentPosition(geoSuccess, geoError, geoOptions);
 
 	axios.get("https://maps.googleapis.com/maps/api/geocode/json?latlng=50.4705531,30.464246900000003&key=AIzaSyAjzkW8XWRsKcQhs7hcY-Rc7wPSSSIQVQM").then((response) => {

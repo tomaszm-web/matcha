@@ -348,6 +348,7 @@ class Account:
 class Chat:
 	def __init__(self, db):
 		self.db = db
+		self.timestamp_format = "%c"
 
 	def __del__(self):
 		del self.db
@@ -360,12 +361,15 @@ class Chat:
 		sql = ("SELECT * FROM `messages` WHERE (sender_id=%s AND recipient_id=%s)"
 			   "OR (sender_id=%s AND recipient_id=%s) ORDER BY timestamp")
 		messages = self.db.get_all_rows(sql, (user_id, recipient_id, recipient_id, user_id))
+		for message in messages:
+			message['timestamp'] = datetime.strftime(message['timestamp'], self.timestamp_format)
 		return messages
 
 
 class Notif:
 	def __init__(self, db):
 		self.db = db
+		self.timestamp_format = "%c"
 
 	def __del__(self):
 		del self.db
@@ -389,4 +393,6 @@ class Notif:
 	def get_notifications(self, user_id):
 		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created DESC"
 		notifications = self.db.get_all_rows(sql, [user_id])
+		for notif in notifications:
+			notif['date_created'] = datetime.strftime(notif['date_created'], self.timestamp_format)
 		return notifications
