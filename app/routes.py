@@ -38,7 +38,6 @@ def index():
 def settings():
 	db = Database(app)
 	account = Account(db)
-	notif = Notif(db)
 	if "user" not in session:
 		flash("You should log in to access your profile", 'danger')
 		return redirect(url_for('index'))
@@ -82,10 +81,17 @@ def chat():
 
 @app.route('/registration', methods=["POST"])
 def registration():
-	db = Database(app)
-	account = Account(db)
-	errors = account.registration(request.form)
-	return jsonify(errors)
+	try:
+		db = Database(app)
+		account = Account(db)
+		account.registration(request.form)
+	except Exception as e:
+		if type(e).__name__ == "KeyError":
+			cause = "You haven't set some values"
+		else:
+			cause = str(e)
+		return jsonify({'success': False, 'cause': cause})
+	return jsonify({'success': True})
 
 
 @app.route('/login', methods=["POST"])
@@ -154,6 +160,20 @@ def change():
 	else:
 		flash("Your profile's info was successfully updated", 'success')
 	return redirect(url_for('settings'))
+
+
+@app.route('/get_user_location_by_ip', methods=["GET"])
+def get_user_location_by_ip():
+	try:
+		db = Database(app)
+		ip = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+		response = requests.get("http://api.ipstack.com/" + ip, params={
+			'access_key': "57cc3adcb818a96b0af7a4020ec09453"
+		})
+		response.raise_for_status()
+	except Exception as e:
+		return jsonify({'success': False, 'cause': str(e)})
+	return jsonify({'success': True, 'address': response.json()})
 
 
 @app.route('/filter_users', methods=["GET", "POST"])
@@ -233,7 +253,6 @@ def get_notifications():
 @socketio.on('private_chat event', namespace='/private_chat')
 def send_message(data):
 	db = Database(app)
-	account = Account(db)
 	live_chat = Chat(db)
 	if 'sender_id' in data and 'recipient_id' in data and 'body' in data:
 		data['timestamp'] = datetime.now().strftime('%c')

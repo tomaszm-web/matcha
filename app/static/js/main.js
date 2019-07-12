@@ -1,4 +1,4 @@
-$(document).ready(function () {
+$(document).ready(function() {
 	let parts = window.location.search.substr(1).split("&");
 	let $_GET = {};
 	for (let i = 0; i < parts.length; i++) {
@@ -14,7 +14,7 @@ $(document).ready(function () {
 	}
 
 	if ($('.filters')) {
-		$('.filters').submit(function (e) {
+		$('.filters').submit(function(e) {
 			e.preventDefault();
 			let data = new FormData(e.target)
 			axios.post(location.origin + '/filter_users', data).then((response) => {
@@ -50,10 +50,11 @@ $(document).ready(function () {
 						url: '/registration',
 						data: new FormData(e.target)
 					}).then((response) => {
-						this.errors.push.apply(this.errors, response.data);
-						if (!this.errors.length) {
-							e.target.reset();
+						if (!response.data.success)
+							this.errors.push(response.data.cause);
+						else {
 							this.message = "Registration is almost done! You should confirm your E-mail to log in."
+							e.target.reset();
 						}
 					}).catch(() => {
 						this.errors.push("Something went wrong! Try again")
@@ -161,7 +162,7 @@ $(document).ready(function () {
 		placeholder: "Choose city"
 	});
 
-	$('.likeUser').click(function () {
+	$('.likeUser').click(function() {
 		axios.get(location.origin + '/like_user', {
 			params: {
 				unlike: $(this).hasClass('done'),
@@ -176,7 +177,7 @@ $(document).ready(function () {
 		});
 	});
 
-	$('.blockUser').click(function () {
+	$('.blockUser').click(function() {
 		axios.get(location.origin + '/block_user', {
 			params: {
 				unblock: $(this).hasClass('done'),
@@ -206,14 +207,14 @@ $(document).ready(function () {
 				this.recipient_id = $_GET['recipient_id'];
 				this.sender_id = $(".sendMessageForm input[name='sender_id']").val();
 				this.messages = this.showMessages();
-				this.socket.on('connect', function () {
+				this.socket.on('connect', function() {
 					console.log('connected to private chat')
 				});
 				this.socket.on('private_chat response', (msg) => {
 					this.messages.push(msg)
 				});
 			},
-			updated: function () {
+			updated: function() {
 				const el = document.querySelector('#chat .chat');
 				el.scrollTop = el.scrollHeight;
 			},
@@ -242,24 +243,45 @@ $(document).ready(function () {
 	}
 
 	/*--------GPS--------*/
-	let geoOptions = {
-		timeout: 10 * 1000
-	};
-	let startPos;
-	let geoSuccess = function (position) {
-		startPos = position
-	};
-	let geoError = function () {
-		console.log('Error occurred. Error code: ' + error.code);
-		// error.code can be:
-		//   0: unknown error
-		//   1: permission denied
-		//   2: position unavailable (error response from location provider)
-		//   3: timed out
-	};
-	navigator.geolocation.getCurrentPosition(geoSuccess, geoError, geoOptions);
+	if ((elem = document.getElementById('city'))) {
+		let geoOptions = {timeout: 5000};
+		let geoSuccess = function(position) {
+			axios.get("https://maps.googleapis.com/maps/api/geocode/json", {
+				params: {
+					latlng: position.coords.latitude + ', ' + position.coords.longitude,
+					key: "AIzaSyAjzkW8XWRsKcQhs7hcY-Rc7wPSSSIQVQM",
+					language: "en"
+				}
+			}).then((response) => {
+				let res = null;
+				for (let i = 0; i < response.data.results.length; i++) {
+					if (response.data.results[i].types.indexOf('locality') > -1) {
+						res = response.data.results[i].formatted_address;
+						break;
+					}
+				}
+				if (res) {
+					var splitted = res.split(', ');
+					elem.value = splitted[0] + ", " + splitted[1];
+				}
+			});
+		};
+		let geoError = function() {
+			axios.get(location.origin + '/get_user_location_by_ip').then((response) => {
+				if (!response.data.success) {
+					console.warn(response.data.cause);
+				} else if (response.data.city && response.data.country_name) {
+					elem.value = response.data.city + ", " + response.data.country_name;
+				}
+			});
+		};
+		navigator.geolocation.getCurrentPosition(geoSuccess, geoError, geoOptions);
 
-	axios.get("https://maps.googleapis.com/maps/api/geocode/json?latlng=50.4705531,30.464246900000003&key=AIzaSyAjzkW8XWRsKcQhs7hcY-Rc7wPSSSIQVQM").then((response) => {
-		console.log(response.data);
-	});
+		let input = elem;
+		let options = {
+			types: ['(cities)'],
+			language: 'en'
+		};
+		let autocomplete = new google.maps.places.Autocomplete(input, options);
+	}
 });

@@ -222,15 +222,6 @@ header {
 	background-color: #fff;
 }
 
-.filters .select2-container .select2-selection--multiple {
-	background-color: #fff;
-	margin-bottom: 10px;
-}
-
-.filters .select2-container--default .select2-selection--single {
-	border: 1px solid #ced4da;
-}
-
 /*Profile*/
 #profile {
 	padding: 80px 0;
@@ -327,9 +318,18 @@ header {
 
 .profile__photo {
 	display: flex;
-	align-items: flex-end;
-	margin-bottom: 15px;
+	justify-content: center;
+	flex-direction: column;
+	margin: 20px 10px;
 	cursor: pointer;
+}
+
+.uploaded_photo {
+	height: 200px;
+	background-position: center center;
+	-webkit-background-size: contain;
+	background-size: contain;
+	background-repeat: no-repeat;
 }
 
 .profile__photo img {
@@ -441,4 +441,13 @@ footer {
 
 .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
 	color: #f05151;
+}
+
+.filters .select2-container .select2-selection--multiple {
+	background-color: #fff;
+	margin-bottom: 10px;
+}
+
+.filters .select2-container--default .select2-selection--single {
+	border: 1px solid #ced4da;
 }

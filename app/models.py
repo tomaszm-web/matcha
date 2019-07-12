@@ -1,8 +1,9 @@
 import os
 import json
 import secrets
+import pygeoip
 from datetime import datetime
-from flask import render_template, url_for, flash, redirect, session, abort, jsonify
+from flask import render_template, url_for, flash, redirect, session, abort, jsonify, request
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from app.mail import send_email
@@ -56,7 +57,7 @@ class Account:
 		if not id:
 			return None
 		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
-			   "biography, avatar, photos, age, online, last_login FROM `users`  WHERE id=%s")
+			   "biography, avatar, photos, age, online, last_login, city FROM `users`  WHERE id=%s")
 		user = self.db.get_row(sql, [id])
 		user['tags'] = self.get_tags(user["id"])
 		user['liked_users'] = self.get_liked_users(user['id'])
@@ -65,6 +66,10 @@ class Account:
 		user['photos'] = json.loads(user['photos'])
 		user['fame'] = self.get_fame_rating(user['id'])
 		return user
+
+	def get_user_location_by_ip(self, id):
+		gi = pygeoip.GeoIP('GeoIPCity.dat', pygeoip.MEMORY_CACHE)
+		geo_data = gi.record_by_addr(request.remote_addr)
 
 	def create_filter_func(self, user_match):
 		# todo Add location sort in 1 place
@@ -168,27 +173,21 @@ class Account:
 			self.db.query(sql[:-1], tag_list)
 
 	def registration(self, form):
-		errors = []
-		try:
-			if self.check_login_existent(form["login"]):
-				errors.append("User with this login already exists")
-			if self.check_email_existent(form["email"]):
-				errors.append("User with this E-mail already exists")
-			if len(errors) == 0:
-				sql = "INSERT INTO `users`(login, name, surname, email, password, token) VALUES(%s, %s, %s, %s, %s, %s)"
-				token = secrets.token_hex(10)
-				self.db.query(sql, (
-					form["login"],
-					form["name"],
-					form["surname"],
-					form["email"],
-					generate_password_hash(form["pass"]),
-					token
-				))
-				self.email_confirmation(form["email"], form["login"], token)
-		except KeyError:
-			errors.append("You haven't set some values")
-		return errors
+		if self.check_login_existent(form["login"]):
+			raise Exception("User with this login already exists")
+		if self.check_email_existent(form["email"]):
+			raise Exception("User with this E-mail already exists")
+		sql = "INSERT INTO `users`(login, name, surname, email, password, token) VALUES(%s, %s, %s, %s, %s, %s)"
+		user_token = secrets.token_hex(10)
+		self.db.query(sql, (
+			form["login"],
+			form["name"],
+			form["surname"],
+			form["email"],
+			generate_password_hash(form["pass"]),
+			user_token
+		))
+		self.email_confirmation(form["email"], form["login"], user_token)
 
 	def login(self, form):
 		sql = "SELECT id, password, confirmed FROM `users` WHERE login=%s"
