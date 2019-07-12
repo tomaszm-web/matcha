@@ -158,10 +158,6 @@ $(document).ready(function() {
 		tags: true
 	});
 
-	$('.city-select').select2({
-		placeholder: "Choose city"
-	});
-
 	$('.likeUser').click(function() {
 		axios.get(location.origin + '/like_user', {
 			params: {
@@ -282,6 +278,15 @@ $(document).ready(function() {
 			types: ['(cities)'],
 			language: 'en'
 		};
-		let autocomplete = new google.maps.places.Autocomplete(input, options);
+		new google.maps.places.Autocomplete(input, options);
+	}
+
+	if ($("#select-city")) {
+		let input = document.getElementById('select-city');
+		let options = {
+			types: ['(cities)'],
+			language: 'en'
+		};
+		new google.maps.places.Autocomplete(input, options);
 	}
 });

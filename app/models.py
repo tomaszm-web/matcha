@@ -110,13 +110,14 @@ class Account:
 			filter3 = not filters['fame_from'] or user['fame'] >= int(filters['fame_from'])
 			filter4 = not filters['fame_to'] or user['fame'] <= int(filters['fame_to'])
 			filter5 = not len(tags) or len(tags) == len(set(user['tags']).intersection(set(tags)))
-			if filter1 and filter2 and filter3 and filter4 and filter5:
+			filter6 = not filters['city'] or filters['city'] == user['city']
+			if filter1 and filter2 and filter3 and filter4 and filter5 and filter6:
 				filtered_users.append(user)
 		return filtered_users
 
 	def get_all_users(self, user_match, filters=None):
 		# todo FILTER by fame rating and tags and location
-		sql = "SELECT id, login, age, biography, avatar FROM `users`"
+		sql = "SELECT id, login, age, biography, avatar, city FROM `users`"
 		if user_match:
 			updated = self.filter_by_preferences(sql, user_match)
 			users = self.db.get_all_rows(updated['sql'], updated['values'])

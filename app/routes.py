@@ -165,7 +165,6 @@ def change():
 @app.route('/get_user_location_by_ip', methods=["GET"])
 def get_user_location_by_ip():
 	try:
-		db = Database(app)
 		ip = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
 		response = requests.get("http://api.ipstack.com/" + ip, params={
 			'access_key': "57cc3adcb818a96b0af7a4020ec09453"
