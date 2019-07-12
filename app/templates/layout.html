@@ -121,9 +121,7 @@
 					{#					<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">#}
 					<input class="form-control" type="text" name="login" placeholder="Login" required maxlength="30">
 					<input class="form-control" type="password" name="pass" placeholder="Password" required>
-					<ul class="errors" v-if="errors.length">
-						<li class="alert alert-danger" v-for="error in errors">{{ error }}</li>
-					</ul>
+					<li class="alert alert-danger" v-if="error">{{ error }}</li>
 					<button class="btn btn-danger">Log In</button>
 					<button class="btn btn-info" data-dismiss="modal" data-toggle="modal" data-target="#reset">Forgot
 						your password?

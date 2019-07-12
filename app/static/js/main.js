@@ -66,7 +66,7 @@ $(document).ready(function () {
 	let login = new Vue({
 		el: "#logIn form",
 		data: {
-			errors: [],
+			error: null,
 			message: ""
 		},
 		methods: {
@@ -77,9 +77,11 @@ $(document).ready(function () {
 					url: '/login',
 					data: new FormData(e.target)
 				}).then((response) => {
-					this.errors.push.apply(this.errors, response.data);
-					if (!this.errors.length) {
+					if (response.data.success) {
+						this.error = null;
 						location.reload()
+					} else {
+						this.error = response.data.cause
 					}
 				}).catch(() => {
 					this.errors.push("Something went wrong! Try again")

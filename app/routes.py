@@ -90,10 +90,19 @@ def registration():
 
 @app.route('/login', methods=["POST"])
 def login():
-	db = Database(app)
-	account = Account(db)
-	errors = account.login(request.form)
-	return jsonify(errors)
+	try:
+		db = Database(app)
+		account = Account(db)
+		account.login(request.form)
+	except Exception as e:
+		if type(e).__name__ == "KeyError":
+			cause = "You haven't set some values"
+		else:
+			cause = str(e)
+		return jsonify({'success': False, 'cause': cause})
+	else:
+		flash("You successfully logged in!", 'success')
+	return jsonify({'success': True})
 
 
 @app.route('/logout')
@@ -101,7 +110,7 @@ def logout():
 	db = Database(app)
 	if "user" in session:
 		flash("You successfully logged out!", 'success')
-		sql = "UPDATE `users` SET online=0 WHERE login=%s"
+		sql = "UPDATE `users` SET online=0 WHERE id=%s"
 		db.query(sql, [session['user']])
 		session.pop("user", None)
 	else:
@@ -220,12 +229,6 @@ def get_notifications():
 		return jsonify({'success': False})
 
 
-# Sockets
-@socketio.on('connect', namespace='/private_chat')
-def connect_to_chat():
-	connected_users[session['user']] = request.sid
-	print(connected_users)
-
 # todo Add message timestamp
 @socketio.on('private_chat event', namespace='/private_chat')
 def send_message(data):
@@ -233,14 +236,11 @@ def send_message(data):
 	account = Account(db)
 	live_chat = Chat(db)
 	if 'sender_id' in data and 'recipient_id' in data and 'body' in data:
-		sender = connected_users[account.get_user_info(id=data['sender_id'])['login']]
-		recipient = connected_users[account.get_user_info(id=data['recipient_id'])['login']]
 		data['timestamp'] = datetime.now().strftime('%c')
 		live_chat.send_message(data['sender_id'], data['recipient_id'], data['body'])
-		if sender:
-			emit('private_chat response', data, room=sender)
-		if recipient:
-			emit('private_chat response', data, room=recipient)
+		emit('private_chat response', data, room=connected_users[data['sender_id']])
+		if data['recipient_id'] in connected_users:
+			emit('private_chat response', data, room=connected_users[data['recipient_id']])
 
 
 @socketio.on('connect')
@@ -248,16 +248,20 @@ def connect_user():
 	if 'user' in session:
 		db = Database(app)
 		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-		sql = "UPDATE `users` SET online = 1, last_login = %s WHERE login=%s"
+		sql = "UPDATE `users` SET online = 1, last_login = %s WHERE id=%s"
 		db.query(sql, [last_login_date, session['user']])
+		connected_users[str(session['user'])] = request.sid
+		print(connected_users)
 
 
 @socketio.on('disconnect')
 def disconnect_user():
 	if 'user' in session:
 		db = Database(app)
-		sql = "UPDATE `users` SET online=0 WHERE login=%s"
+		sql = "UPDATE `users` SET online=0 WHERE id=%s"
 		db.query(sql, [session['user']])
+		connected_users.pop(session['user'], None)
+		session.pop("user", None)
 
 
 # Files

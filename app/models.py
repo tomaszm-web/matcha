@@ -52,17 +52,12 @@ class Account:
 		tags = [k['name'] for k in tags]
 		return tags
 
-	def get_user_info(self, login=None, id=None):
-		if not login and not id:
+	def get_user_info(self, id):
+		if not id:
 			return None
 		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
-			   "biography, avatar, photos, age, online, last_login FROM `users`")
-		if login:
-			sql += " WHERE login=%s"
-			user = self.db.get_row(sql, [login])
-		elif id:
-			sql += " WHERE id=%s"
-			user = self.db.get_row(sql, [id])
+			   "biography, avatar, photos, age, online, last_login FROM `users`  WHERE id=%s")
+		user = self.db.get_row(sql, [id])
 		user['tags'] = self.get_tags(user["id"])
 		user['liked_users'] = self.get_liked_users(user['id'])
 		user['blocked_users'] = self.get_blocked_users(user['id'])
@@ -196,25 +191,18 @@ class Account:
 		return errors
 
 	def login(self, form):
-		errors = []
-		try:
-			sql = "SELECT * FROM `users` WHERE login=%s"
-			user = self.db.get_row(sql, [form["login"]])
-			if not user:
-				errors.append("Wrong login!")
-			elif not check_password_hash(user["password"], form["pass"]):
-				errors.append("Wrong password!")
-			elif not user["confirmed"]:
-				errors.append("You should confirm your E-mail first!")
-			else:
-				session["user"] = form["login"]
-				last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-				sql = "UPDATE `users` SET online = 1, last_login = %s WHERE login=%s"
-				self.db.query(sql, [last_login_date, session['user']])
-				flash("You successfully logged in!", 'success')
-		except KeyError:
-			errors.append("You haven't set some values")
-		return errors
+		sql = "SELECT id, password, confirmed FROM `users` WHERE login=%s"
+		user = self.db.get_row(sql, [form['login']])
+		if not user:
+			raise Exception("Wrong login!")
+		if not check_password_hash(user["password"], form["pass"]):
+			raise Exception("Wrong password!")
+		if not user["confirmed"]:
+			raise Exception("You should confirm your E-mail first!")
+		session["user"] = user['id']
+		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+		sql = "UPDATE `users` SET online = 1, last_login=%s WHERE id=%s"
+		self.db.query(sql, [last_login_date, user['id']])
 
 	def confirmation(self, login, token):
 		sql = "SELECT token FROM `users` WHERE login=%s"
@@ -287,7 +275,7 @@ class Account:
 		return {'sql': sql, 'values': values}
 
 	def change(self, form, files=None):
-		user = self.get_user_info(session["user"])
+		user = self.get_user_info(session['user'])
 		to_update = self.get_changed_values(user, form)
 		if 'email' in to_update['values'] and self.check_email_existent(form["email"]):
 			raise Exception("User with his E-mail already exists")
