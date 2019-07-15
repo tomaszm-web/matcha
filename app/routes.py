@@ -17,7 +17,6 @@ from .mail import send_email
 from datetime import datetime
 
 users_in_chat = {}
-users_online = {}
 
 
 @app.route('/')
@@ -261,18 +260,10 @@ def get_notifications():
 		return jsonify({'success': False})
 
 
-# todo Add message timestamp
 @socketio.on('connect', namespace='/private_chat')
 def connect_user_to_chat():
 	if 'user' in session:
 		users_in_chat[str(session['user'])] = request.sid
-		print(users_in_chat)
-
-
-@socketio.on('disconnect', namespace='/private_chat')
-def disconnect_user_from_chat():
-	if 'user' in session:
-		users_in_chat.pop(session['user'], None)
 		print(users_in_chat)
 
 
@@ -292,6 +283,13 @@ def send_message(data):
 			notif.send_notification(data['recipient_id'], 'message', account.get_user_info(data['sender_id']))
 
 
+@socketio.on('disconnect', namespace='/private_chat')
+def disconnect_user_from_chat():
+	if 'user' in session:
+		users_in_chat.pop(session['user'], None)
+		print(users_in_chat)
+
+
 @socketio.on('connect')
 def connect_user():
 	if 'user' in session:
@@ -299,7 +297,6 @@ def connect_user():
 		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 		sql = "UPDATE `users` SET online = 1, last_login = %s WHERE id=%s"
 		db.query(sql, [last_login_date, session['user']])
-		print('connected to session')
 
 
 @socketio.on('disconnect')
