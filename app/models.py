@@ -67,13 +67,9 @@ class Account:
 		user['fame'] = self.get_fame_rating(user['id'])
 		return user
 
-	def get_user_location_by_ip(self, id):
-		gi = pygeoip.GeoIP('GeoIPCity.dat', pygeoip.MEMORY_CACHE)
-		geo_data = gi.record_by_addr(request.remote_addr)
-
 	def create_filter_func(self, user_match):
-		# todo Add location sort in 1 place
 		return lambda e: (
+			e['city'] != user_match['city'],
 			abs(user_match['age'] - e['age']),
 			-e['fame'],
 			-len(set(user_match['tags']).intersection(set(e['tags'])))
@@ -116,8 +112,7 @@ class Account:
 		return filtered_users
 
 	def get_all_users(self, user_match, filters=None):
-		# todo FILTER by fame rating and tags and location
-		sql = "SELECT id, login, age, biography, avatar, city FROM `users`"
+		sql = "SELECT id, login, age, biography, avatar, city, gender, preferences FROM `users`"
 		if user_match:
 			updated = self.filter_by_preferences(sql, user_match)
 			users = self.db.get_all_rows(updated['sql'], updated['values'])
@@ -328,6 +323,13 @@ class Account:
 			sql = "INSERT INTO `blocked` SET user_id=%s, blocked_id=%s"
 		self.db.query(sql, [user_id, blocked_id])
 
+	def report_user(self, user_id, reported_id, unreport):
+		if unreport == 'true':
+			sql = "DELETE FROM `reports` WHERE user_id=%s AND reported_id=%s"
+		else:
+			sql = "INSERT INTO `reports` SET user_id=%s, reported_id=%s"
+		self.db.query(sql, [user_id, reported_id])
+
 	def check_user(self, checking, checked_user):
 		sql = "INSERT INTO `checked_profile` SET checking=%s, checked_user=%s"
 		self.db.query(sql, [checking, checked_user])
@@ -363,6 +365,8 @@ class Notif:
 		del self.db
 
 	def send_notification(self, recipient_id, notif_type, executive_user):
+		if recipient_id in executive_user['blocked_users'] or recipient_id == executive_user['id']:
+			return
 		notifications = {
 			'like': f"You have been liked by {executive_user['login']}",
 			'unlike': f"You have been unliked by {executive_user['login']}",
@@ -372,7 +376,7 @@ class Notif:
 		}
 		links = {
 			'user_action': url_for('profile', user_id=executive_user['id']),
-			'message': url_for('chat', recipient_id_id=executive_user['id'])
+			'message': url_for('chat', recipient_id=executive_user['id'])
 		}
 		sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"
 		link = 'message' if notif_type == 'message' else 'user_action'

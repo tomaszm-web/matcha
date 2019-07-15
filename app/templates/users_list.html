@@ -8,8 +8,14 @@
 				<div class="card-body">
 					<h5 class="card-title">%% user.login %%</h5>
 					<p class="card-text">%% user.biography %%</p>
+					<p class="card-text text-muted">
+						Age: %% user.age %%<br>
+						Gender: %% user.gender %%<br>
+						Preferences: %% user.preferences %%<br>
+						City: %% user.city %%
+					</p>
 					<button class="btn btn-success likeUser {% print('done') if user.id in cur_user.liked_users %}"
-							data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%">
+							data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%" data-to-reload="false">
 						<i class="fas fa-thumbs-up"></i>Like
 					</button>
 				</div>

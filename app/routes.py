@@ -56,7 +56,7 @@ def profile():
 	user = account.get_user_info(id=request.args["user_id"])
 	if 'user' in session:
 		cur_user = account.get_user_info(session['user'])
-		if user['id'] not in cur_user['checked_users']:
+		if user['id'] not in cur_user['checked_users'] and user['id'] != cur_user['id']:
 			account.check_user(cur_user['id'], user['id'])
 			notif.send_notification(user['id'], 'check_profile', cur_user)
 		like_each_other = user['id'] in cur_user['liked_users'] and cur_user['id'] in user['liked_users']
@@ -204,13 +204,24 @@ def like_user():
 
 @app.route('/block_user', methods=["GET"])
 def block_user():
-	db = Database(app)
-	account = Account(db)
 	try:
+		db = Database(app)
+		account = Account(db)
 		account.block_user(request.args['user_id'], request.args['blocked_id'], request.args['unblock'])
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
 	return jsonify({'success': True, 'unblock': request.args.get('unblock')})
+
+
+@app.route('/report_user', methods=["GET"])
+def report_user():
+	try:
+		db = Database(app)
+		account = Account(db)
+		account.block_user(request.args['user_id'], request.args['reported_id'], request.args['unreport'])
+	except Exception as e:
+		return jsonify({'success': False, 'error_message': str(e)})
+	return jsonify({'success': True, 'unreport': request.args.get('unreport')})
 
 
 # Chat
@@ -249,16 +260,34 @@ def get_notifications():
 
 
 # todo Add message timestamp
+@socketio.on('connect', namespace='/private_chat')
+def connect_user_to_chat():
+	if 'user' in session:
+		connected_users[str(session['user'])] = request.sid
+		print(connected_users)
+
+
+@socketio.on('disconnect')
+def disconnect_user_from_chat():
+	if 'user' in session:
+		connected_users.pop(session['user'], None)
+		print(connected_users)
+
+
 @socketio.on('private_chat event', namespace='/private_chat')
 def send_message(data):
-	db = Database(app)
-	live_chat = Chat(db)
 	if 'sender_id' in data and 'recipient_id' in data and 'body' in data:
+		db = Database(app)
+		live_chat = Chat(db)
 		data['timestamp'] = datetime.now().strftime('%c')
 		live_chat.send_message(data['sender_id'], data['recipient_id'], data['body'])
 		emit('private_chat response', data, room=connected_users[data['sender_id']])
 		if data['recipient_id'] in connected_users:
 			emit('private_chat response', data, room=connected_users[data['recipient_id']])
+		else:
+			account = Account(db)
+			notif = Notif(db)
+			notif.send_notification(data['recipient_id'], 'message', account.get_user_info(data['sender_id']))
 
 
 @socketio.on('connect')
@@ -268,8 +297,7 @@ def connect_user():
 		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 		sql = "UPDATE `users` SET online = 1, last_login = %s WHERE id=%s"
 		db.query(sql, [last_login_date, session['user']])
-		connected_users[str(session['user'])] = request.sid
-		print(connected_users)
+		print('connected to session')
 
 
 @socketio.on('disconnect')
@@ -278,7 +306,6 @@ def disconnect_user():
 		db = Database(app)
 		sql = "UPDATE `users` SET online=0 WHERE id=%s"
 		db.query(sql, [session['user']])
-		connected_users.pop(session['user'], None)
 		session.pop("user", None)
 
 

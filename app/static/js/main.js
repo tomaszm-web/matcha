@@ -1,27 +1,58 @@
 $(document).ready(function() {
+	let elem;
 	let parts = window.location.search.substr(1).split("&");
 	let $_GET = {};
 	for (let i = 0; i < parts.length; i++) {
 		let temp = parts[i].split("=");
 		$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
 	}
+
 	let socket = io.connect(location.origin);
 
-	if ($('.users_list')) {
-		axios.get(location.origin + '/filter_users').then((response) => {
-			$('.users_list').html(response.data);
-		});
-	}
 
-	if ($('.filters')) {
-		$('.filters').submit(function(e) {
-			e.preventDefault();
-			let data = new FormData(e.target)
-			axios.post(location.origin + '/filter_users', data).then((response) => {
+	let user_list_created = false;
+	if ((elem = document.querySelector(".users_list"))) {
+		user_list_created = new Promise((resolve, reject) => {
+			axios.get(location.origin + '/filter_users').then((response) => {
 				$('.users_list').html(response.data);
+				resolve(true);
 			});
 		})
 	}
+
+	function likeUserEvent() {
+		$('.likeUser').click(function() {
+			axios.get(location.origin + '/like_user', {
+				params: {
+					unlike: $(this).hasClass('done'),
+					like_owner: $(this).attr('data-user-id'),
+					liked_user: $(this).attr('data-liked-user-id')
+				}
+			}).then((response) => {
+				if (response.data.success) {
+					if ($(this).attr('data-to-reload'))
+						location.reload();
+					else
+						$(this).toggleClass('done');
+				}
+			}).catch(() => {
+				console.log("Something went wrong! Try again")
+			});
+		});
+	}
+
+	if (user_list_created)
+		user_list_created.then(likeUserEvent);
+	else
+		likeUserEvent();
+
+	$('.filters').submit(function(e) {
+		e.preventDefault();
+		let data = new FormData(e.target)
+		axios.post(location.origin + '/filter_users', data).then((response) => {
+			$('.users_list').html(response.data);
+		});
+	});
 
 	/*--------Forms--------*/
 	let passRegExp = new RegExp("^(((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})");
@@ -148,7 +179,7 @@ $(document).ready(function() {
 		}
 	});
 
-	let elem = document.querySelector(".profile__avatar input");
+	elem = document.querySelector(".profile__avatar input");
 	if (elem) elem.onchange = (e) => {
 		e.target.parentNode.classList.add("selected");
 	};
@@ -156,21 +187,6 @@ $(document).ready(function() {
 	$('.multiple-tags').select2({
 		placeholder: "Interest tags",
 		tags: true
-	});
-
-	$('.likeUser').click(function() {
-		axios.get(location.origin + '/like_user', {
-			params: {
-				unlike: $(this).hasClass('done'),
-				like_owner: $(this).attr('data-user-id'),
-				liked_user: $(this).attr('data-liked-user-id')
-			}
-		}).then((response) => {
-			if (response.data.success)
-				$(this).toggleClass('done')
-		}).catch(() => {
-			console.log("Something went wrong! Try again")
-		});
 	});
 
 	$('.blockUser').click(function() {
@@ -183,9 +199,20 @@ $(document).ready(function() {
 		}).then((response) => {
 			if (response.data.success)
 				$(this).toggleClass('done')
-		}).catch(() => {
-			console.log("Something went wrong! Try again")
-		});
+		})
+	});
+
+	$('.reportUser').click(function() {
+		axios.get(location.origin + '/report_user', {
+			params: {
+				unreport: $(this).hasClass('done'),
+				user_id: $(this).attr('data-user-id'),
+				reported_id: $(this).attr('data-reported-user-id')
+			}
+		}).then((response) => {
+			if (response.data.success)
+				$(this).toggleClass('done')
+		})
 	});
 
 	/*--------Chat--------*/
@@ -239,7 +266,7 @@ $(document).ready(function() {
 	}
 
 	/*--------GPS--------*/
-	if ((elem = document.getElementById('city'))) {
+	if ((elem = document.getElementById('city')) && elem.value !== '') {
 		let geoOptions = {timeout: 5000};
 		let geoSuccess = function(position) {
 			axios.get("https://maps.googleapis.com/maps/api/geocode/json", {
@@ -266,27 +293,27 @@ $(document).ready(function() {
 			axios.get(location.origin + '/get_user_location_by_ip').then((response) => {
 				if (!response.data.success) {
 					console.warn(response.data.cause);
-				} else if (response.data.city && response.data.country_name) {
-					elem.value = response.data.city + ", " + response.data.country_name;
+				} else if (response.data.address.city && response.data.address.country_name) {
+					elem.value = response.data.address.city + ", " + response.data.address.country_name;
 				}
 			});
 		};
 		navigator.geolocation.getCurrentPosition(geoSuccess, geoError, geoOptions);
-
-		let input = elem;
-		let options = {
-			types: ['(cities)'],
-			language: 'en'
-		};
-		new google.maps.places.Autocomplete(input, options);
 	}
 
-	if ($("#select-city")) {
-		let input = document.getElementById('select-city');
+	if ((elem = document.getElementById('city'))) {
 		let options = {
 			types: ['(cities)'],
 			language: 'en'
 		};
-		new google.maps.places.Autocomplete(input, options);
+		new google.maps.places.Autocomplete(elem, options);
+	}
+
+	if ((elem = document.getElementById('select-city'))) {
+		let options = {
+			types: ['(cities)'],
+			language: 'en'
+		};
+		new google.maps.places.Autocomplete(elem, options);
 	}
 });

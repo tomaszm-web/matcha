@@ -68,24 +68,32 @@
 							<option value="%% tag %%" selected>#%% tag %%</option>
 						{% endfor %}
 					</select>
-					<div class="btn-group">
-						{% if cur_user and user.id != cur_user.id %}
+					{% if cur_user and user.id != cur_user.id %}
+						<div class="btn-group">
 							<button class="btn btn-success likeUser {% print('done') if user.id in cur_user.liked_users %}"
 									data-liked-user-id="%% user.id %%"
-									data-user-id="%% cur_user.id %%">
+									data-user-id="%% cur_user.id %%"
+									data-to-reload="true">
 								<i class="fas fa-thumbs-up"></i>Like
 							</button>
 							{% if like_each_other %}
-								<a href="%% url_for('chat', recipient_id=user.id) %%" class="btn btn-primary"><i
+								<a href="%% url_for('chat', recipient_id=user.id) %%" class="btn btn-primary chat-link"><i
 										class="fas fa-comment"></i>Chat</a>
 							{% endif %}
+						</div>
+						<div class="btn-group">
 							<button class="btn btn-danger blockUser {% print('done') if user.id in cur_user.blocked_users %}"
 									data-blocked-user-id="%% user.id %%"
 									data-user-id="%% cur_user.id %%">
 								<i class="fas fa-ban"></i>Block user
 							</button>
-						{% endif %}
-					</div>
+							<button class="btn btn-warning reportUser {% print('done') if user.id in cur_user.blocked_users %}"
+									data-reported-user-id="%% user.id %%"
+									data-user-id="%% cur_user.id %%">
+								<i class="fas fa-ban"></i>Report as fake
+							</button>
+						</div>
+					{% endif %}
 				</div>
 			</div>
 		</div>

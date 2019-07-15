@@ -136,6 +136,14 @@ form input {
 	background-color: white;
 }
 
+.dropdown__profile:hover>.dropdown-menu {
+    display: block;
+}
+
+.dropdown__profile>.dropdown-toggle:active {
+    pointer-events: none;
+}
+
 
 /*Header*/
 header {
