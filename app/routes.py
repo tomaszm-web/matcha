@@ -16,7 +16,8 @@ from .database import Database
 from .mail import send_email
 from datetime import datetime
 
-connected_users = {}
+users_in_chat = {}
+users_online = {}
 
 
 @app.route('/')
@@ -38,9 +39,9 @@ def index():
 def settings():
 	db = Database(app)
 	account = Account(db)
-	if "user" not in session:
-		flash("You should log in to access your profile", 'danger')
-		return redirect(url_for('index'))
+	# if "user" not in session:
+	# 	flash("You should log in to access your profile", 'danger')
+	# 	return redirect(url_for('index'))
 	user = account.get_user_info(session["user"])
 	return render_template('settings.html', cur_user=user)
 
@@ -189,10 +190,11 @@ def filter_users():
 
 @app.route('/like_user', methods=["GET"])
 def like_user():
-	db = Database(app)
-	account = Account(db)
-	notif = Notif(db)
+	if 'user' not in session:
+		jsonify({'success': False})
 	try:
+		db = Database(app)
+		account = Account(db)
 		action = account.like_user(request.args['like_owner'], request.args['liked_user'], request.args['unlike'])
 		if notif:
 			notif.send_notification(request.args.get('liked_user'), action,
@@ -263,15 +265,15 @@ def get_notifications():
 @socketio.on('connect', namespace='/private_chat')
 def connect_user_to_chat():
 	if 'user' in session:
-		connected_users[str(session['user'])] = request.sid
-		print(connected_users)
+		users_in_chat[str(session['user'])] = request.sid
+		print(users_in_chat)
 
 
-@socketio.on('disconnect')
+@socketio.on('disconnect', namespace='/private_chat')
 def disconnect_user_from_chat():
 	if 'user' in session:
-		connected_users.pop(session['user'], None)
-		print(connected_users)
+		users_in_chat.pop(session['user'], None)
+		print(users_in_chat)
 
 
 @socketio.on('private_chat event', namespace='/private_chat')

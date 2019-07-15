@@ -6,7 +6,6 @@ $(document).ready(function() {
 		let temp = parts[i].split("=");
 		$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
 	}
-
 	let socket = io.connect(location.origin);
 
 
@@ -21,6 +20,8 @@ $(document).ready(function() {
 	}
 
 	function likeUserEvent() {
+		if ((elem = $('.likeUser')).attr('data-user-id') === '')
+			elem.attr('disabled', true);
 		$('.likeUser').click(function() {
 			axios.get(location.origin + '/like_user', {
 				params: {
@@ -229,7 +230,7 @@ $(document).ready(function() {
 				this.socket = io.connect(location.origin + '/private_chat');
 				this.recipient_id = $_GET['recipient_id'];
 				this.sender_id = $(".sendMessageForm input[name='sender_id']").val();
-				this.messages = this.showMessages();
+				this.showMessages();
 				this.socket.on('connect', function() {
 					console.log('connected to private chat')
 				});

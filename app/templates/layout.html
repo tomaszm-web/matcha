@@ -3,6 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta data-cur-user-id="%% cur_user.id if cur_user else '0' %%">
 	<title>Matcha</title>
 	<link href="https://fonts.googleapis.com/css?family=Montserrat:900|Poppins:300,400&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
@@ -193,46 +194,4 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
 <script src="static/js/main.js"></script>
-<script>
-	let elem;
-	if ((elem = document.getElementById('user-notif'))) {
-		notifs = new Vue({
-			el: '#notifications',
-			data: {
-				{% if cur_user %}
-					user_id: %% cur_user.id %%,
-				{% endif %}
-			notifications: {}
-		},
-		created() {
-			{% if cur_user %}
-				this.getNotifications();
-			{% endif %}
-		},
-		computed: {
-			length() {
-				let size = 0, key;
-				for (key in this.notifications) {
-					if (this.notifications.hasOwnProperty(key))
-						size++;
-				}
-				return size;
-			}
-		},
-		methods: {
-			getNotifications() {
-				axios.get(location.origin + '/get_notifications', {
-					params: {user_id: this.user_id}
-				}).then((response) => {
-					if (response.data.success)
-						this.notifications = response.data.notifications
-				})
-			}
-		}
-	});
-	{% if cur_user %}
-		setInterval(notifs.getNotifications, 10000);
-	{% endif %}
-	}
-</script>
 </html>
