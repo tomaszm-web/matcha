@@ -274,9 +274,9 @@ def send_message(data):
 		live_chat = Chat(db)
 		data['timestamp'] = datetime.now().strftime('%c')
 		live_chat.send_message(data['sender_id'], data['recipient_id'], data['body'])
-		emit('private_chat response', data, room=connected_users[data['sender_id']])
-		if data['recipient_id'] in connected_users:
-			emit('private_chat response', data, room=connected_users[data['recipient_id']])
+		emit('private_chat response', data, room=users_in_chat[data['sender_id']])
+		if data['recipient_id'] in users_in_chat:
+			emit('private_chat response', data, room=users_in_chat[data['recipient_id']])
 		else:
 			account = Account(db)
 			notif = Notif(db)
