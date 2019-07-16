@@ -34,7 +34,8 @@
 					</a>
 					<div class="dropdown-menu dropdown-menu-right notifications" aria-labelledby="user-notif">
 						<div class="dropdown-header">Notifications:</div>
-						<a class="message text-info" v-for="notif in notifications" :href="notif.link">
+						<a class="message text-info" v-for="notif in notifications" :href="notif.link"
+						   :data-notif-id="notif.id">
 							{{ notif.message }}
 							<span class="message__timestamp text-secondary">{{ notif.date_created }}</span>
 						</a>
@@ -188,7 +189,8 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
 		integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
 		crossorigin="anonymous"></script>
-<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAjzkW8XWRsKcQhs7hcY-Rc7wPSSSIQVQM&libraries=places&language=en"></script>
+<script type="text/javascript"
+		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAjzkW8XWRsKcQhs7hcY-Rc7wPSSSIQVQM&libraries=places&language=en"></script>
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vue"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/js/select2.min.js"></script>

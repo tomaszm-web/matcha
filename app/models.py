@@ -53,18 +53,19 @@ class Account:
 		tags = [k['name'] for k in tags]
 		return tags
 
-	def get_user_info(self, id):
+	def get_user_info(self, id, extended=True):
 		if not id:
 			return None
 		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
 			   "biography, avatar, photos, age, online, last_login, city FROM `users`  WHERE id=%s")
 		user = self.db.get_row(sql, [id])
-		user['tags'] = self.get_tags(user["id"])
-		user['liked_users'] = self.get_liked_users(user['id'])
-		user['blocked_users'] = self.get_blocked_users(user['id'])
-		user['checked_users'] = self.get_checked_users(user['id'])
-		user['photos'] = json.loads(user['photos'])
-		user['fame'] = self.get_fame_rating(user['id'])
+		if extended:
+			user['tags'] = self.get_tags(user["id"])
+			user['liked_users'] = self.get_liked_users(user['id'])
+			user['blocked_users'] = self.get_blocked_users(user['id'])
+			user['checked_users'] = self.get_checked_users(user['id'])
+			user['photos'] = json.loads(user['photos'])
+			user['fame'] = self.get_fame_rating(user['id'])
 		return user
 
 	def create_filter_func(self, user_match):
@@ -365,8 +366,6 @@ class Notif:
 		del self.db
 
 	def send_notification(self, recipient_id, notif_type, executive_user):
-		if recipient_id in executive_user['blocked_users'] or recipient_id == executive_user['id']:
-			return
 		notifications = {
 			'like': f"You have been liked by {executive_user['login']}",
 			'unlike': f"You have been unliked by {executive_user['login']}",
@@ -388,3 +387,11 @@ class Notif:
 		for notif in notifications:
 			notif['date_created'] = datetime.strftime(notif['date_created'], self.timestamp_format)
 		return notifications
+
+	def del_viewed_notifs(self, viewed_notifs):
+		arr_len = len(viewed_notifs)
+		sql = "DELETE FROM `notifications` WHERE id IN ("
+		for i in range(arr_len):
+			sql += "%s, "
+		sql = sql[:-2] + ")"
+		self.db.query(sql, viewed_notifs)

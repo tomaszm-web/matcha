@@ -59,8 +59,7 @@ def profile():
 		if user['id'] not in cur_user['checked_users'] and user['id'] != cur_user['id']:
 			account.check_user(cur_user['id'], user['id'])
 			notif.send_notification(user['id'], 'check_profile', cur_user)
-		like_each_other = user['id'] in cur_user['liked_users'] and cur_user['id'] in user['liked_users']
-		return render_template('profile.html', cur_user=cur_user, user=user, like_each_other=like_each_other)
+		return render_template('profile.html', cur_user=cur_user, user=user)
 	else:
 		return render_template('profile.html', user=user)
 
@@ -76,6 +75,9 @@ def chat():
 		flash("Wrong user id", 'danger')
 		return redirect(url_for('index'))
 	user = account.get_user_info(session["user"])
+	if recipient['id'] not in user['liked_users'] or user['id'] in recipient['liked_users']:
+		flash("You should like each other before chatting", 'danger')
+		return redirect(url_for('profile', user_id=recipient['id']))
 	return render_template('chat.html', cur_user=user, recipient=recipient)
 
 
@@ -194,10 +196,11 @@ def like_user():
 	try:
 		db = Database(app)
 		account = Account(db)
-		action = account.like_user(request.args['like_owner'], request.args['liked_user'], request.args['unlike'])
-		if notif:
-			notif.send_notification(request.args.get('liked_user'), action,
-									account.get_user_info(id=request.args.get('like_owner')))
+		notif = Notif(db)
+		recipient = request.args.get('liked_user')
+		executioner = request.args.get('like_owner')
+		action = account.like_user(executioner, recipient, request.args['unlike'])
+		notif.send_notification(recipient, action, account.get_user_info(executioner, extended=False))
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
 	return jsonify({'success': True, 'unlike': request.args.get('unlike')})
@@ -238,15 +241,15 @@ def get_messages():
 
 
 # Notifications
-@app.route('/send_notification', methods=["GET"])
-def send_notification():
-	try:
-		db = Database(app)
-		notif = Notif(db)
-		notif.send_notification(request.args['sender_id'], request.args['message'])
-		return jsonify({'success': True})
-	except Exception:
-		return jsonify({'success': False})
+# @app.route('/send_notification', methods=["GET"])
+# def send_notification():
+# 	try:
+# 		db = Database(app)
+# 		notif = Notif(db)
+# 		notif.send_notification(request.args['sender_id'], request.args['message'],)
+# 		return jsonify({'success': True})
+# 	except Exception:
+# 		return jsonify({'success': False})
 
 
 @app.route('/get_notifications', methods=["GET"])
@@ -258,6 +261,17 @@ def get_notifications():
 		return jsonify({'success': True, 'notifications': notifications})
 	except KeyError:
 		return jsonify({'success': False})
+
+
+@app.route('/del_viewed_notifs', methods=["GET"])
+def del_viewed_notifs():
+	try:
+		db = Database(app)
+		notif = Notif(db)
+		notif.del_viewed_notifs(request.args.get('viewed_notifs').split(','))
+		return jsonify({'success': True})
+	except Exception as e:
+		return jsonify({'success': False, 'cause': str(e)})
 
 
 @socketio.on('connect', namespace='/private_chat')
@@ -316,4 +330,4 @@ def uploaded_file(filename, userdir=None):
 		return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}/{userdir}", filename)
 	return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}", filename)
 
-# todo Create Gps positioning
+# todo Relative markup, bug with likes

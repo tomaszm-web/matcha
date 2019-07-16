@@ -15,7 +15,7 @@
 						City: %% user.city %%
 					</p>
 					<button class="btn btn-success likeUser {% print('done') if user.id in cur_user.liked_users %}"
-							data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%" data-to-reload="false">
+							data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%">
 						<i class="fas fa-thumbs-up"></i>Like
 					</button>
 				</div>

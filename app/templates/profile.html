@@ -72,14 +72,12 @@
 						<div class="btn-group">
 							<button class="btn btn-success likeUser {% print('done') if user.id in cur_user.liked_users %}"
 									data-liked-user-id="%% user.id %%"
-									data-user-id="%% cur_user.id %%"
-									data-to-reload="true">
+									data-user-id="%% cur_user.id %%">
 								<i class="fas fa-thumbs-up"></i>Like
 							</button>
-							{% if like_each_other %}
-								<a href="%% url_for('chat', recipient_id=user.id) %%" class="btn btn-primary chat-link"><i
-										class="fas fa-comment"></i>Chat</a>
-							{% endif %}
+							<a href="%% url_for('chat', recipient_id=user.id) %%" class="btn btn-primary chat-link">
+								<i class="fas fa-comment"></i>Chat
+							</a>
 						</div>
 						<div class="btn-group">
 							<button class="btn btn-danger blockUser {% print('done') if user.id in cur_user.blocked_users %}"
