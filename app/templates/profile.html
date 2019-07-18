@@ -77,15 +77,15 @@
 							</button>
 							<a href="%% url_for('chat', recipient_id=user.id) %%" class="btn btn-primary chat-link">
 								<i class="fas fa-comment"></i>Chat
-							</a>
+							</a></button>
 						</div>
 						<div class="btn-group">
 							<button class="btn btn-danger blockUser {% print('done') if user.id in cur_user.blocked_users %}"
 									data-blocked-user-id="%% user.id %%"
 									data-user-id="%% cur_user.id %%">
 								<i class="fas fa-ban"></i>Block user
-							</button>
-							<button class="btn btn-warning reportUser {% print('done') if user.id in cur_user.blocked_users %}"
+
+							<button class="btn btn-warning reportUser {% print('done') if user.id in cur_user.reported_users %}"
 									data-reported-user-id="%% user.id %%"
 									data-user-id="%% cur_user.id %%">
 								<i class="fas fa-ban"></i>Report as fake

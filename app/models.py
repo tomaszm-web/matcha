@@ -63,6 +63,7 @@ class Account:
 			user['tags'] = self.get_tags(user["id"])
 			user['liked_users'] = self.get_liked_users(user['id'])
 			user['blocked_users'] = self.get_blocked_users(user['id'])
+			user['blocked_users'] = self.get_reported_users(user['id'])
 			user['checked_users'] = self.get_checked_users(user['id'])
 			user['photos'] = json.loads(user['photos'])
 			user['fame'] = self.get_fame_rating(user['id'])
@@ -296,6 +297,12 @@ class Account:
 		response = self.db.get_all_rows(sql, [user_id])
 		blocked_users = [k["blocked_id"] for k in response]
 		return blocked_users
+
+	def get_reported_users(self, user_id):
+		sql = "SELECT * FROM `reports` WHERE user_id=%s"
+		response = self.db.get_all_rows(sql, [user_id])
+		reported_users = [k["reported_id"] for k in response]
+		return reported_users
 
 	def get_checked_users(self, user_login):
 		sql = "SELECT * FROM `checked_profile` WHERE checking=%s"

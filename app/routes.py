@@ -222,7 +222,7 @@ def report_user():
 	try:
 		db = Database(app)
 		account = Account(db)
-		account.block_user(request.args['user_id'], request.args['reported_id'], request.args['unreport'])
+		account.report_user(request.args['user_id'], request.args['reported_id'], request.args['unreport'])
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
 	return jsonify({'success': True, 'unreport': request.args.get('unreport')})
