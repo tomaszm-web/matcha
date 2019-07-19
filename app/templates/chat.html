@@ -8,20 +8,20 @@
 				</div>
 			</div>
 			<div class="row justify-content-center mb-3">
-				<div class="col-10">
+				<div class="col-12 col-md-10">
 					<a href="%% url_for('profile', user_id=recipient.id) %%" class="text-info">
-						<img src="%% recipient.avatar %%" alt="Matcha" class="img-round chat__img">
-						%% recipient.login %%
+						<img src="%% recipient.avatar %%" alt="Matcha" class="img-fluid rounded chat__img">
+						@%% recipient.login %%
 					</a>
 				</div>
 			</div>
 			<div class="row justify-content-center">
-				<div class="col-10">
+				<div class="col-12 col-md-10">
 					<div class="chat">
 						<div class="chat__message" v-for="message in messages"
 							 v-bind:class="{ 'right-align': message.sender_id == sender_id }">
 							<img :src="message.sender_id == sender_id ? '%% cur_user.avatar %%' : '%% recipient.avatar %%'"
-								 alt="Matcha" class="chat__img img-round">
+								 alt="Matcha" class="chat__img rounded">
 							<div class="d-flex flex-column">
 								<div class="d-flex align-items-center">
 									<div class="chat__login text-info">

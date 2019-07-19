@@ -17,16 +17,20 @@
 <section id="nav">
 	<div class="container">
 		<div class="row align-items-center">
-			<div class="col-1 text-center"><img src="static/img/logo.png" alt="Matcha"></div>
-			<div class="col-9">
+			<div class="col-2 text-center">
+				<a href="%% url_for('index') %%">
+					<img src="static/img/logo.png" alt="Matcha" class="img-fluid">
+				</a>
+			</div>
+			<div class="col-5 col-sm-3">
 				<nav class="main-menu">
 					<ul class="main-menu__list justify-content-center">
 						<li class="main-menu__item"><a href="%% url_for('index') %%">Main</a></li>
-						<li class="main-menu__item"><a href="%% url_for('settings') %%">Profile Settings</a></li>
+						<li class="main-menu__item"><a href="%% url_for('settings') %%">Settings</a></li>
 					</ul>
 				</nav>
 			</div>
-			<div class="col-2 text-right d-flex align-items-center">
+			<div class="col-5 d-flex ml-auto align-items-center justify-content-end">
 				<div class="dropdown" id="notifications">
 					<a href="#" class="text-success" data-toggle="dropdown" id="user-notif">
 						<i class="fas fa-bell"></i>
@@ -43,7 +47,7 @@
 					</div>
 				</div>
 				<div class="dropdown dropdown__profile">
-					<a href="#" class="profile-link" data-toggle="dropdown" id="user-profile"
+					<a href="#" class="profile-link rounded" data-toggle="dropdown" id="user-profile"
 					   style="background-image: url(%% cur_user.avatar if cur_user else 'static/img/default_avatar.png' %%)"></a>
 					<div class="dropdown-menu dropdown-menu-right" aria-labelledby="user-profile">
 						{% if "user" not in session %}
@@ -65,10 +69,10 @@
 <footer>
 	<div class="container">
 		<div class="row">
-			<div class="col-6">
+			<div class="col-12 col-sm-6">
 				2018 <code>Matcha.</code> All rights reserved.
 			</div>
-			<div class="col-6 text-right">
+			<div class="col-12 col-sm-6 text-sm-right">
 				Created by <code>yochered</code>
 			</div>
 		</div>

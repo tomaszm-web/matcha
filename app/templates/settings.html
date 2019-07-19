@@ -21,7 +21,7 @@
 						</div>
 					</div>
 				</div>
-				<div class="col-6">
+				<div class="col-12 col-sm-6">
 					<label class="form-group">
 						E-mail:
 						<input class="form-control" type="email" name="email" value="%% cur_user.email %%" required
@@ -44,7 +44,7 @@
 								  required>%% cur_user.biography %%</textarea>
 					</label>
 				</div>
-				<div class="col-6">
+				<div class="col-12 col-sm-6">
 					<label class="form-group">
 						Age:
 						<input type="number" name="age" class="form-control" value="%% cur_user.age %%" min="0"
@@ -87,7 +87,7 @@
 				</div>
 				<div class="col-12">
 					Profile photos:
-					<label class="form-group d-flex">
+					<label class="form-group d-sm-flex">
 						{% for photo in cur_user.photos %}
 							<div class="profile__photo">
 								{% if photo %}

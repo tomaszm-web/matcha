@@ -38,9 +38,9 @@ def index():
 def settings():
 	db = Database(app)
 	account = Account(db)
-	# if "user" not in session:
-	# 	flash("You should log in to access your profile", 'danger')
-	# 	return redirect(url_for('index'))
+	if "user" not in session:
+		flash("You should log in to access your profile", 'danger')
+		return redirect(url_for('index'))
 	user = account.get_user_info(session["user"])
 	return render_template('settings.html', cur_user=user)
 
