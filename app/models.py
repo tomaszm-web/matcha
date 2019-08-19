@@ -260,7 +260,7 @@ class Account:
 	def get_changed_values(self, prev_val, new_val):
 		sql = ''
 		values = []
-		ignored_values = ['login', 'tags']
+		ignored_values = ['login', 'tags', 'csrf_token']
 		for key, val in new_val.items():
 			if key not in ignored_values and prev_val[key] != val:
 				sql += (key + '=%s, ')
@@ -311,7 +311,7 @@ class Account:
 		return liked_users
 
 	def like_user(self, like_owner, like_to, unlike):
-		if unlike == 'true':
+		if unlike == "True":
 			sql = "DELETE FROM `likes` WHERE like_owner=%s AND liked_user=%s"
 			action = 'unlike'
 		else:

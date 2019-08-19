@@ -1,10 +1,11 @@
+import secrets
 from flask import (
 	render_template,
 	request,
 	url_for,
 	session,
-	abort,
 	flash,
+	abort,
 	redirect,
 	send_from_directory,
 	jsonify)
@@ -13,7 +14,6 @@ from app import app, socketio
 from flask_socketio import emit
 from app.models import Account, Chat, Notif
 from .database import Database
-from .mail import send_email
 from datetime import datetime
 
 users_in_chat = {}
@@ -22,6 +22,8 @@ users_in_chat = {}
 @app.route('/')
 @app.route('/index')
 def index():
+	session['csrf_token'] = secrets.token_hex(10)
+	app.jinja_env.globals['csrf_token'] = session['csrf_token']
 	db = Database(app)
 	account = Account(db)
 	notif = Notif(db)
@@ -36,6 +38,8 @@ def index():
 
 @app.route('/settings')
 def settings():
+	session['csrf_token'] = secrets.token_hex(10)
+	app.jinja_env.globals['csrf_token'] = session['csrf_token']
 	db = Database(app)
 	account = Account(db)
 	if "user" not in session:
@@ -47,6 +51,8 @@ def settings():
 
 @app.route('/profile', methods=["GET"])
 def profile():
+	session['csrf_token'] = secrets.token_hex(10)
+	app.jinja_env.globals['csrf_token'] = session['csrf_token']
 	db = Database(app)
 	account = Account(db)
 	notif = Notif(db)
@@ -68,6 +74,8 @@ def profile():
 def chat():
 	if 'user' not in session:
 		return redirect(url_for('index'))
+	session['csrf_token'] = secrets.token_hex()
+	app.jinja_env.globals['csrf_token'] = session['csrf_token']
 	db = Database(app)
 	account = Account(db)
 	recipient = account.get_user_info(id=request.args["recipient_id"])
@@ -139,9 +147,9 @@ def confirmation():
 
 @app.route('/reset', methods=["POST"])
 def reset():
-	db = Database(app)
-	account = Account(db)
 	try:
+		db = Database(app)
+		account = Account(db)
 		account.reset(request.form, action=request.form["action"])
 	except Exception as e:
 		return jsonify({'success': False, 'error': str(e)})
@@ -179,18 +187,20 @@ def get_user_location_by_ip():
 
 @app.route('/filter_users', methods=["GET", "POST"])
 def filter_users():
-	db = Database(app)
-	account = Account(db)
-	cur_user = account.get_user_info(session['user']) if 'user' in session else None
-	if len(request.form) > 0:
-		users = account.get_all_users(cur_user, request.form)
-	else:
-		users = account.get_all_users(cur_user)
-	return render_template('users_list.html', cur_user=cur_user, users=users)
+	try:
+		db = Database(app)
+		account = Account(db)
+		cur_user = account.get_user_info(session['user']) if 'user' in session else None
+		if len(request.form) > 0:
+			users = account.get_all_users(cur_user, request.form)
+		else:
+			users = account.get_all_users(cur_user)
+		return render_template('users_list.html', cur_user=cur_user, users=users)
+	except:
+		return "Something went wrong!"
 
-
-@app.route('/like_user', methods=["GET"])
-def like_user():
+@app.route('/like_user_ajax', methods=["GET"])
+def like_user_ajax():
 	if 'user' not in session:
 		jsonify({'success': False})
 	try:
@@ -204,6 +214,24 @@ def like_user():
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
 	return jsonify({'success': True, 'unlike': request.args.get('unlike')})
+
+
+@app.route('/like_user', methods=["POST"])
+def like_user():
+	if 'user' not in session:
+		flash("You should log in first", 'danger')
+		redirect(url_for('index'))
+	try:
+		db = Database(app)
+		account = Account(db)
+		notif = Notif(db)
+		recipient = request.form.get('liked_user')
+		executioner = session['user']
+		action = account.like_user(executioner, recipient, request.form.get('unlike'))
+		notif.send_notification(recipient, action, account.get_user_info(executioner, extended=False))
+	except Exception as e:
+		flash("Something went wrong. Try again a bit later!", 'danger')
+	return redirect(url_for('profile', user_id=request.form.get('liked_user')))
 
 
 @app.route('/block_user', methods=["GET"])
@@ -320,6 +348,13 @@ def disconnect_user():
 		sql = "UPDATE `users` SET online=0 WHERE id=%s"
 		db.query(sql, [session['user']])
 		session.pop("user", None)
+
+
+@app.before_request
+def before_request():
+	if request.method == "POST" and session['csrf_token'] != request.form.get('csrf_token'):
+		flash('Csrf attack!', 'danger')
+		return redirect(url_for('index'))
 
 
 # Files

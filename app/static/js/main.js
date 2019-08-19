@@ -23,7 +23,7 @@ $(document).ready(function() {
 		if ((elem = $('.likeUser')).attr('data-user-id') === '')
 			elem.attr('disabled', true);
 		$('.likeUser').click(function() {
-			axios.get(location.origin + '/like_user', {
+			axios.get(location.origin + '/like_user_ajax', {
 				params: {
 					unlike: $(this).hasClass('done'),
 					like_owner: $(this).attr('data-user-id'),
@@ -136,7 +136,7 @@ $(document).ready(function() {
 			}
 		},
 		methods: {
-			checkForm(action) {
+			checkForm() {
 				this.errors = [];
 				if (!this.pass || !this.repass)
 					this.errors.push("Empty password");
