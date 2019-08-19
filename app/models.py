@@ -57,7 +57,7 @@ class Account:
 		if not id:
 			return None
 		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
-			   "biography, avatar, photos, age, online, last_login, city FROM `users`  WHERE id=%s")
+			   "biography, avatar, photos, age, online, last_login, city, token FROM `users`  WHERE id=%s")
 		user = self.db.get_row(sql, [id])
 		if extended:
 			user['tags'] = self.get_tags(user["id"])
@@ -261,15 +261,18 @@ class Account:
 		sql = ''
 		values = []
 		ignored_values = ['login', 'tags', 'csrf_token']
+		need_confirmation = False
 		for key, val in new_val.items():
 			if key not in ignored_values and prev_val[key] != val:
 				sql += (key + '=%s, ')
+				if key == 'email':
+					need_confirmation = True
 				values.append(val)
-		if 'email' in values:
+		if need_confirmation:
 			sql += "confirmed='0', "
 		if len(values):
 			sql = sql[:-2]
-		return {'sql': sql, 'values': values}
+		return {'sql': sql, 'values': values, 'need_confirmation': need_confirmation}
 
 	def change(self, form, files=None):
 		user = self.get_user_info(session['user'])
@@ -282,8 +285,9 @@ class Account:
 			sql = "UPDATE `users` SET " + to_update['sql'] + " WHERE id=%s"
 			to_update['values'].append(user['id'])
 			self.db.query(sql, to_update['values'])
-		if 'confirmed' in to_update:
-			self.email_confirmation(form["email"], session["user"], user["token"])
+		if to_update['need_confirmation']:
+			login = user['login'] if 'login' not in to_update else to_update['login']
+			self.email_confirmation(form["email"], login, user["token"])
 			flash("You will have to confirm your new E-mail!", 'success')
 
 	def get_liked_users(self, user_id):

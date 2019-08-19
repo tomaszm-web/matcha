@@ -83,7 +83,7 @@ def chat():
 		flash("Wrong user id", 'danger')
 		return redirect(url_for('index'))
 	user = account.get_user_info(session["user"])
-	if recipient['id'] not in user['liked_users'] or user['id'] in recipient['liked_users']:
+	if recipient['id'] not in user['liked_users'] or user['id'] not in recipient['liked_users']:
 		flash("You should like each other before chatting", 'danger')
 		return redirect(url_for('profile', user_id=recipient['id']))
 	return render_template('chat.html', cur_user=user, recipient=recipient)
