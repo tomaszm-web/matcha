@@ -136,6 +136,18 @@ form input {
 	background-color: white;
 }
 
+.dropdown__profile:hover > .dropdown-menu {
+	display: block;
+}
+
+.dropdown__profile > .dropdown-toggle:active {
+	pointer-events: none;
+}
+
+.modal .btn {
+	margin-bottom: 5px;
+}
+
 
 /*Header*/
 header {
@@ -160,14 +172,14 @@ header {
 .notifications {
 	width: 30vw;
 	max-height: 60vh;
-    overflow-y: scroll
+	overflow-y: scroll
 }
 
 .notifications .message {
 	font-weight: 300;
 	color: white;
 	font-size: 14px;
-	padding: 20px;
+	padding: .6rem 1.5rem;
 	border-bottom: 1px solid white;
 	display: block;
 	position: relative;
@@ -220,15 +232,6 @@ header {
 	margin-top: 0;
 	margin-bottom: 10px;
 	background-color: #fff;
-}
-
-.filters .select2-container .select2-selection--multiple {
-	background-color: #fff;
-	margin-bottom: 10px;
-}
-
-.filters .select2-container--default .select2-selection--single {
-	border: 1px solid #ced4da;
 }
 
 /*Profile*/
@@ -318,15 +321,28 @@ header {
 }
 
 .profile__login {
-	margin-bottom: 30px;
 	font-weight: bold;
+	margin-top: 10px;
+}
+
+.profile__status {
+	font-size: 14px;
 }
 
 .profile__photo {
 	display: flex;
-	align-items: flex-end;
-	margin-bottom: 15px;
+	justify-content: center;
+	flex-direction: column;
+	margin: 20px 10px;
 	cursor: pointer;
+}
+
+.uploaded_photo {
+	height: 200px;
+	background-position: center center;
+	-webkit-background-size: contain;
+	background-size: contain;
+	background-repeat: no-repeat;
 }
 
 .profile__photo img {
@@ -424,6 +440,10 @@ footer {
 }
 
 /*SELECT2*/
+.select2-container {
+	width: 100% !important;
+}
+
 .select2-container .select2-selection--multiple {
 	background-color: #7b8b9421;
 	border: 1px solid #ced4da !important;
@@ -438,4 +458,41 @@ footer {
 
 .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
 	color: #f05151;
+}
+
+.filters .select2-container .select2-selection--multiple {
+	background-color: #fff;
+	margin-bottom: 10px;
+}
+
+.filters .select2-container--default .select2-selection--single {
+	border: 1px solid #ced4da;
+}
+
+@media screen and (max-width: 768px) {
+	.main-title {
+		font-size: 60px
+	}
+
+	.chat {
+		padding: 10px;
+	}
+
+	.chat__img {
+		max-height: 45px;
+	}
+
+	.chat__timestamp {
+		font-size: 10px;
+	}
+
+	.chat__login {
+		font-size: 15px;
+	}
+}
+
+@media screen and (max-width: 576px) {
+	.main-title {
+		font-size: 48px
+	}
 }

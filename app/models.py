@@ -1,7 +1,9 @@
 import os
 import json
 import secrets
-from flask import render_template, url_for, flash, redirect, session, abort, jsonify
+import pygeoip
+from datetime import datetime
+from flask import render_template, url_for, flash, redirect, session, abort, jsonify, request
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from app.mail import send_email
@@ -51,28 +53,25 @@ class Account:
 		tags = [k['name'] for k in tags]
 		return tags
 
-	def get_user_info(self, login=None, id=None):
-		if not login and not id:
+	def get_user_info(self, id, extended=True):
+		if not id:
 			return None
 		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
-			   "biography, avatar, photos, age FROM `users`")
-		if login:
-			sql += " WHERE login=%s"
-			user = self.db.get_row(sql, [login])
-		elif id:
-			sql += " WHERE id=%s"
-			user = self.db.get_row(sql, [id])
-		user['tags'] = self.get_tags(user["id"])
-		user['liked_users'] = self.get_liked_users(user['id'])
-		user['blocked_users'] = self.get_blocked_users(user['id'])
-		user['checked_users'] = self.get_checked_users(user['id'])
-		user['photos'] = json.loads(user['photos'])
-		user['fame'] = self.get_fame_rating(user['id'])
+			   "biography, avatar, photos, age, online, last_login, city, token FROM `users`  WHERE id=%s")
+		user = self.db.get_row(sql, [id])
+		if extended:
+			user['tags'] = self.get_tags(user["id"])
+			user['liked_users'] = self.get_liked_users(user['id'])
+			user['blocked_users'] = self.get_blocked_users(user['id'])
+			user['blocked_users'] = self.get_reported_users(user['id'])
+			user['checked_users'] = self.get_checked_users(user['id'])
+			user['photos'] = json.loads(user['photos'])
+			user['fame'] = self.get_fame_rating(user['id'])
 		return user
 
 	def create_filter_func(self, user_match):
-		# todo Add location sort in 1 place
 		return lambda e: (
+			e['city'] != user_match['city'],
 			abs(user_match['age'] - e['age']),
 			-e['fame'],
 			-len(set(user_match['tags']).intersection(set(e['tags'])))
@@ -109,13 +108,13 @@ class Account:
 			filter3 = not filters['fame_from'] or user['fame'] >= int(filters['fame_from'])
 			filter4 = not filters['fame_to'] or user['fame'] <= int(filters['fame_to'])
 			filter5 = not len(tags) or len(tags) == len(set(user['tags']).intersection(set(tags)))
-			if filter1 and filter2 and filter3 and filter4 and filter5:
+			filter6 = not filters['city'] or filters['city'] == user['city']
+			if filter1 and filter2 and filter3 and filter4 and filter5 and filter6:
 				filtered_users.append(user)
 		return filtered_users
 
 	def get_all_users(self, user_match, filters=None):
-		# todo FILTER by fame rating and tags and location
-		sql = "SELECT id, login, age, biography, avatar FROM `users`"
+		sql = "SELECT id, login, age, biography, avatar, city, gender, preferences FROM `users`"
 		if user_match:
 			updated = self.filter_by_preferences(sql, user_match)
 			users = self.db.get_all_rows(updated['sql'], updated['values'])
@@ -172,45 +171,35 @@ class Account:
 			self.db.query(sql[:-1], tag_list)
 
 	def registration(self, form):
-		errors = []
-		try:
-			if self.check_login_existent(form["login"]):
-				errors.append("User with this login already exists")
-			if self.check_email_existent(form["email"]):
-				errors.append("User with this E-mail already exists")
-			if len(errors) == 0:
-				sql = "INSERT INTO `users`(login, name, surname, email, password, token) VALUES(%s, %s, %s, %s, %s, %s)"
-				token = secrets.token_hex(10)
-				self.db.query(sql, (
-					form["login"],
-					form["name"],
-					form["surname"],
-					form["email"],
-					generate_password_hash(form["pass"]),
-					token
-				))
-				self.email_confirmation(form["email"], form["login"], token)
-		except KeyError:
-			errors.append("You haven't set some values")
-		return errors
+		if self.check_login_existent(form["login"]):
+			raise Exception("User with this login already exists")
+		if self.check_email_existent(form["email"]):
+			raise Exception("User with this E-mail already exists")
+		sql = "INSERT INTO `users`(login, name, surname, email, password, token) VALUES(%s, %s, %s, %s, %s, %s)"
+		user_token = secrets.token_hex(10)
+		self.db.query(sql, (
+			form["login"],
+			form["name"],
+			form["surname"],
+			form["email"],
+			generate_password_hash(form["pass"]),
+			user_token
+		))
+		self.email_confirmation(form["email"], form["login"], user_token)
 
 	def login(self, form):
-		errors = []
-		try:
-			sql = "SELECT * FROM `users` WHERE login=%s"
-			user = self.db.get_row(sql, [form["login"]])
-			if not user:
-				errors.append("Wrong login!")
-			elif not check_password_hash(user["password"], form["pass"]):
-				errors.append("Wrong password!")
-			elif not user["confirmed"]:
-				errors.append("You should confirm your E-mail first!")
-			else:
-				session["user"] = form["login"]
-				flash("You successfully logged in!", 'success')
-		except KeyError:
-			errors.append("You haven't set some values")
-		return errors
+		sql = "SELECT id, password, confirmed FROM `users` WHERE login=%s"
+		user = self.db.get_row(sql, [form['login']])
+		if not user:
+			raise Exception("Wrong login!")
+		if not check_password_hash(user["password"], form["pass"]):
+			raise Exception("Wrong password!")
+		if not user["confirmed"]:
+			raise Exception("You should confirm your E-mail first!")
+		session["user"] = user['id']
+		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+		sql = "UPDATE `users` SET online = 1, last_login=%s WHERE id=%s"
+		self.db.query(sql, [last_login_date, user['id']])
 
 	def confirmation(self, login, token):
 		sql = "SELECT token FROM `users` WHERE login=%s"
@@ -271,19 +260,22 @@ class Account:
 	def get_changed_values(self, prev_val, new_val):
 		sql = ''
 		values = []
-		ignored_values = ['login', 'tags']
+		ignored_values = ['login', 'tags', 'csrf_token']
+		need_confirmation = False
 		for key, val in new_val.items():
 			if key not in ignored_values and prev_val[key] != val:
 				sql += (key + '=%s, ')
+				if key == 'email':
+					need_confirmation = True
 				values.append(val)
-		if 'email' in values:
+		if need_confirmation:
 			sql += "confirmed='0', "
 		if len(values):
 			sql = sql[:-2]
-		return {'sql': sql, 'values': values}
+		return {'sql': sql, 'values': values, 'need_confirmation': need_confirmation}
 
 	def change(self, form, files=None):
-		user = self.get_user_info(session["user"])
+		user = self.get_user_info(session['user'])
 		to_update = self.get_changed_values(user, form)
 		if 'email' in to_update['values'] and self.check_email_existent(form["email"]):
 			raise Exception("User with his E-mail already exists")
@@ -293,8 +285,9 @@ class Account:
 			sql = "UPDATE `users` SET " + to_update['sql'] + " WHERE id=%s"
 			to_update['values'].append(user['id'])
 			self.db.query(sql, to_update['values'])
-		if 'confirmed' in to_update:
-			self.email_confirmation(form["email"], session["user"], user["token"])
+		if to_update['need_confirmation']:
+			login = user['login'] if 'login' not in to_update else to_update['login']
+			self.email_confirmation(form["email"], login, user["token"])
 			flash("You will have to confirm your new E-mail!", 'success')
 
 	def get_liked_users(self, user_id):
@@ -309,6 +302,12 @@ class Account:
 		blocked_users = [k["blocked_id"] for k in response]
 		return blocked_users
 
+	def get_reported_users(self, user_id):
+		sql = "SELECT * FROM `reports` WHERE user_id=%s"
+		response = self.db.get_all_rows(sql, [user_id])
+		reported_users = [k["reported_id"] for k in response]
+		return reported_users
+
 	def get_checked_users(self, user_login):
 		sql = "SELECT * FROM `checked_profile` WHERE checking=%s"
 		response = self.db.get_all_rows(sql, [user_login])
@@ -316,7 +315,7 @@ class Account:
 		return liked_users
 
 	def like_user(self, like_owner, like_to, unlike):
-		if unlike == 'true':
+		if unlike == "True":
 			sql = "DELETE FROM `likes` WHERE like_owner=%s AND liked_user=%s"
 			action = 'unlike'
 		else:
@@ -336,6 +335,13 @@ class Account:
 			sql = "INSERT INTO `blocked` SET user_id=%s, blocked_id=%s"
 		self.db.query(sql, [user_id, blocked_id])
 
+	def report_user(self, user_id, reported_id, unreport):
+		if unreport == 'true':
+			sql = "DELETE FROM `reports` WHERE user_id=%s AND reported_id=%s"
+		else:
+			sql = "INSERT INTO `reports` SET user_id=%s, reported_id=%s"
+		self.db.query(sql, [user_id, reported_id])
+
 	def check_user(self, checking, checked_user):
 		sql = "INSERT INTO `checked_profile` SET checking=%s, checked_user=%s"
 		self.db.query(sql, [checking, checked_user])
@@ -344,6 +350,7 @@ class Account:
 class Chat:
 	def __init__(self, db):
 		self.db = db
+		self.timestamp_format = "%c"
 
 	def __del__(self):
 		del self.db
@@ -356,12 +363,15 @@ class Chat:
 		sql = ("SELECT * FROM `messages` WHERE (sender_id=%s AND recipient_id=%s)"
 			   "OR (sender_id=%s AND recipient_id=%s) ORDER BY timestamp")
 		messages = self.db.get_all_rows(sql, (user_id, recipient_id, recipient_id, user_id))
+		for message in messages:
+			message['timestamp'] = datetime.strftime(message['timestamp'], self.timestamp_format)
 		return messages
 
 
 class Notif:
 	def __init__(self, db):
 		self.db = db
+		self.timestamp_format = "%c"
 
 	def __del__(self):
 		del self.db
@@ -376,7 +386,7 @@ class Notif:
 		}
 		links = {
 			'user_action': url_for('profile', user_id=executive_user['id']),
-			'message': url_for('chat', recipient_id_id=executive_user['id'])
+			'message': url_for('chat', recipient_id=executive_user['id'])
 		}
 		sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"
 		link = 'message' if notif_type == 'message' else 'user_action'
@@ -385,4 +395,14 @@ class Notif:
 	def get_notifications(self, user_id):
 		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created DESC"
 		notifications = self.db.get_all_rows(sql, [user_id])
+		for notif in notifications:
+			notif['date_created'] = datetime.strftime(notif['date_created'], self.timestamp_format)
 		return notifications
+
+	def del_viewed_notifs(self, viewed_notifs):
+		arr_len = len(viewed_notifs)
+		sql = "DELETE FROM `notifications` WHERE id IN ("
+		for i in range(arr_len):
+			sql += "%s, "
+		sql = sql[:-2] + ")"
+		self.db.query(sql, viewed_notifs)

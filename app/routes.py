@@ -1,23 +1,29 @@
+import secrets
 from flask import (
 	render_template,
 	request,
 	url_for,
 	session,
-	abort,
 	flash,
+	abort,
 	redirect,
 	send_from_directory,
 	jsonify)
 import requests
-from app import app, socketio, Map
+from app import app, socketio
+from flask_socketio import emit
 from app.models import Account, Chat, Notif
 from .database import Database
-from .mail import send_email
+from datetime import datetime
+
+users_in_chat = {}
 
 
 @app.route('/')
 @app.route('/index')
 def index():
+	session['csrf_token'] = secrets.token_hex(10)
+	app.jinja_env.globals['csrf_token'] = session['csrf_token']
 	db = Database(app)
 	account = Account(db)
 	notif = Notif(db)
@@ -32,9 +38,10 @@ def index():
 
 @app.route('/settings')
 def settings():
+	session['csrf_token'] = secrets.token_hex(10)
+	app.jinja_env.globals['csrf_token'] = session['csrf_token']
 	db = Database(app)
 	account = Account(db)
-	notif = Notif(db)
 	if "user" not in session:
 		flash("You should log in to access your profile", 'danger')
 		return redirect(url_for('index'))
@@ -44,6 +51,8 @@ def settings():
 
 @app.route('/profile', methods=["GET"])
 def profile():
+	session['csrf_token'] = secrets.token_hex(10)
+	app.jinja_env.globals['csrf_token'] = session['csrf_token']
 	db = Database(app)
 	account = Account(db)
 	notif = Notif(db)
@@ -53,17 +62,20 @@ def profile():
 	user = account.get_user_info(id=request.args["user_id"])
 	if 'user' in session:
 		cur_user = account.get_user_info(session['user'])
-		if user['id'] not in cur_user['checked_users']:
+		if user['id'] not in cur_user['checked_users'] and user['id'] != cur_user['id']:
 			account.check_user(cur_user['id'], user['id'])
 			notif.send_notification(user['id'], 'check_profile', cur_user)
-		like_each_other = user['id'] in cur_user['liked_users'] and cur_user['id'] in user['liked_users']
-		return render_template('profile.html', cur_user=cur_user, user=user, like_each_other=like_each_other)
+		return render_template('profile.html', cur_user=cur_user, user=user)
 	else:
 		return render_template('profile.html', user=user)
 
 
 @app.route('/chat', methods=["GET"])
 def chat():
+	if 'user' not in session:
+		return redirect(url_for('index'))
+	session['csrf_token'] = secrets.token_hex()
+	app.jinja_env.globals['csrf_token'] = session['csrf_token']
 	db = Database(app)
 	account = Account(db)
 	recipient = account.get_user_info(id=request.args["recipient_id"])
@@ -71,33 +83,51 @@ def chat():
 		flash("Wrong user id", 'danger')
 		return redirect(url_for('index'))
 	user = account.get_user_info(session["user"])
+	if recipient['id'] not in user['liked_users'] or user['id'] not in recipient['liked_users']:
+		flash("You should like each other before chatting", 'danger')
+		return redirect(url_for('profile', user_id=recipient['id']))
 	return render_template('chat.html', cur_user=user, recipient=recipient)
 
 
 @app.route('/registration', methods=["POST"])
 def registration():
-	db = Database(app)
-	account = Account(db)
-	errors = account.registration(request.form)
-	return jsonify(errors)
+	try:
+		db = Database(app)
+		account = Account(db)
+		account.registration(request.form)
+	except Exception as e:
+		if type(e).__name__ == "KeyError":
+			cause = "You haven't set some values"
+		else:
+			cause = str(e)
+		return jsonify({'success': False, 'cause': cause})
+	return jsonify({'success': True})
 
 
 @app.route('/login', methods=["POST"])
 def login():
-	db = Database(app)
-	account = Account(db)
-	errors = account.login(request.form)
-	return jsonify(errors)
+	try:
+		db = Database(app)
+		account = Account(db)
+		account.login(request.form)
+	except Exception as e:
+		if type(e).__name__ == "KeyError":
+			cause = "You haven't set some values"
+		else:
+			cause = str(e)
+		return jsonify({'success': False, 'cause': cause})
+	else:
+		flash("You successfully logged in!", 'success')
+	return jsonify({'success': True})
 
 
 @app.route('/logout')
 def logout():
 	db = Database(app)
-	account = Account(db)
-	notif = Notif(db)
 	if "user" in session:
 		flash("You successfully logged out!", 'success')
-		notif.send_notification(38, 'like', account.get_user_info('o4eredko'))
+		sql = "UPDATE `users` SET online=0 WHERE id=%s"
+		db.query(sql, [session['user']])
 		session.pop("user", None)
 	else:
 		flash("You should log in first, to be able to log out!", 'danger')
@@ -117,9 +147,9 @@ def confirmation():
 
 @app.route('/reset', methods=["POST"])
 def reset():
-	db = Database(app)
-	account = Account(db)
 	try:
+		db = Database(app)
+		account = Account(db)
 		account.reset(request.form, action=request.form["action"])
 	except Exception as e:
 		return jsonify({'success': False, 'error': str(e)})
@@ -142,58 +172,91 @@ def change():
 	return redirect(url_for('settings'))
 
 
+@app.route('/get_user_location_by_ip', methods=["GET"])
+def get_user_location_by_ip():
+	try:
+		ip = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+		response = requests.get("http://api.ipstack.com/" + ip, params={
+			'access_key': "57cc3adcb818a96b0af7a4020ec09453"
+		})
+		response.raise_for_status()
+	except Exception as e:
+		return jsonify({'success': False, 'cause': str(e)})
+	return jsonify({'success': True, 'address': response.json()})
+
+
 @app.route('/filter_users', methods=["GET", "POST"])
 def filter_users():
-	db = Database(app)
-	account = Account(db)
-	cur_user = account.get_user_info(session['user']) if 'user' in session else None
-	if len(request.form) > 0:
-		users = account.get_all_users(cur_user, request.form)
-	else:
-		users = account.get_all_users(cur_user)
-	return render_template('users_list.html', cur_user=cur_user, users=users)
-
-
-@app.route('/like_user', methods=["GET"])
-def like_user():
-	db = Database(app)
-	account = Account(db)
-	notif = Notif(db)
 	try:
-		action = account.like_user(request.args['like_owner'], request.args['liked_user'], request.args['unlike'])
-		if notif:
-			notif.send_notification(request.args.get('liked_user'), action,
-									account.get_user_info(id=request.args.get('like_owner')))
+		db = Database(app)
+		account = Account(db)
+		cur_user = account.get_user_info(session['user']) if 'user' in session else None
+		if len(request.form) > 0:
+			users = account.get_all_users(cur_user, request.form)
+		else:
+			users = account.get_all_users(cur_user)
+		return render_template('users_list.html', cur_user=cur_user, users=users)
+	except:
+		return "Something went wrong!"
+
+@app.route('/like_user_ajax', methods=["GET"])
+def like_user_ajax():
+	if 'user' not in session:
+		jsonify({'success': False})
+	try:
+		db = Database(app)
+		account = Account(db)
+		notif = Notif(db)
+		recipient = request.args.get('liked_user')
+		executioner = request.args.get('like_owner')
+		action = account.like_user(executioner, recipient, request.args['unlike'])
+		notif.send_notification(recipient, action, account.get_user_info(executioner, extended=False))
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
 	return jsonify({'success': True, 'unlike': request.args.get('unlike')})
 
 
+@app.route('/like_user', methods=["POST"])
+def like_user():
+	if 'user' not in session:
+		flash("You should log in first", 'danger')
+		redirect(url_for('index'))
+	try:
+		db = Database(app)
+		account = Account(db)
+		notif = Notif(db)
+		recipient = request.form.get('liked_user')
+		executioner = session['user']
+		action = account.like_user(executioner, recipient, request.form.get('unlike'))
+		notif.send_notification(recipient, action, account.get_user_info(executioner, extended=False))
+	except Exception as e:
+		flash("Something went wrong. Try again a bit later!", 'danger')
+	return redirect(url_for('profile', user_id=request.form.get('liked_user')))
+
+
 @app.route('/block_user', methods=["GET"])
 def block_user():
-	db = Database(app)
-	account = Account(db)
 	try:
+		db = Database(app)
+		account = Account(db)
 		account.block_user(request.args['user_id'], request.args['blocked_id'], request.args['unblock'])
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
 	return jsonify({'success': True, 'unblock': request.args.get('unblock')})
 
 
-# Chat
-@socketio.on('chat event')
-# todo Add message timestamp
-def send_message(json, methods=['GET', 'POST']):
+@app.route('/report_user', methods=["GET"])
+def report_user():
 	try:
 		db = Database(app)
-		live_chat = Chat(db)
-		if 'sender_id' in json and 'recipient_id' in json:
-			live_chat.send_message(json['sender_id'], json['recipient_id'], json['body'])
-			socketio.emit('chat response', json)
-	except Exception:
-		return
+		account = Account(db)
+		account.report_user(request.args['user_id'], request.args['reported_id'], request.args['unreport'])
+	except Exception as e:
+		return jsonify({'success': False, 'error_message': str(e)})
+	return jsonify({'success': True, 'unreport': request.args.get('unreport')})
 
 
+# Chat
 @app.route('/get_messages', methods=["GET"])
 def get_messages():
 	try:
@@ -206,15 +269,15 @@ def get_messages():
 
 
 # Notifications
-@app.route('/send_notification', methods=["GET"])
-def send_notification():
-	try:
-		db = Database(app)
-		notif = Notif(db)
-		notif.send_notification(request.args['sender_id'], request.args['message'])
-		return jsonify({'success': True})
-	except Exception:
-		return jsonify({'success': False})
+# @app.route('/send_notification', methods=["GET"])
+# def send_notification():
+# 	try:
+# 		db = Database(app)
+# 		notif = Notif(db)
+# 		notif.send_notification(request.args['sender_id'], request.args['message'],)
+# 		return jsonify({'success': True})
+# 	except Exception:
+# 		return jsonify({'success': False})
 
 
 @app.route('/get_notifications', methods=["GET"])
@@ -228,9 +291,70 @@ def get_notifications():
 		return jsonify({'success': False})
 
 
+@app.route('/del_viewed_notifs', methods=["GET"])
+def del_viewed_notifs():
+	try:
+		db = Database(app)
+		notif = Notif(db)
+		notif.del_viewed_notifs(request.args.get('viewed_notifs').split(','))
+		return jsonify({'success': True})
+	except Exception as e:
+		return jsonify({'success': False, 'cause': str(e)})
+
+
+@socketio.on('connect', namespace='/private_chat')
+def connect_user_to_chat():
+	if 'user' in session:
+		users_in_chat[str(session['user'])] = request.sid
+		print(users_in_chat)
+
+
+@socketio.on('private_chat event', namespace='/private_chat')
+def send_message(data):
+	if 'sender_id' in data and 'recipient_id' in data and 'body' in data:
+		db = Database(app)
+		live_chat = Chat(db)
+		data['timestamp'] = datetime.now().strftime('%c')
+		live_chat.send_message(data['sender_id'], data['recipient_id'], data['body'])
+		emit('private_chat response', data, room=users_in_chat[data['sender_id']])
+		if data['recipient_id'] in users_in_chat:
+			emit('private_chat response', data, room=users_in_chat[data['recipient_id']])
+		else:
+			account = Account(db)
+			notif = Notif(db)
+			notif.send_notification(data['recipient_id'], 'message', account.get_user_info(data['sender_id']))
+
+
+@socketio.on('disconnect', namespace='/private_chat')
+def disconnect_user_from_chat():
+	if 'user' in session:
+		users_in_chat.pop(session['user'], None)
+		print(users_in_chat)
+
+
+@socketio.on('connect')
+def connect_user():
+	if 'user' in session:
+		db = Database(app)
+		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+		sql = "UPDATE `users` SET online = 1, last_login = %s WHERE id=%s"
+		db.query(sql, [last_login_date, session['user']])
+
+
 @socketio.on('disconnect')
 def disconnect_user():
-	redirect(url_for('logout'))
+	if 'user' in session:
+		db = Database(app)
+		sql = "UPDATE `users` SET online=0 WHERE id=%s"
+		db.query(sql, [session['user']])
+		session.pop("user", None)
+
+
+@app.before_request
+def before_request():
+	if request.method == "POST" and session['csrf_token'] != request.form.get('csrf_token'):
+		flash('Csrf attack!', 'danger')
+		return redirect(url_for('index'))
 
 
 # Files
@@ -241,4 +365,4 @@ def uploaded_file(filename, userdir=None):
 		return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}/{userdir}", filename)
 	return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}", filename)
 
-# todo Create Gps positioning
+# todo Relative markup, bug with likes

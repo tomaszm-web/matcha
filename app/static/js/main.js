@@ -1,28 +1,54 @@
-$(document).ready(function () {
+$(document).ready(function() {
+	let elem;
 	let parts = window.location.search.substr(1).split("&");
 	let $_GET = {};
 	for (let i = 0; i < parts.length; i++) {
 		let temp = parts[i].split("=");
 		$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
 	}
+	let socket = io.connect(location.origin);
 
-	let socket = io.connect('http://' + document.domain + ':' + location.port);
 
-	if ($('.users_list')) {
-		axios.get(location.origin + '/filter_users').then((response) => {
-			$('.users_list').html(response.data);
-		});
-	}
-
-	if ($('.filters')) {
-		$('.filters').submit(function (e) {
-			e.preventDefault();
-			let data = new FormData(e.target)
-			axios.post(location.origin + '/filter_users', data).then((response) => {
+	let user_list_created = false;
+	if ((elem = document.querySelector(".users_list"))) {
+		user_list_created = new Promise((resolve, reject) => {
+			axios.get(location.origin + '/filter_users').then((response) => {
 				$('.users_list').html(response.data);
+				resolve(true);
 			});
 		})
 	}
+
+	function likeUserEvent() {
+		if ((elem = $('.likeUser')).attr('data-user-id') === '')
+			elem.attr('disabled', true);
+		$('.likeUser').click(function() {
+			axios.get(location.origin + '/like_user_ajax', {
+				params: {
+					unlike: $(this).hasClass('done'),
+					like_owner: $(this).attr('data-user-id'),
+					liked_user: $(this).attr('data-liked-user-id')
+				}
+			}).then((response) => {
+				if (response.data.success) {
+					$(this).toggleClass('done');
+				}
+			});
+		});
+	}
+
+	if (user_list_created)
+		user_list_created.then(likeUserEvent);
+	else
+		likeUserEvent();
+
+	$('.filters').submit(function(e) {
+		e.preventDefault();
+		let data = new FormData(e.target)
+		axios.post(location.origin + '/filter_users', data).then((response) => {
+			$('.users_list').html(response.data);
+		});
+	});
 
 	/*--------Forms--------*/
 	let passRegExp = new RegExp("^(((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})");
@@ -51,10 +77,11 @@ $(document).ready(function () {
 						url: '/registration',
 						data: new FormData(e.target)
 					}).then((response) => {
-						this.errors.push.apply(this.errors, response.data);
-						if (!this.errors.length) {
-							e.target.reset();
+						if (!response.data.success)
+							this.errors.push(response.data.cause);
+						else {
 							this.message = "Registration is almost done! You should confirm your E-mail to log in."
+							e.target.reset();
 						}
 					}).catch(() => {
 						this.errors.push("Something went wrong! Try again")
@@ -67,7 +94,7 @@ $(document).ready(function () {
 	let login = new Vue({
 		el: "#logIn form",
 		data: {
-			errors: [],
+			error: null,
 			message: ""
 		},
 		methods: {
@@ -78,9 +105,11 @@ $(document).ready(function () {
 					url: '/login',
 					data: new FormData(e.target)
 				}).then((response) => {
-					this.errors.push.apply(this.errors, response.data);
-					if (!this.errors.length) {
+					if (response.data.success) {
+						this.error = null;
 						location.reload()
+					} else {
+						this.error = response.data.cause
 					}
 				}).catch(() => {
 					this.errors.push("Something went wrong! Try again")
@@ -107,7 +136,7 @@ $(document).ready(function () {
 			}
 		},
 		methods: {
-			checkForm(action) {
+			checkForm() {
 				this.errors = [];
 				if (!this.pass || !this.repass)
 					this.errors.push("Empty password");
@@ -146,7 +175,7 @@ $(document).ready(function () {
 		}
 	});
 
-	let elem = document.querySelector(".profile__avatar input");
+	elem = document.querySelector(".profile__avatar input");
 	if (elem) elem.onchange = (e) => {
 		e.target.parentNode.classList.add("selected");
 	};
@@ -156,26 +185,7 @@ $(document).ready(function () {
 		tags: true
 	});
 
-	$('.city-select').select2({
-		placeholder: "Choose city"
-	});
-
-	$('.likeUser').click(function () {
-		axios.get(location.origin + '/like_user', {
-			params: {
-				unlike: $(this).hasClass('done'),
-				like_owner: $(this).attr('data-user-id'),
-				liked_user: $(this).attr('data-liked-user-id')
-			}
-		}).then((response) => {
-			if (response.data.success)
-				$(this).toggleClass('done')
-		}).catch(() => {
-			console.log("Something went wrong! Try again")
-		});
-	});
-
-	$('.blockUser').click(function () {
+	$('.blockUser').click(function() {
 		axios.get(location.origin + '/block_user', {
 			params: {
 				unblock: $(this).hasClass('done'),
@@ -185,9 +195,20 @@ $(document).ready(function () {
 		}).then((response) => {
 			if (response.data.success)
 				$(this).toggleClass('done')
-		}).catch(() => {
-			console.log("Something went wrong! Try again")
-		});
+		})
+	});
+
+	$('.reportUser').click(function() {
+		axios.get(location.origin + '/report_user', {
+			params: {
+				unreport: $(this).hasClass('done'),
+				user_id: $(this).attr('data-user-id'),
+				reported_id: $(this).attr('data-reported-user-id')
+			}
+		}).then((response) => {
+			if (response.data.success)
+				$(this).toggleClass('done')
+		})
 	});
 
 	/*--------Chat--------*/
@@ -195,15 +216,22 @@ $(document).ready(function () {
 		const chat = new Vue({
 			el: '#chat',
 			data: {
-				messages: null,
+				messages: {},
 				sender_id: null,
 				recipient_id: null,
+				socket: null
 			},
 			created() {
+				this.socket = io.connect(location.origin + '/private_chat');
 				this.recipient_id = $_GET['recipient_id'];
 				this.sender_id = $(".sendMessageForm input[name='sender_id']").val();
 				this.showMessages();
-				// elem.scrollTop = elem.scrollHeight;
+				this.socket.on('connect', function() {
+					console.log('connected to private chat')
+				});
+				this.socket.on('private_chat response', (msg) => {
+					this.messages.push(msg)
+				});
 			},
 			updated: function() {
 				const el = document.querySelector('#chat .chat');
@@ -219,29 +247,129 @@ $(document).ready(function () {
 					}).then((response) => {
 						if (response.data.success)
 							this.messages = response.data.messages;
-					})
+					});
 				},
 				sendMessage(e) {
-					e.preventDefault();
-					socket.emit('chat event', {
+					this.socket.emit('private_chat event', {
 						sender_id: this.sender_id,
 						recipient_id: this.recipient_id,
 						body: e.target.text.value
 					});
-					e.target.reset();
+					e.target.text.value = ""
 				}
 			}
 		});
+	}
 
-		socket.on('connect', function () {
-			socket.emit('chat event', {
-				data: 'User Connected'
-			});
-			$('.sendMessageForm').on('submit', chat.sendMessage);
-		});
+	/*--------Notifications--------*/
 
-		socket.on('chat response', function (msg) {
-			chat.messages.push(msg);
+	if ((elem = document.getElementById('user-notif'))) {
+		notifs = new Vue({
+			el: '#notifications',
+			data: {
+				user_id: $('meta[data-cur-user-id]').attr('data-cur-user-id'),
+				notifications: {},
+				viewed_notifs: []
+			},
+			created() {
+				if (!this.user_id) return;
+				this.getNotifications();
+				setInterval(this.getNotifications, 10000);
+			},
+			computed: {
+				length() {
+					let size = 0, key;
+					for (key in this.notifications) {
+						if (this.notifications.hasOwnProperty(key))
+							size++;
+					}
+					return size;
+				}
+			},
+			updated() {
+				$('#notifications').on('shown.bs.dropdown', this.addViewedMessagesHandler)
+					.on('hide.bs.dropdown', this.delViewedNotifications);
+				$('.notifications').on('scroll', this.addViewedMessagesHandler);
+			},
+			methods: {
+				addViewedMessagesHandler() {
+					let container = $('.notifications');
+					let docViewTop = container.scrollTop();
+					let docViewBottom = docViewTop + container.height();
+					let messages = container.children('.message');
+					messages.each(function() {
+						let elemTop = $(this).offset().top;
+						let elemBottom = elemTop + $(this).height();
+						let messageNotInArray = notifs.viewed_notifs.indexOf($(this).attr('data-notif-id')) === -1;
+						if (messageNotInArray && (elemBottom <= docViewBottom) && (elemTop >= docViewTop)) {
+							notifs.viewed_notifs.push($(this).attr('data-notif-id'))
+						}
+					})
+				},
+				delViewedNotifications() {
+					if (!this.viewed_notifs.length) return;
+					axios.get(location.origin + '/del_viewed_notifs', {
+						params: {
+							viewed_notifs: this.viewed_notifs.join(',')
+						}
+					}).then((response) => {
+						this.len -= this.viewed_notifs.length
+					});
+				},
+				getNotifications() {
+					axios.get(location.origin + '/get_notifications', {
+						params: {user_id: this.user_id}
+					}).then((response) => {
+						if (response.data.success)
+							this.notifications = response.data.notifications;
+					});
+				}
+			}
 		});
 	}
+
+	/*--------GPS--------*/
+	if ((elem = document.getElementById('city')) && elem.value !== '') {
+		let geoOptions = {timeout: 5000};
+		let geoSuccess = function(position) {
+			axios.get("https://maps.googleapis.com/maps/api/geocode/json", {
+				params: {
+					latlng: position.coords.latitude + ', ' + position.coords.longitude,
+					key: "AIzaSyAjzkW8XWRsKcQhs7hcY-Rc7wPSSSIQVQM",
+					language: "en"
+				}
+			}).then((response) => {
+				let res = null;
+				for (let i = 0; i < response.data.results.length; i++) {
+					if (response.data.results[i].types.indexOf('locality') > -1) {
+						res = response.data.results[i].formatted_address;
+						break;
+					}
+				}
+				if (res) {
+					var splitted = res.split(', ');
+					elem.value = splitted[0] + ", " + splitted[1];
+				}
+			});
+		};
+		let geoError = function() {
+			axios.get(location.origin + '/get_user_location_by_ip').then((response) => {
+				if (!response.data.success) {
+					console.warn(response.data.cause);
+				} else if (response.data.address.city && response.data.address.country_name) {
+					elem.value = response.data.address.city + ", " + response.data.address.country_name;
+				}
+			});
+		};
+		navigator.geolocation.getCurrentPosition(geoSuccess, geoError, geoOptions);
+	}
+
+	const autocomplete_options = {
+		types: ['(cities)'],
+		language: 'en'
+	};
+	if ((elem = document.getElementById('city')))
+		new google.maps.places.Autocomplete(elem, autocomplete_options);
+	if ((elem = document.getElementById('select-city')))
+		new google.maps.places.Autocomplete(elem, autocomplete_options);
 });

@@ -3,7 +3,7 @@
 	<header>
 		<div class="container">
 			<div class="row justify-content-center">
-				<div class="col-7 text-center">
+				<div class="col-12 col-xl-7 text-center">
 					<h1 class="main-title">Socialize.</h1>
 					<p class="main-subtitle">
 						Searching for your soul mate is difficult. With a bit of FUN & social interactions, everything
@@ -24,35 +24,41 @@
 				<div class="col">
 					<form action="%% url_for('filter_users') %%" method="POST" class="filters">
 						<div class="form-row">
-							<div class="col-6">
+							<input type="hidden" name="csrf_token" value="%% csrf_token %%">
+							<div class="col-12 col-sm-6">
 								<label for="age_from">Age:</label>
 								<div class="input-group">
-									<input name="age_from" type="number" id="age_from" class="form-control" min="1" max="100"
+									<input name="age_from" type="number" id="age_from" class="form-control" min="1"
+										   max="100"
 										   placeholder="from">
-									<input name="age_to" type="number" id="age_to" class="form-control" min="1" max="100"
+									<input name="age_to" type="number" id="age_to" class="form-control" min="1"
+										   max="100"
 										   placeholder="to">
 								</div>
 							</div>
-							<div class="col-6">
+							<div class="col-12 col-sm-6">
 								<label for="age_from">Fame rating:</label>
 								<div class="input-group">
-									<input name="fame_from" type="number" id="fame_from" class="form-control" min="1" max="100"
+									<input name="fame_from" type="number" id="fame_from" class="form-control" min="1"
+										   max="100"
 										   placeholder="from 1">
-									<input name="fame_to" type="number" id="fame_to" class="form-control" min="1" max="100"
+									<input name="fame_to" type="number" id="fame_to" class="form-control" min="1"
+										   max="100"
 										   placeholder="to 100">
 								</div>
 							</div>
-							<div class="col-6">
+							<div class="col-12 col-sm-6">
 								<label for="tags">Interests tags:</label>
 								<select name="tags" id="tags" class="form-control multiple-tags" multiple>
 								</select>
 							</div>
-							<div class="col-6">
-								<label for="city">Interests tags:</label>
-								<select name="city" id="city" class="form-control city-select">
-								</select>
+							<div class="col-12 col-sm-6">
+								<label for="city">City:</label>
+								<input type="text" name="city" id="select-city" class="form-control" placeholder="Choose city">
 							</div>
-							<div class="col"><button class="btn btn-danger">Apply changes</button></div>
+							<div class="col">
+								<button class="btn btn-danger">Apply changes</button>
+							</div>
 						</div>
 					</form>
 				</div>
