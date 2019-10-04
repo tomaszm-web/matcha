@@ -14,9 +14,6 @@ class Account:
 	def __init__(self, db):
 		self.db = db
 
-	def __del__(self):
-		del self.db
-
 	def check_login_existent(self, login):
 		sql = "SELECT * FROM `users` WHERE login=%s"
 		row_num = self.db.get_row_num(sql, [login])
@@ -34,23 +31,21 @@ class Account:
 		if not search_in:
 			sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
 			search_in = self.db.get_all_rows(sql)
-		max_likes_num = None
-		user_like_num = None
+		user_like_num = 1
+		max_likes = max(row['like_num'] for row in search_in)
 		for row in search_in:
-			if not max_likes_num or max_likes_num < row['like_num']:
-				max_likes_num = row['like_num']
 			if row['liked_user'] == user_id:
 				user_like_num = row['like_num']
-		if not max or not user_like_num:
+		if not max_likes or user_like_num is None:
 			return 0
-		return int(round(user_like_num / max_likes_num * 100))
+		return int(round(user_like_num / max_likes * 100))
 
 	def get_tags(self, user_id):
 		sql = ("SELECT tags.name FROM `tags` "
 			   "INNER JOIN `users_tags` ON tags.id = users_tags.tag_id "
 			   "WHERE users_tags.user_id = %s")
 		tags = self.db.get_all_rows(sql, [user_id])
-		tags = [k['name'] for k in tags]
+		tags = (k['name'] for k in tags)
 		return tags
 
 	def get_user_info(self, id, extended=True):
@@ -91,13 +86,14 @@ class Account:
 			else:
 				matches['male'] = 'heterosexual'
 				matches['female'] = 'homosexual'
-		updated = {'sql': sql + ' WHERE ', 'values': []}
+		sql += ' WHERE '
+		values = []
 		for gender, preferences in matches.items():
-			updated['sql'] += "(gender=%s AND (preferences=%s OR preferences='bisexual')) OR "
-			updated['values'].append(gender)
-			updated['values'].append(preferences)
-		updated['sql'] = updated['sql'][:-4]
-		return updated
+			sql += "(gender=%s AND (preferences=%s OR preferences='bisexual')) OR "
+			values.append(gender)
+			values.append(preferences)
+		sql = sql[:-4]
+		return sql, values
 
 	def filter_by_criterias(self, users, filters):
 		filtered_users = []
@@ -116,8 +112,8 @@ class Account:
 	def get_all_users(self, user_match, filters=None):
 		sql = "SELECT id, login, age, biography, avatar, city, gender, preferences FROM `users`"
 		if user_match:
-			updated = self.filter_by_preferences(sql, user_match)
-			users = self.db.get_all_rows(updated['sql'], updated['values'])
+			sql, values = self.filter_by_preferences(sql, user_match)
+			users = self.db.get_all_rows(sql, values)
 		else:
 			users = self.db.get_all_rows(sql)
 		sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
@@ -142,7 +138,7 @@ class Account:
 		if not tags:
 			return False
 		all_tags = self.db.get_all_rows("SELECT * FROM `tags`")
-		all_tags_names = [tag["name"] for tag in all_tags]
+		all_tags_names = (tag["name"] for tag in all_tags)
 		sql = "INSERT INTO `tags` (name) VALUES"
 		tag_list = []
 		for tag_name in tags:
@@ -293,25 +289,25 @@ class Account:
 	def get_liked_users(self, user_id):
 		sql = "SELECT * FROM `likes` WHERE like_owner=%s"
 		response = self.db.get_all_rows(sql, [user_id])
-		liked_users = [k["liked_user"] for k in response]
+		liked_users = (k["liked_user"] for k in response)
 		return liked_users
 
 	def get_blocked_users(self, user_id):
 		sql = "SELECT * FROM `blocked` WHERE user_id=%s"
 		response = self.db.get_all_rows(sql, [user_id])
-		blocked_users = [k["blocked_id"] for k in response]
+		blocked_users = (k["blocked_id"] for k in response)
 		return blocked_users
 
 	def get_reported_users(self, user_id):
 		sql = "SELECT * FROM `reports` WHERE user_id=%s"
 		response = self.db.get_all_rows(sql, [user_id])
-		reported_users = [k["reported_id"] for k in response]
+		reported_users = (k["reported_id"] for k in response)
 		return reported_users
 
 	def get_checked_users(self, user_login):
 		sql = "SELECT * FROM `checked_profile` WHERE checking=%s"
 		response = self.db.get_all_rows(sql, [user_login])
-		liked_users = [k["checked_user"] for k in response]
+		liked_users = (k["checked_user"] for k in response)
 		return liked_users
 
 	def like_user(self, like_owner, like_to, unlike):

@@ -4,8 +4,11 @@ import MySQLdb.cursors
 
 class Database:
 	def __init__(self, app):
-		self.con = MySQLdb.connect(host=app.config["DB_HOST"], user=app.config["DB_USER"],
-								   passwd=app.config["DB_PASSWORD"], db=app.config["DB_NAME"],
+		host = app.config["DB_HOST"]
+		user = app.config["DB_USER"]
+		password = app.config["DB_PASSWORD"]
+		db = app.config["DB_NAME"]
+		self.con = MySQLdb.connect(host=host, user=user, passwd=password, db=db,
 								   cursorclass=MySQLdb.cursors.DictCursor)
 		self.cur = self.con.cursor()
 
