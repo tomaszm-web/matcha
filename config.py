@@ -1,4 +1,5 @@
-from datetime import timedelta
+import os
+
 
 class Config(object):
 	# Определяет, включен ли режим отладки
@@ -7,7 +8,7 @@ class Config(object):
 	# - 500 ошибку без какой либо дополнительной информации.
 	DEBUG = False
 	# данных, например cookies.
-	SECRET_KEY = 'ABSOLUTELY SECRET'
+	SECRET_KEY = os.environ.get('SECRET_KEY') or 'ABSOLUTELY SECRET'
 
 	DB_HOST = "remotemysql.com"
 	DB_USER = "EbumYmCv3K"
@@ -15,12 +16,12 @@ class Config(object):
 	DB_NAME = "EbumYmCv3K"
 
 	# Email sender configuration
-	MAIL_SERVER = 'smtp.googlemail.com'
-	MAIL_PORT = 465
+	MAIL_SERVER = os.environ.get('MAIL_SERVER')
+	MAIL_PORT = os.environ.get('MAIL_PORT')
 	MAIL_USE_TLS = False
 	MAIL_USE_SSL = True
-	MAIL_USERNAME = "evgeny.ocheredko@gmail.com"
-	MAIL_PASSWORD = "36673667"
+	MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+	MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
 
 	# administrator list
 	ADMINS = ["evgeny.ocheredko@gmail.com"]
