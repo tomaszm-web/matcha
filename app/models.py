@@ -241,14 +241,13 @@ class Account:
 		avatar_path = self.upload_photo(user_dir, files['avatar'])
 		if avatar_path is not None:
 			self.db.query('UPDATE users SET avatar = %s', (avatar_path,))
-		photos_filenames = []
+		photo_filenames = []
 		photos = files.getlist('photos[]')
 		for i, photo in enumerate(photos):
 			photo_path = self.upload_photo(user_dir, photo)
-			photos_filenames.append(photo_path if photo_path else user['photos'][i])
-		if len(photos_filenames) > 0:
-			flash(photos_filenames, 'info')
-			self.db.query('UPDATE users SET photos = %s', [str(photos_filenames)])
+			photo_filenames.append(photo_path if photo_path else user['photos'][i])
+		if len(photo_filenames) > 0:
+			self.db.query('UPDATE users SET photos = %s WHERE id = %s', (json.dumps(photo_filenames), user['id']))
 
 	def get_changed_values(self, prev_val, new_val):
 		"""Checks which values were updated"""

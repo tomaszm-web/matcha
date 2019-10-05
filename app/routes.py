@@ -22,7 +22,6 @@ def index():
 	notif = Notif(db)
 	if 'user' in session:
 		cur_user = account.get_user_info(session["user"])
-		cur_user['notifications'] = None
 		cur_user['notifications'] = notif.get_notifications(cur_user['id'])
 	else:
 		cur_user = None

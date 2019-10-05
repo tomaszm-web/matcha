@@ -312,8 +312,6 @@ $(document).ready(function() {
 						params: {
 							viewed_notifs: this.viewed_notifs.join(',')
 						}
-					}).then((response) => {
-						this.len -= this.viewed_notifs.length
 					});
 				},
 				getNotifications() {
