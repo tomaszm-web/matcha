@@ -103,6 +103,7 @@ h2 {
 	right: 15px;
 	top: 75px;
 	z-index: 999;
+	transition: .3s ease-out all;
 }
 
 /*Header*/
@@ -327,7 +328,7 @@ header {
 	background-color: #fff;
 }
 
-.profile__fame .progress-bar {
+.progress-bar {
 	color: darkmagenta;
 }
 

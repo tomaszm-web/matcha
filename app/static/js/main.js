@@ -370,4 +370,8 @@ $(document).ready(function() {
 		new google.maps.places.Autocomplete(elem, autocomplete_options);
 	if ((elem = document.getElementById('select-city')))
 		new google.maps.places.Autocomplete(elem, autocomplete_options);
+
+	setTimeout(function() {
+		$('.flashes').css('opacity', 0);
+	}, 7000);
 });

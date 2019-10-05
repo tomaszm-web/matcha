@@ -16,12 +16,12 @@ class Account:
 
 	def check_login_existent(self, login):
 		sql = "SELECT * FROM `users` WHERE login=%s"
-		row_num = self.db.get_row_num(sql, (login))
+		row_num = self.db.get_row_num(sql, (login,))
 		return row_num > 0
 
 	def check_email_existent(self, email):
 		sql = "SELECT * FROM `users` WHERE email=%s"
-		row_num = self.db.get_row_num(sql, (email))
+		row_num = self.db.get_row_num(sql, (email,))
 		return row_num > 0
 
 	def check_img_extension(self, filename):
@@ -45,7 +45,7 @@ class Account:
 			   "INNER JOIN `users_tags` ON tags.id = users_tags.tag_id "
 			   "WHERE users_tags.user_id = %s")
 		tags = self.db.get_all_rows(sql, (user_id,))
-		tags = (k['name'] for k in tags)
+		tags = tuple(k['name'] for k in tags)
 		return tags
 
 	def get_user_info(self, id, extended=True):

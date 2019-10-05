@@ -59,15 +59,19 @@
 					<h4 class="profile__title">Preferences:</h4>
 					<div class="profile__preferences">%% user.preferences %%</div>
 
-					<h4 class="profile__title">Biography:</h4>
-					<div class="profile__bio">%% user.biography %%</div>
+					{% if user['biography'] %}
+						<h4 class="profile__title">Biography:</h4>
+						<div class="profile__bio">%% user.biography %%</div>
+					{% endif %}
 
-					<h4 class="profile__title">Interest tags:</h4>
-					<select class="form-control multiple-tags" disabled multiple>#}
-						{% for tag in user["tags"] %}
-							<option value="%% tag %%" selected>#%% tag %%</option>
-						{% endfor %}
-					</select>
+					{% if user['tags'] | length > 0 %}
+						<h4 class="profile__title">Interest tags:</h4>
+						<select class="form-control multiple-tags" disabled multiple>#}
+							{% for tag in user["tags"] %}
+								<option value="%% tag %%" selected>#%% tag %%</option>
+							{% endfor %}
+						</select>
+					{% endif %}
 					{% if cur_user and user.id != cur_user.id %}
 						<div class="btn-group">
 							<form action="%% url_for('like_user') %%" method="POST">
