@@ -16,12 +16,12 @@ class Account:
 
 	def check_login_existent(self, login):
 		sql = "SELECT * FROM `users` WHERE login=%s"
-		row_num = self.db.get_row_num(sql, [login])
+		row_num = self.db.get_row_num(sql, (login))
 		return row_num > 0
 
 	def check_email_existent(self, email):
 		sql = "SELECT * FROM `users` WHERE email=%s"
-		row_num = self.db.get_row_num(sql, [email])
+		row_num = self.db.get_row_num(sql, (email))
 		return row_num > 0
 
 	def check_img_extension(self, filename):
@@ -31,20 +31,20 @@ class Account:
 		if not search_in:
 			sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
 			search_in = self.db.get_all_rows(sql)
-		user_like_num = 1
+		user_like_num = 0
 		max_likes = max(row['like_num'] for row in search_in)
 		for row in search_in:
 			if row['liked_user'] == user_id:
 				user_like_num = row['like_num']
-		if not max_likes or user_like_num is None:
+		if not max_likes:
 			return 0
-		return int(round(user_like_num / max_likes * 100))
+		return round(user_like_num / max_likes * 100)
 
 	def get_tags(self, user_id):
 		sql = ("SELECT tags.name FROM `tags` "
 			   "INNER JOIN `users_tags` ON tags.id = users_tags.tag_id "
 			   "WHERE users_tags.user_id = %s")
-		tags = self.db.get_all_rows(sql, [user_id])
+		tags = self.db.get_all_rows(sql, (user_id,))
 		tags = (k['name'] for k in tags)
 		return tags
 
@@ -58,7 +58,7 @@ class Account:
 			user['tags'] = self.get_tags(user["id"])
 			user['liked_users'] = self.get_liked_users(user['id'])
 			user['blocked_users'] = self.get_blocked_users(user['id'])
-			user['blocked_users'] = self.get_reported_users(user['id'])
+			user['reported_users'] = self.get_reported_users(user['id'])
 			user['checked_users'] = self.get_checked_users(user['id'])
 			user['photos'] = json.loads(user['photos'])
 			user['fame'] = self.get_fame_rating(user['id'])
@@ -149,7 +149,7 @@ class Account:
 
 	def update_users_tags(self, user, new_tags):
 		if new_tags and user['tags'] == new_tags:
-			return
+			return None
 		self.insert_nonexistent_tags(new_tags)
 		all_tags = self.db.get_all_rows("SELECT * FROM `tags`")
 
@@ -232,57 +232,48 @@ class Account:
 			if not os.path.exists(photo_path):
 				photo.save(photo_path)
 			return photo_path
-		return False
+		return None
 
-	def update_user_files(self, user, files, to_update):
+	def update_user_files(self, user, files):
 		if not files:
-			return False
+			return None
 		user_dir = os.path.join(app.config['UPLOAD_FOLDER'], user['login'])
 		avatar_path = self.upload_photo(user_dir, files['avatar'])
-		if avatar_path:
-			to_update['sql'] += ', avatar=%s' if len(to_update['values']) else 'avatar=%s'
-			to_update['values'].append(avatar_path)
-
+		if avatar_path is not None:
+			self.db.query('UPDATE users SET avatar = %s', (avatar_path,))
 		photos_filenames = []
 		photos = files.getlist('photos[]')
 		for i, photo in enumerate(photos):
 			photo_path = self.upload_photo(user_dir, photo)
 			photos_filenames.append(photo_path if photo_path else user['photos'][i])
-		if len(photos_filenames):
-			to_update['sql'] += ', photos=%s' if len(to_update['values']) else 'photos=%s'
-			to_update['values'].append(json.dumps(photos_filenames))
+		if len(photos_filenames) > 0:
+			flash(photos_filenames, 'info')
+			self.db.query('UPDATE users SET photos = %s', [str(photos_filenames)])
 
 	def get_changed_values(self, prev_val, new_val):
-		sql = ''
-		values = []
-		ignored_values = ['login', 'tags', 'csrf_token']
-		need_confirmation = False
-		for key, val in new_val.items():
-			if key not in ignored_values and prev_val[key] != val:
-				sql += (key + '=%s, ')
-				if key == 'email':
-					need_confirmation = True
-				values.append(val)
+		"""Checks which values were updated"""
+		ignored = ('tags', 'csrf_token')
+		values = [val for key, val in new_val.items() if key not in ignored and str(prev_val[key]) != val]
+		sql = ', '.join(f"{key} = %s" for key, val in new_val.items() if key not in ignored and str(prev_val[key]) != val)
+		need_confirmation = new_val['email'] in values
 		if need_confirmation:
-			sql += "confirmed='0', "
-		if len(values):
-			sql = sql[:-2]
-		return {'sql': sql, 'values': values, 'need_confirmation': need_confirmation}
+			sql += ", confirmed='0'"
+		return sql, values, need_confirmation
 
 	def change(self, form, files=None):
 		user = self.get_user_info(session['user'])
-		to_update = self.get_changed_values(user, form)
-		if 'email' in to_update['values'] and self.check_email_existent(form["email"]):
+		sql, values, need_confirmation = self.get_changed_values(user, form)
+		# for a, b in form.items():
+		if need_confirmation and self.check_email_existent(form["email"]):
 			raise Exception("User with his E-mail already exists")
+		if len(values) > 0:
+			sql = f"UPDATE `users` SET {sql} WHERE id=%s"
+			values.append(user['id'])
+			self.db.query(sql, values)
 		self.update_users_tags(user, form.getlist('tags'))
-		self.update_user_files(user, files, to_update)
-		if len(to_update['values']) > 0:
-			sql = "UPDATE `users` SET " + to_update['sql'] + " WHERE id=%s"
-			to_update['values'].append(user['id'])
-			self.db.query(sql, to_update['values'])
-		if to_update['need_confirmation']:
-			login = user['login'] if 'login' not in to_update else to_update['login']
-			self.email_confirmation(form["email"], login, user["token"])
+		self.update_user_files(user, files)
+		if need_confirmation:
+			self.email_confirmation(form["email"], user['login'], user["token"])
 			flash("You will have to confirm your new E-mail!", 'success')
 
 	def get_liked_users(self, user_id):
@@ -315,12 +306,12 @@ class Account:
 			action = 'unlike'
 		else:
 			sql = "SELECT * FROM `likes` WHERE like_owner=%s AND liked_user=%s"
-			if self.db.get_row_num(sql, [like_to, like_owner]) > 0:
+			if self.db.get_row_num(sql, (like_to, like_owner)) > 0:
 				action = 'like_back'
 			else:
 				action = 'like'
 			sql = "INSERT INTO `likes` SET like_owner=%s, liked_user=%s"
-		self.db.query(sql, [like_owner, like_to])
+		self.db.query(sql, (like_owner, like_to))
 		return action
 
 	def block_user(self, user_id, blocked_id, unblock):
@@ -328,18 +319,18 @@ class Account:
 			sql = "DELETE FROM `blocked` WHERE user_id=%s AND blocked_id=%s"
 		else:
 			sql = "INSERT INTO `blocked` SET user_id=%s, blocked_id=%s"
-		self.db.query(sql, [user_id, blocked_id])
+		self.db.query(sql, (user_id, blocked_id))
 
 	def report_user(self, user_id, reported_id, unreport):
 		if unreport == 'true':
 			sql = "DELETE FROM `reports` WHERE user_id=%s AND reported_id=%s"
 		else:
 			sql = "INSERT INTO `reports` SET user_id=%s, reported_id=%s"
-		self.db.query(sql, [user_id, reported_id])
+		self.db.query(sql, (user_id, reported_id))
 
 	def check_user(self, checking, checked_user):
 		sql = "INSERT INTO `checked_profile` SET checking=%s, checked_user=%s"
-		self.db.query(sql, [checking, checked_user])
+		self.db.query(sql, (checking, checked_user))
 
 
 class Chat:

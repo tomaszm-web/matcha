@@ -1,4 +1,3 @@
-from flask_mysqldb import MySQL
 import MySQLdb
 import MySQLdb.cursors
 
@@ -27,27 +26,34 @@ class Database:
 			self.con.commit()
 			if cur and to_close:
 				cur.close()
+				return 123
 			return cur
 		except MySQLdb.OperationalError:
 			self.connect()
-			cur = self.query(sql, values, to_close)
+			return self.query(sql, values, to_close)
 		except Exception:
 			self.con.rollback()
 
 	def get_row(self, sql, values=None):
 		cur = self.query(sql, values, to_close=False)
+		if not cur:
+			return None
 		res = cur.fetchone()
 		cur.close()
 		return res
 
 	def get_all_rows(self, sql, values=None):
 		cur = self.query(sql, values, to_close=False)
+		if not cur:
+			return None
 		res = cur.fetchall()
 		cur.close()
 		return res
 
 	def get_row_num(self, sql, values=None):
 		cur = self.query(sql, values, to_close=False)
+		if not cur:
+			return None
 		res = cur.rowcount
 		cur.close()
 		return res

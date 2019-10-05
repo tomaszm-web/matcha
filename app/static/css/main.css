@@ -1,6 +1,13 @@
+html {
+	height: 100%;
+}
+
 body {
 	font-family: 'Poppins', sans-serif;
 	background-color: #F0EBEB;
+	position: relative;
+	padding-bottom: 55px;
+	min-height: 100%;
 }
 
 ul, li {
@@ -320,6 +327,10 @@ header {
 	background-color: #fff;
 }
 
+.profile__fame .progress-bar {
+	color: darkmagenta;
+}
+
 .profile__login {
 	font-weight: bold;
 	margin-top: 10px;
@@ -434,6 +445,11 @@ header {
 
 /*Footer*/
 footer {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	text-align: center;
 	background-color: #3B354D;
 	color: #fff;
 	padding: 15px 0;
@@ -470,6 +486,10 @@ footer {
 }
 
 @media screen and (max-width: 768px) {
+	body {
+		padding-bottom: 79px;
+	}
+
 	.main-title {
 		font-size: 60px
 	}
