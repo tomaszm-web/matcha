@@ -45,7 +45,7 @@ class Account:
 			   "INNER JOIN `users_tags` ON tags.id = users_tags.tag_id "
 			   "WHERE users_tags.user_id = %s")
 		tags = self.db.get_all_rows(sql, (user_id,))
-		tags = tuple(k['name'] for k in tags)
+		tags = [k['name'] for k in tags]
 		return tags
 
 	def get_user_info(self, id, extended=True):
@@ -278,25 +278,25 @@ class Account:
 	def get_liked_users(self, user_id):
 		sql = "SELECT * FROM `likes` WHERE like_owner=%s"
 		response = self.db.get_all_rows(sql, [user_id])
-		liked_users = (k["liked_user"] for k in response)
+		liked_users = [k["liked_user"] for k in response]
 		return liked_users
 
 	def get_blocked_users(self, user_id):
 		sql = "SELECT * FROM `blocked` WHERE user_id=%s"
 		response = self.db.get_all_rows(sql, [user_id])
-		blocked_users = (k["blocked_id"] for k in response)
+		blocked_users = [k["blocked_id"] for k in response]
 		return blocked_users
 
 	def get_reported_users(self, user_id):
 		sql = "SELECT * FROM `reports` WHERE user_id=%s"
 		response = self.db.get_all_rows(sql, [user_id])
-		reported_users = (k["reported_id"] for k in response)
+		reported_users = [k["reported_id"] for k in response]
 		return reported_users
 
 	def get_checked_users(self, user_login):
 		sql = "SELECT * FROM `checked_profile` WHERE checking=%s"
 		response = self.db.get_all_rows(sql, [user_login])
-		liked_users = (k["checked_user"] for k in response)
+		liked_users = [k["checked_user"] for k in response]
 		return liked_users
 
 	def like_user(self, like_owner, like_to, unlike):
@@ -337,9 +337,6 @@ class Chat:
 		self.db = db
 		self.timestamp_format = "%c"
 
-	def __del__(self):
-		del self.db
-
 	def send_message(self, sender_id, recipient_id, message_text):
 		sql = "INSERT INTO `messages` SET sender_id=%s, recipient_id=%s, body=%s"
 		self.db.query(sql, (sender_id, recipient_id, message_text))
@@ -353,41 +350,38 @@ class Chat:
 		return messages
 
 
-class Notif:
+class Notification:
 	def __init__(self, db):
 		self.db = db
 		self.timestamp_format = "%c"
-
-	def __del__(self):
-		del self.db
-
-	def send_notification(self, recipient_id, notif_type, executive_user):
-		notifications = {
-			'like': f"You have been liked by {executive_user['login']}",
-			'unlike': f"You have been unliked by {executive_user['login']}",
-			'check_profile': f"Your profile was checked by {executive_user['login']}",
-			'message': f"You received a message from {executive_user['login']}",
-			'like_back': f"You have been liked back by {executive_user['login']}"
+		self.notifications = {
+			'like': "You have been liked by {}",
+			'unlike': "You have been unliked by {}",
+			'check_profile': "Your profile was checked by {}",
+			'message': "You received a message from {}",
+			'like_back': "You have been liked back by {}"
 		}
+
+	def send(self, recipient_id, notif_type, executive_user):
 		links = {
 			'user_action': url_for('profile', user_id=executive_user['id']),
 			'message': url_for('chat', recipient_id=executive_user['id'])
 		}
 		sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"
 		link = 'message' if notif_type == 'message' else 'user_action'
-		self.db.query(sql, (recipient_id, notifications[notif_type], links[link]))
+		message = self.notifications[notif_type].format(executive_user['login'])
+		self.db.query(sql, (recipient_id, message, links[link]))
 
-	def get_notifications(self, user_id):
+	def get(self, user_id):
 		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created DESC"
 		notifications = self.db.get_all_rows(sql, [user_id])
 		for notif in notifications:
 			notif['date_created'] = datetime.strftime(notif['date_created'], self.timestamp_format)
 		return notifications
 
-	def del_viewed_notifs(self, viewed_notifs):
-		arr_len = len(viewed_notifs)
-		sql = "DELETE FROM `notifications` WHERE id IN ("
-		for i in range(arr_len):
-			sql += "%s, "
-		sql = sql[:-2] + ")"
-		self.db.query(sql, viewed_notifs)
+	def delete_viewed(self, viewed):
+		arr_len = len(viewed)
+		vals = ', '.join('%s' for _ in range(len(viewed)))
+		sql = f"DELETE FROM `notifications` WHERE id IN ({vals})"
+		self.db.query(sql, viewed)
+		print(f"{viewed} was deleted! {vals}")

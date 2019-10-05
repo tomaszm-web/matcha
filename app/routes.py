@@ -9,12 +9,12 @@ from flask import (
 	send_from_directory,
 	jsonify)
 import requests
-from app.models import Account, Chat, Notif
+from app.models import Account, Chat, Notification
 from app import app, db
 
 account = Account(db)
 chat = Chat(db)
-notif = Notif(db)
+notification = Notification(db)
 
 
 @app.route('/')
@@ -24,7 +24,7 @@ def index():
 	app.jinja_env.globals['csrf_token'] = session['csrf_token']
 	if 'user' in session:
 		cur_user = account.get_user_info(session["user"])
-		cur_user['notifications'] = notif.get_notifications(cur_user['id'])
+		cur_user['notifications'] = notification.get(cur_user['id'])
 	else:
 		cur_user = None
 	users = account.get_all_users(user_match=cur_user)
@@ -54,7 +54,7 @@ def profile():
 		cur_user = account.get_user_info(session['user'])
 		if user['id'] not in cur_user['checked_users'] and user['id'] != cur_user['id']:
 			account.check_user(cur_user['id'], user['id'])
-			notif.send_notification(user['id'], 'check_profile', cur_user)
+			notification.send(user['id'], 'check_profile', cur_user)
 		return render_template('profile.html', cur_user=cur_user, user=user)
 	else:
 		return render_template('profile.html', user=user)
@@ -171,8 +171,9 @@ def filter_users():
 		else:
 			users = account.get_all_users(cur_user)
 		return render_template('users_list.html', cur_user=cur_user, users=users)
-	except:
+	except Exception:
 		return "Something went wrong!"
+
 
 @app.route('/like_user_ajax', methods=["GET"])
 def like_user_ajax():
@@ -182,7 +183,7 @@ def like_user_ajax():
 		recipient = request.args.get('liked_user')
 		executioner = request.args.get('like_owner')
 		action = account.like_user(executioner, recipient, request.args['unlike'])
-		notif.send_notification(recipient, action, account.get_user_info(executioner, extended=False))
+		notification.send(recipient, action, account.get_user_info(executioner, extended=False))
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
 	return jsonify({'success': True, 'unlike': request.args.get('unlike')})
@@ -197,8 +198,8 @@ def like_user():
 		recipient = request.form.get('liked_user')
 		executioner = session['user']
 		action = account.like_user(executioner, recipient, request.form.get('unlike'))
-		notif.send_notification(recipient, action, account.get_user_info(executioner, extended=False))
-	except Exception as e:
+		notification.send(recipient, action, account.get_user_info(executioner, extended=False))
+	except Exception:
 		flash("Something went wrong. Try again a bit later!", 'danger')
 	return redirect(url_for('profile', user_id=request.form.get('liked_user')))
 
@@ -234,25 +235,25 @@ def get_messages():
 @app.route('/send_notification', methods=["GET"])
 def send_notification():
 	try:
-		notif.send_notification(request.args['sender_id'], request.args['message'],)
+		notification.send(request.args['sender_id'], request.args['message'], )
 		return jsonify({'success': True})
-	except Exception:
-		return jsonify({'success': False})
+	except Exception as e:
+		return jsonify({'success': False, 'cause': str(e)})
 
 
 @app.route('/get_notifications', methods=["GET"])
 def get_notifications():
 	try:
-		notifications = notif.get_notifications(request.args['user_id'])
+		notifications = notification.get(request.args['user_id'])
 		return jsonify({'success': True, 'notifications': notifications})
-	except KeyError:
-		return jsonify({'success': False})
+	except Exception as e:
+		return jsonify({'success': False, 'cause': str(e)})
 
 
-@app.route('/del_viewed_notifs', methods=["GET"])
-def del_viewed_notifs():
+@app.route('/del_viewed_notifications', methods=["GET"])
+def del_viewed_notifications():
 	try:
-		notif.del_viewed_notifs(request.args.get('viewed_notifs').split(','))
+		notification.delete_viewed(request.args.get('viewed_notifications').split(','))
 		return jsonify({'success': True})
 	except Exception as e:
 		return jsonify({'success': False, 'cause': str(e)})

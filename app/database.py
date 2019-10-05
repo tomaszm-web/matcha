@@ -26,7 +26,6 @@ class Database:
 			self.con.commit()
 			if cur and to_close:
 				cur.close()
-				return 123
 			return cur
 		except MySQLdb.OperationalError:
 			self.connect()

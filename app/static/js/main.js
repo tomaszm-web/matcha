@@ -226,9 +226,6 @@ $(document).ready(function() {
 				this.recipient_id = $_GET['recipient_id'];
 				this.sender_id = $(".sendMessageForm input[name='sender_id']").val();
 				this.showMessages();
-				this.socket.on('connect', function() {
-					console.log('connected to private chat')
-				});
 				this.socket.on('private_chat response', (msg) => {
 					this.messages.push(msg)
 				});
@@ -269,7 +266,7 @@ $(document).ready(function() {
 			data: {
 				user_id: $('meta[data-cur-user-id]').attr('data-cur-user-id'),
 				notifications: {},
-				viewed_notifs: []
+				viewed_notifications: []
 			},
 			created() {
 				if (!this.user_id) return;
@@ -300,18 +297,20 @@ $(document).ready(function() {
 					messages.each(function() {
 						let elemTop = $(this).offset().top;
 						let elemBottom = elemTop + $(this).height();
-						let messageNotInArray = notifs.viewed_notifs.indexOf($(this).attr('data-notif-id')) === -1;
+						let messageNotInArray = notifs.viewed_notifications.indexOf($(this).attr('data-notif-id')) === -1;
 						if (messageNotInArray && (elemBottom <= docViewBottom) && (elemTop >= docViewTop)) {
-							notifs.viewed_notifs.push($(this).attr('data-notif-id'))
+							notifs.viewed_notifications.push($(this).attr('data-notif-id'))
 						}
 					})
 				},
 				delViewedNotifications() {
-					if (!this.viewed_notifs.length) return;
-					axios.get(location.origin + '/del_viewed_notifs', {
+					if (!this.viewed_notifications.length) return;
+					axios.get(location.origin + '/del_viewed_notifications', {
 						params: {
-							viewed_notifs: this.viewed_notifs.join(',')
+							viewed_notifications: this.viewed_notifications.join(',')
 						}
+					}).then(() => {
+						notifs.viewed_notifications = []
 					});
 				},
 				getNotifications() {
