@@ -10,10 +10,10 @@ class Config(object):
 	# данных, например cookies.
 	SECRET_KEY = os.environ.get('SECRET_KEY') or 'ABSOLUTELY SECRET'
 
-	DB_HOST = "remotemysql.com"
-	DB_USER = "EbumYmCv3K"
-	DB_PASSWORD = "8tdbKY8Vct"
-	DB_NAME = "EbumYmCv3K"
+	MYSQL_HOST = "remotemysql.com"
+	MYSQL_USER = "EbumYmCv3K"
+	MYSQL_PASSWORD = "8tdbKY8Vct"
+	MYSQL_DB = "EbumYmCv3K"
 
 	# Email sender configuration
 	MAIL_SERVER = os.environ.get('MAIL_SERVER')

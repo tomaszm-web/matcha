@@ -3,7 +3,7 @@ import json
 import secrets
 import pygeoip
 from datetime import datetime
-from flask import render_template, url_for, flash, redirect, session, abort, jsonify, request
+from flask import render_template, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from app.mail import send_email
@@ -129,8 +129,7 @@ class Account:
 
 	def email_confirmation(self, email, login, token):
 		send_email("Thank's for the signing-up to Matcha",
-				   app.config["ADMINS"][0],
-				   [email],
+				   app.config["ADMINS"][0], [email],
 				   "You should confirm your E-mail!",
 				   render_template('signup_email.html', login=login, token=token))
 

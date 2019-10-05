@@ -1,39 +1,55 @@
+from flask_mysqldb import MySQL
 import MySQLdb
 import MySQLdb.cursors
 
 
 class Database:
 	def __init__(self, app):
-		host = app.config["DB_HOST"]
-		user = app.config["DB_USER"]
-		password = app.config["DB_PASSWORD"]
-		db = app.config["DB_NAME"]
-		self.con = MySQLdb.connect(host=host, user=user, passwd=password, db=db,
-								   cursorclass=MySQLdb.cursors.DictCursor)
-		self.cur = self.con.cursor()
+		self.con = None
+		self.app = app
+		self.connect()
 
-	def __del__(self):
-		self.cur.close()
-		self.con.close()
+	def connect(self):
+		host = self.app.config['MYSQL_HOST']
+		db = self.app.config['MYSQL_DB']
+		user = self.app.config['MYSQL_USER']
+		password = self.app.config['MYSQL_PASSWORD']
+		try:
+			self.con = MySQLdb.connect(host=host, db=db, user=user, password=password,
+									   cursorclass=MySQLdb.cursors.DictCursor)
+		except MySQLdb.OperationalError as e:
+			exit(f"MySql Connection Error. Cannot run app.\n{str(e)}")
 
-	def query(self, sql, values=None):
-		self.cur.execute(sql, values)
-		if sql[:5] != "SELECT":
+	def query(self, sql, values=None, to_close=True):
+		try:
+			cur = self.con.cursor()
+			cur.execute(sql, values)
 			self.con.commit()
+			if cur and to_close:
+				cur.close()
+			return cur
+		except MySQLdb.OperationalError:
+			self.connect()
+			cur = self.query(sql, values, to_close)
+		except Exception:
+			self.con.rollback()
 
 	def get_row(self, sql, values=None):
-		self.query(sql, values)
-		res = self.cur.fetchone()
+		cur = self.query(sql, values, to_close=False)
+		res = cur.fetchone()
+		cur.close()
 		return res
 
 	def get_all_rows(self, sql, values=None):
-		self.query(sql, values)
-		res = self.cur.fetchall()
+		cur = self.query(sql, values, to_close=False)
+		res = cur.fetchall()
+		cur.close()
 		return res
 
 	def get_row_num(self, sql, values=None):
-		self.query(sql, values)
-		res = self.cur.rowcount
+		cur = self.query(sql, values, to_close=False)
+		res = cur.rowcount
+		cur.close()
 		return res
 
 	def create_tables(self):

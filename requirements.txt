@@ -1,3 +1,4 @@
+MySQLdb
 blinker==1.4
 certifi==2019.6.16
 cffi==1.12.3

@@ -1,10 +1,7 @@
-import os
 from flask import Flask
 from app.database import Database
 from flask_mail import Mail
 from config import DevelopmentConfig
-# from flask_googlemaps import GoogleMaps
-# from flaskext.csrf import csrf
 from flask_socketio import SocketIO
 
 
@@ -19,6 +16,6 @@ class CustomFlask(Flask):
 app = CustomFlask(__name__)
 app.config.from_object(DevelopmentConfig)
 socketio = SocketIO(app)
-db = Database(app)
 mail = Mail(app)
-from app import routes, models
+db = Database(app)
+from app import routes, models, sockets
