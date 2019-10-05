@@ -83,7 +83,7 @@
 								</button>
 							</form>
 							{% if user.id in cur_user.liked_users and cur_user.id in user.liked_users %}
-								<a href="%% url_for('chat', recipient_id=user.id) %%" class="btn btn-primary chat-link">
+								<a href="%% url_for('chat_page', recipient_id=user.id) %%" class="btn btn-primary chat-link">
 									<i class="fas fa-comment"></i>Chat
 								</a>
 							{% endif %}

@@ -61,7 +61,7 @@ def profile():
 
 
 @app.route('/chat', methods=["GET"])
-def chat():
+def chat_page():
 	if 'user' not in session:
 		return redirect(url_for('index'))
 	session['csrf_token'] = secrets.token_hex()
@@ -275,3 +275,6 @@ def uploaded_file(filename, userdir=None):
 	return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}", filename)
 
 # todo Google api key expired
+# todo Notifications last notif cannot be deleted
+# todo change request method to POST for likes, blocks, reports, etc
+# todo CSRF protection for get requests in private chat

@@ -216,7 +216,7 @@ $(document).ready(function() {
 		const chat = new Vue({
 			el: '#chat',
 			data: {
-				messages: {},
+				messages: [],
 				sender_id: null,
 				recipient_id: null,
 				socket: null
@@ -239,11 +239,13 @@ $(document).ready(function() {
 					axios.get(location.origin + '/get_messages', {
 						params: {
 							sender_id: this.sender_id,
-							recipient_id: this.recipient_id,
+							recipient_id: this.recipient_id
 						}
 					}).then((response) => {
-						if (response.data.success)
+						if (response.data.success) {
+							console.log(response.data.messages);
 							this.messages = response.data.messages;
+						}
 					});
 				},
 				sendMessage(e) {

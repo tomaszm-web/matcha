@@ -338,7 +338,7 @@ class Chat:
 		self.timestamp_format = "%c"
 
 	def send_message(self, sender_id, recipient_id, message_text):
-		sql = "INSERT INTO `messages` SET sender_id=%s, recipient_id=%s, body=%s"
+		sql = "INSERT INTO `messages` (sender_id, recipient_id, body) VALUES (%s, %s, %s)"
 		self.db.query(sql, (sender_id, recipient_id, message_text))
 
 	def get_messages(self, user_id, recipient_id):
@@ -365,7 +365,7 @@ class Notification:
 	def send(self, recipient_id, notif_type, executive_user):
 		links = {
 			'user_action': url_for('profile', user_id=executive_user['id']),
-			'message': url_for('chat', recipient_id=executive_user['id'])
+			'message': url_for('chat_page', recipient_id=executive_user['id'])
 		}
 		sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"
 		link = 'message' if notif_type == 'message' else 'user_action'
