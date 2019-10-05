@@ -1,4 +1,4 @@
-from app import mail, app
+from app import app, mail
 from flask_mail import Message
 from threading import Thread
 

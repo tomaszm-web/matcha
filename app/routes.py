@@ -9,8 +9,12 @@ from flask import (
 	send_from_directory,
 	jsonify)
 import requests
-from app import db
-from app.models import *
+from app.models import Account, Chat, Notif
+from app import app, db
+
+account = Account(db)
+chat = Chat(db)
+notif = Notif(db)
 
 
 @app.route('/')
@@ -18,22 +22,19 @@ from app.models import *
 def index():
 	session['csrf_token'] = secrets.token_hex(10)
 	app.jinja_env.globals['csrf_token'] = session['csrf_token']
-	account = Account(db)
-	notif = Notif(db)
 	if 'user' in session:
 		cur_user = account.get_user_info(session["user"])
 		cur_user['notifications'] = notif.get_notifications(cur_user['id'])
 	else:
 		cur_user = None
 	users = account.get_all_users(user_match=cur_user)
-	return render_template('index.html', users=None, cur_user=cur_user)
+	return render_template('index.html', users=users, cur_user=cur_user)
 
 
 @app.route('/settings')
 def settings():
 	session['csrf_token'] = secrets.token_hex(10)
 	app.jinja_env.globals['csrf_token'] = session['csrf_token']
-	account = Account(db)
 	if "user" not in session:
 		flash("You should log in to access your profile", 'danger')
 		return redirect(url_for('index'))
@@ -45,8 +46,6 @@ def settings():
 def profile():
 	session['csrf_token'] = secrets.token_hex(10)
 	app.jinja_env.globals['csrf_token'] = session['csrf_token']
-	account = Account(db)
-	notif = Notif(db)
 	if "user_id" not in request.args:
 		flash("Invalid profile", 'danger')
 		return redirect(url_for('index'))
@@ -67,7 +66,6 @@ def chat():
 		return redirect(url_for('index'))
 	session['csrf_token'] = secrets.token_hex()
 	app.jinja_env.globals['csrf_token'] = session['csrf_token']
-	account = Account(db)
 	recipient = account.get_user_info(id=request.args["recipient_id"])
 	if not recipient:
 		flash("Wrong user id", 'danger')
@@ -82,7 +80,6 @@ def chat():
 @app.route('/registration', methods=["POST"])
 def registration():
 	try:
-		account = Account(db)
 		account.registration(request.form)
 	except Exception as e:
 		if type(e).__name__ == "KeyError":
@@ -96,7 +93,6 @@ def registration():
 @app.route('/login', methods=["POST"])
 def login():
 	try:
-		account = Account(db)
 		account.login(request.form)
 	except Exception as e:
 		if type(e).__name__ == "KeyError":
@@ -123,7 +119,6 @@ def logout():
 
 @app.route('/confirmation', methods=["GET"])
 def confirmation():
-	account = Account(db)
 	if account.confirmation(request.args.get("login"), request.args.get("token")):
 		flash("Your E-mail was successfully confirmed!", 'success')
 	else:
@@ -134,7 +129,6 @@ def confirmation():
 @app.route('/reset', methods=["POST"])
 def reset():
 	try:
-		account = Account(db)
 		account.reset(request.form, action=request.form["action"])
 	except Exception as e:
 		return jsonify({'success': False, 'error': str(e)})
@@ -144,7 +138,6 @@ def reset():
 @app.route('/change_profile_info', methods=["POST"])
 def change():
 	try:
-		account = Account(db)
 		account.change(request.form, request.files)
 	except Exception as e:
 		if type(e).__name__ == "KeyError":
@@ -172,7 +165,6 @@ def get_user_location_by_ip():
 @app.route('/filter_users', methods=["GET", "POST"])
 def filter_users():
 	try:
-		account = Account(db)
 		cur_user = account.get_user_info(session['user']) if 'user' in session else None
 		if len(request.form) > 0:
 			users = account.get_all_users(cur_user, request.form)
@@ -187,8 +179,6 @@ def like_user_ajax():
 	if 'user' not in session:
 		jsonify({'success': False})
 	try:
-		account = Account(db)
-		notif = Notif(db)
 		recipient = request.args.get('liked_user')
 		executioner = request.args.get('like_owner')
 		action = account.like_user(executioner, recipient, request.args['unlike'])
@@ -204,8 +194,6 @@ def like_user():
 		flash("You should log in first", 'danger')
 		redirect(url_for('index'))
 	try:
-		account = Account(db)
-		notif = Notif(db)
 		recipient = request.form.get('liked_user')
 		executioner = session['user']
 		action = account.like_user(executioner, recipient, request.form.get('unlike'))
@@ -218,7 +206,6 @@ def like_user():
 @app.route('/block_user', methods=["GET"])
 def block_user():
 	try:
-		account = Account(db)
 		account.block_user(request.args['user_id'], request.args['blocked_id'], request.args['unblock'])
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
@@ -228,7 +215,6 @@ def block_user():
 @app.route('/report_user', methods=["GET"])
 def report_user():
 	try:
-		account = Account(db)
 		account.report_user(request.args['user_id'], request.args['reported_id'], request.args['unreport'])
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
@@ -239,8 +225,7 @@ def report_user():
 @app.route('/get_messages', methods=["GET"])
 def get_messages():
 	try:
-		live_chat = Chat(db)
-		messages = live_chat.get_messages(request.args['sender_id'], request.args['recipient_id'])
+		messages = chat.get_messages(request.args['sender_id'], request.args['recipient_id'])
 		return jsonify({'success': True, 'messages': messages})
 	except Exception as e:
 		return jsonify({'success': False, 'cause': str(e)})
@@ -249,7 +234,6 @@ def get_messages():
 @app.route('/send_notification', methods=["GET"])
 def send_notification():
 	try:
-		notif = Notif(db)
 		notif.send_notification(request.args['sender_id'], request.args['message'],)
 		return jsonify({'success': True})
 	except Exception:
@@ -259,7 +243,6 @@ def send_notification():
 @app.route('/get_notifications', methods=["GET"])
 def get_notifications():
 	try:
-		notif = Notif(db)
 		notifications = notif.get_notifications(request.args['user_id'])
 		return jsonify({'success': True, 'notifications': notifications})
 	except KeyError:
@@ -269,7 +252,6 @@ def get_notifications():
 @app.route('/del_viewed_notifs', methods=["GET"])
 def del_viewed_notifs():
 	try:
-		notif = Notif(db)
 		notif.del_viewed_notifs(request.args.get('viewed_notifs').split(','))
 		return jsonify({'success': True})
 	except Exception as e:
