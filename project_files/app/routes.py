@@ -64,7 +64,7 @@ def profile():
 def chat_page():
 	if 'user' not in session:
 		return redirect(url_for('index'))
-	session['csrf_token'] = secrets.token_hex()
+	session['csrf_token'] = secrets.token_hex(10)
 	app.jinja_env.globals['csrf_token'] = session['csrf_token']
 	recipient = account.get_user_info(id=request.args["recipient_id"])
 	if not recipient:
@@ -223,7 +223,7 @@ def report_user():
 
 
 # Chat
-@app.route('/get_messages', methods=["GET"])
+@app.route('/get_messages', methods=["GET", "POST"])
 def get_messages():
 	try:
 		messages = chat.get_messages(request.args['sender_id'], request.args['recipient_id'])
@@ -263,7 +263,7 @@ def del_viewed_notifications():
 def before_request():
 	if request.method == "POST" and session['csrf_token'] != request.form.get('csrf_token'):
 		flash('Csrf attack!', 'danger')
-		return redirect(url_for('index'))
+		return redirect(request.url)
 
 
 # Files
@@ -274,7 +274,4 @@ def uploaded_file(filename, userdir=None):
 		return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}/{userdir}", filename)
 	return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}", filename)
 
-# todo Google api key expired
 # todo Notifications last notif cannot be deleted
-# todo change request method to POST for likes, blocks, reports, etc
-# todo CSRF protection for get requests in private chat
