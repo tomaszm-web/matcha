@@ -31,7 +31,7 @@ class Config(object):
 	UPLOAD_FOLDER = "uploads"
 
 	# Google Maps Key
-	GOOGLEMAPS_KEY = "AIzaSyAjzkW8XWRsKcQhs7hcY-Rc7wPSSSIQVQM"
+	GOOGLEMAPS_KEY = "AIzaSyD13VWC5CjsfUt9vvPT6ufxjTGAXBOhhjg"
 
 	# PERMANENT_SESSION_LIFETIME = timedelta(minutes=5)
 
