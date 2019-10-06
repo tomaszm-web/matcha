@@ -44,7 +44,7 @@ $(document).ready(function() {
 
 	$('.filters').submit(function(e) {
 		e.preventDefault();
-		let data = new FormData(e.target)
+		let data = new FormData(e.target);
 		axios.post(location.origin + '/filter_users', data).then((response) => {
 			$('.users_list').html(response.data);
 		});
@@ -239,11 +239,10 @@ $(document).ready(function() {
 					axios.get(location.origin + '/get_messages', {
 						params: {
 							sender_id: this.sender_id,
-							recipient_id: this.recipient_id
+							recipient_id: this.recipient_id,
 						}
 					}).then((response) => {
 						if (response.data.success) {
-							console.log(response.data.messages);
 							this.messages = response.data.messages;
 						}
 					});
@@ -293,7 +292,7 @@ $(document).ready(function() {
 			methods: {
 				addViewedMessagesHandler() {
 					let container = $('.notifications');
-					let docViewTop = container.scrollTop();
+					let docViewTop = container.scrollTop() + container.offset().top;
 					let docViewBottom = docViewTop + container.height();
 					let messages = container.children('.message');
 					messages.each(function() {
@@ -312,7 +311,8 @@ $(document).ready(function() {
 							viewed_notifications: this.viewed_notifications.join(',')
 						}
 					}).then(() => {
-						notifs.viewed_notifications = []
+						notifs.viewed_notifications = [];
+						notifs.getNotifications();
 					});
 				},
 				getNotifications() {
@@ -354,7 +354,7 @@ $(document).ready(function() {
 		let geoError = function() {
 			axios.get(location.origin + '/get_user_location_by_ip').then((response) => {
 				if (!response.data.success) {
-					console.warn(response.data.cause);
+					// console.warn(response.data.cause);
 				} else if (response.data.address.city && response.data.address.country_name) {
 					elem.value = response.data.address.city + ", " + response.data.address.country_name;
 				}
