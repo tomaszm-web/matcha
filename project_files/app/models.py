@@ -240,7 +240,7 @@ class Account:
 		user_dir = os.path.join(app.config['UPLOAD_FOLDER'], user['login'])
 		avatar_path = self.upload_photo(user_dir, files['avatar'])
 		if avatar_path is not None:
-			self.db.query('UPDATE users SET avatar = %s', (avatar_path,))
+			self.db.query('UPDATE users SET avatar = %s WHERE id = %s', (avatar_path, user['id']))
 		photo_filenames = []
 		photos = files.getlist('photos[]')
 		for i, photo in enumerate(photos):
