@@ -21,8 +21,8 @@ class Config(object):
 	MAIL_USE_TLS = False
 	MAIL_USE_SSL = True
 	# In google account settings allow access for unauthorized apps
-	MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
-	MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+	MAIL_USERNAME = os.environ.get('GMAIL_USERNAME')
+	MAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD')
 
 	# administrator list
 	ADMINS = ["evgeny.ocheredko@gmail.com"]

@@ -1,4 +1,3 @@
-import secrets
 from flask import (
 	render_template,
 	request,
@@ -10,7 +9,7 @@ from flask import (
 	jsonify)
 import requests
 from app.models import Account, Chat, Notification
-from app import app, db
+from app import app, db, csrf_update, login_required
 
 account = Account(db)
 chat = Chat(db)
@@ -19,9 +18,8 @@ notification = Notification(db)
 
 @app.route('/')
 @app.route('/index')
+@csrf_update
 def index():
-	session['csrf_token'] = secrets.token_hex(10)
-	app.jinja_env.globals['csrf_token'] = session['csrf_token']
 	if 'user' in session:
 		cur_user = account.get_user_info(session["user"])
 		cur_user['notifications'] = notification.get(cur_user['id'])
@@ -32,23 +30,16 @@ def index():
 
 
 @app.route('/settings')
+@csrf_update
+@login_required
 def settings():
-	session['csrf_token'] = secrets.token_hex(10)
-	app.jinja_env.globals['csrf_token'] = session['csrf_token']
-	if "user" not in session:
-		flash("You should log in to access your profile", 'danger')
-		return redirect(url_for('index'))
 	user = account.get_user_info(session["user"])
 	return render_template('settings.html', cur_user=user)
 
 
 @app.route('/profile', methods=["GET"])
+@csrf_update
 def profile():
-	session['csrf_token'] = secrets.token_hex(10)
-	app.jinja_env.globals['csrf_token'] = session['csrf_token']
-	if "user_id" not in request.args:
-		flash("Invalid profile", 'danger')
-		return redirect(url_for('index'))
 	user = account.get_user_info(id=request.args["user_id"])
 	if 'user' in session:
 		cur_user = account.get_user_info(session['user'])
@@ -61,11 +52,9 @@ def profile():
 
 
 @app.route('/chat', methods=["GET"])
+@csrf_update
+@login_required
 def chat_page():
-	if 'user' not in session:
-		return redirect(url_for('index'))
-	session['csrf_token'] = secrets.token_hex(10)
-	app.jinja_env.globals['csrf_token'] = session['csrf_token']
 	recipient = account.get_user_info(id=request.args["recipient_id"])
 	if not recipient:
 		flash("Wrong user id", 'danger')
@@ -106,14 +95,12 @@ def login():
 
 
 @app.route('/logout')
+@login_required
 def logout():
-	if "user" in session:
-		flash("You successfully logged out!", 'success')
-		sql = "UPDATE `users` SET online=0 WHERE id=%s"
-		db.query(sql, [session['user']])
-		session.pop("user", None)
-	else:
-		flash("You should log in first, to be able to log out!", 'danger')
+	flash("You successfully logged out!", 'success')
+	sql = "UPDATE `users` SET online=0 WHERE id=%s"
+	db.query(sql, [session['user']])
+	session.pop("user", None)
 	return redirect(url_for('index'))
 
 
@@ -178,7 +165,7 @@ def filter_users():
 @app.route('/like_user_ajax', methods=["GET"])
 def like_user_ajax():
 	if 'user' not in session:
-		jsonify({'success': False})
+		return jsonify({'success': False})
 	try:
 		recipient = request.args.get('liked_user')
 		executioner = request.args.get('like_owner')
@@ -191,9 +178,6 @@ def like_user_ajax():
 
 @app.route('/like_user', methods=["POST"])
 def like_user():
-	if 'user' not in session:
-		flash("You should log in first", 'danger')
-		redirect(url_for('index'))
 	try:
 		recipient = request.form.get('liked_user')
 		executioner = session['user']
@@ -273,6 +257,7 @@ def uploaded_file(filename, userdir=None):
 	if userdir:
 		return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}/{userdir}", filename)
 	return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}", filename)
+
 
 # todo Like after uploading photo
 # todo Sort by params

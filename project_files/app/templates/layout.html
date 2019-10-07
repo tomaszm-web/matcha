@@ -13,7 +13,6 @@
 		  integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/css/select2.min.css" rel="stylesheet">
 	<link href="static/css/main.css" rel="stylesheet">
-    <meta name="csrf_token" value="%% csrf_token %%">
 </head>
 <body>
 <section id="nav">
@@ -28,7 +27,9 @@
 				<nav class="main-menu">
 					<ul class="main-menu__list justify-content-center">
 						<li class="main-menu__item"><a href="%% url_for('index') %%">Main</a></li>
-						<li class="main-menu__item"><a href="%% url_for('settings') %%">Settings</a></li>
+						{% if 'user' in session %}
+							<li class="main-menu__item"><a href="%% url_for('settings') %%">Settings</a></li>
+						{% endif %}
 					</ul>
 				</nav>
 			</div>
@@ -46,7 +47,7 @@
 							{{ notif.message }}
 							<span class="message__timestamp text-secondary">{{ notif.date_created }}</span>
 						</a>
-						<div class="message" v-if="!length">No notifications yet</div>
+						<div class="message-empty" v-if="!length">No notifications yet</div>
 					</div>
 				</div>
             {% endif %}

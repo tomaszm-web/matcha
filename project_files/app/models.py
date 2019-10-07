@@ -211,10 +211,8 @@ class Account:
 		if action == "check":
 			if not user:
 				raise Exception("No user with such E-mail")
-			send_email("Matcha: Reset password",
-					   app.config["ADMINS"][0],
-					   [form["email"]],
-					   "It seems you want to change your password?",
+			send_email("Matcha: Reset password", app.config["ADMINS"][0],
+					   [form["email"]], "It seems you want to change your password?",
 					   render_template('reset_password.html', user=user))
 		elif action == "reset":
 			if form["token"] != user["token"]:
@@ -251,10 +249,11 @@ class Account:
 
 	def get_changed_values(self, prev_val, new_val):
 		"""Checks which values were updated"""
-		ignored = ('tags', 'csrf_token')
+		ignored = ('tags', '_csrf_token')
 		values = [val for key, val in new_val.items() if key not in ignored and str(prev_val[key]) != val]
-		sql = ', '.join(f"{key} = %s" for key, val in new_val.items() if key not in ignored and str(prev_val[key]) != val)
-		need_confirmation = new_val['email'] in values
+		sql = ', '.join(f"{key} = %s" for key, val in new_val.items()
+						if key not in ignored and str(prev_val[key]) != val)
+		need_confirmation = prev_val['email'] != new_val['email']
 		if need_confirmation:
 			sql += ", confirmed='0'"
 		return sql, values, need_confirmation

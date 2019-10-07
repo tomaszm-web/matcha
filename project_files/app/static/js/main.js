@@ -1,3 +1,70 @@
+if ((elem = document.getElementById('user-notif'))) {
+	notifs = new Vue({
+		el: '#notifications',
+		data: {
+			user_id: $('meta[data-cur-user-id]').attr('data-cur-user-id'),
+			notifications: {},
+			viewed_notifications: []
+		},
+		created() {
+			if (!this.user_id) return;
+			this.getNotifications();
+			setInterval(this.getNotifications, 10000);
+		},
+		computed: {
+			length() {
+				let size = 0, key;
+				for (key in this.notifications) {
+					if (this.notifications.hasOwnProperty(key))
+						size++;
+				}
+				return size;
+			}
+		},
+		updated() {
+			$('#notifications').on('shown.bs.dropdown', this.addViewedMessagesHandler)
+				.on('hide.bs.dropdown', this.delViewedNotifications);
+			$('.notifications').on('scroll', this.addViewedMessagesHandler);
+		},
+		methods: {
+			addViewedMessagesHandler() {
+				let container = $('.notifications');
+				let docViewTop = container.scrollTop() + container.offset().top;
+				let docViewBottom = docViewTop + container.height();
+				let messages = container.children('.message');
+				messages.each(function() {
+					let elemTop = $(this).offset().top;
+					let elemBottom = elemTop + $(this).height();
+					let messageNotInArray = notifs.viewed_notifications.indexOf($(this).attr('data-notif-id')) === -1;
+					if (messageNotInArray && (elemBottom <= docViewBottom) && (elemTop >= docViewTop)) {
+						this.viewed_notifications.push($(this).attr('data-notif-id'))
+					}
+				})
+			},
+			delViewedNotifications() {
+				if (!notifs.viewed_notifications.length)
+					return;
+				axios.get(location.origin + '/del_viewed_notifications', {
+					params: {
+						viewed_notifications: this.viewed_notifications.join(',')
+					}
+				}).then(() => {
+					this.viewed_notifications = [];
+					this.getNotifications();
+				});
+			},
+			getNotifications() {
+				axios.get(location.origin + '/get_notifications', {
+					params: {user_id: this.user_id}
+				}).then((response) => {
+					if (response.data.success)
+						this.notifications = response.data.notifications;
+				});
+			}
+		}
+	});
+}
+
 $(document).ready(function() {
 	let elem;
 	let parts = window.location.search.substr(1).split("&");
@@ -6,8 +73,6 @@ $(document).ready(function() {
 		let temp = parts[i].split("=");
 		$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
 	}
-	let socket = io.connect(location.origin);
-
 
 	let user_list_created = false;
 	if ((elem = document.querySelector(".users_list"))) {
@@ -261,73 +326,10 @@ $(document).ready(function() {
 
 	/*--------Notifications--------*/
 
-	if ((elem = document.getElementById('user-notif'))) {
-		notifs = new Vue({
-			el: '#notifications',
-			data: {
-				user_id: $('meta[data-cur-user-id]').attr('data-cur-user-id'),
-				notifications: {},
-				viewed_notifications: []
-			},
-			created() {
-				if (!this.user_id) return;
-				this.getNotifications();
-				setInterval(this.getNotifications, 10000);
-			},
-			computed: {
-				length() {
-					let size = 0, key;
-					for (key in this.notifications) {
-						if (this.notifications.hasOwnProperty(key))
-							size++;
-					}
-					return size;
-				}
-			},
-			updated() {
-				$('#notifications').on('shown.bs.dropdown', this.addViewedMessagesHandler)
-					.on('hide.bs.dropdown', this.delViewedNotifications);
-				$('.notifications').on('scroll', this.addViewedMessagesHandler);
-			},
-			methods: {
-				addViewedMessagesHandler() {
-					let container = $('.notifications');
-					let docViewTop = container.scrollTop() + container.offset().top;
-					let docViewBottom = docViewTop + container.height();
-					let messages = container.children('.message');
-					messages.each(function() {
-						let elemTop = $(this).offset().top;
-						let elemBottom = elemTop + $(this).height();
-						let messageNotInArray = notifs.viewed_notifications.indexOf($(this).attr('data-notif-id')) === -1;
-						if (messageNotInArray && (elemBottom <= docViewBottom) && (elemTop >= docViewTop)) {
-							notifs.viewed_notifications.push($(this).attr('data-notif-id'))
-						}
-					})
-				},
-				delViewedNotifications() {
-					if (!this.viewed_notifications.length) return;
-					axios.get(location.origin + '/del_viewed_notifications', {
-						params: {
-							viewed_notifications: this.viewed_notifications.join(',')
-						}
-					}).then(() => {
-						notifs.viewed_notifications = [];
-						notifs.getNotifications();
-					});
-				},
-				getNotifications() {
-					axios.get(location.origin + '/get_notifications', {
-						params: {user_id: this.user_id}
-					}).then((response) => {
-						if (response.data.success)
-							this.notifications = response.data.notifications;
-					});
-				}
-			}
-		});
-	}
+
 
 	/*--------GPS--------*/
+	let city;
 	if ((city = document.getElementById('city')) && elem.value !== '') {
 		let geoOptions = {timeout: 5000};
 		let geoSuccess = function(position) {
