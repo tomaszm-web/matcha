@@ -249,7 +249,7 @@ class Account:
 
 	def get_changed_values(self, prev_val, new_val):
 		"""Checks which values were updated"""
-		ignored = ('tags', '_csrf_token')
+		ignored = ('tags', 'csrf_token')
 		values = [val for key, val in new_val.items() if key not in ignored and str(prev_val[key]) != val]
 		sql = ', '.join(f"{key} = %s" for key, val in new_val.items()
 						if key not in ignored and str(prev_val[key]) != val)

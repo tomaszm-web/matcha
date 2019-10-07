@@ -6,7 +6,7 @@ from flask import (
 	flash,
 	redirect,
 	send_from_directory,
-	jsonify)
+	jsonify, abort)
 import requests
 from app.models import Account, Chat, Notification
 from app import app, db, csrf_update, login_required
@@ -162,18 +162,18 @@ def filter_users():
 		return "Something went wrong!"
 
 
-@app.route('/like_user_ajax', methods=["GET"])
+@app.route('/ajax/like_user', methods=["POST"])
 def like_user_ajax():
-	if 'user' not in session:
-		return jsonify({'success': False})
 	try:
-		recipient = request.args.get('liked_user')
-		executioner = request.args.get('like_owner')
-		action = account.like_user(executioner, recipient, request.args['unlike'])
+		req = request.get_json()
+		recipient = req['liked_user']
+		executioner = req['like_owner']
+		unlike = req['unlike']
+		action = account.like_user(executioner, recipient, unlike)
 		notification.send(recipient, action, account.get_user_info(executioner, extended=False))
 	except Exception as e:
 		return jsonify({'success': False, 'error_message': str(e)})
-	return jsonify({'success': True, 'unlike': request.args.get('unlike')})
+	return jsonify({'success': True, 'unlike': unlike})
 
 
 @app.route('/like_user', methods=["POST"])
@@ -245,9 +245,12 @@ def del_viewed_notifications():
 
 @app.before_request
 def before_request():
-	if request.method == "POST" and session['csrf_token'] != request.form.get('csrf_token'):
-		flash('Csrf attack!', 'danger')
-		return redirect(request.url)
+	if request.method == "POST":
+		json = request.get_json()
+		token = session.get('csrf_token')
+		csrf_in_json = json is not None and 'csrf_token' in json and token == json['csrf_token']
+		if request.form.get('csrf_token') != token and not csrf_in_json:
+			return abort(404)
 
 
 # Files

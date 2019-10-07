@@ -1,4 +1,6 @@
-if ((elem = document.getElementById('user-notif'))) {
+var elem = null;
+
+if (document.getElementById('user-notif')) {
 	notifs = new Vue({
 		el: '#notifications',
 		data: {
@@ -22,7 +24,8 @@ if ((elem = document.getElementById('user-notif'))) {
 			}
 		},
 		updated() {
-			$('#notifications').on('shown.bs.dropdown', this.addViewedMessagesHandler)
+			$('#notifications')
+				.on('shown.bs.dropdown', this.addViewedMessagesHandler)
 				.on('hide.bs.dropdown', this.delViewedNotifications);
 			$('.notifications').on('scroll', this.addViewedMessagesHandler);
 		},
@@ -35,14 +38,14 @@ if ((elem = document.getElementById('user-notif'))) {
 				messages.each(function() {
 					let elemTop = $(this).offset().top;
 					let elemBottom = elemTop + $(this).height();
-					let messageNotInArray = notifs.viewed_notifications.indexOf($(this).attr('data-notif-id')) === -1;
+					let messageNotInArray = this.viewed_notifications.indexOf($(this).attr('data-notif-id')) === -1;
 					if (messageNotInArray && (elemBottom <= docViewBottom) && (elemTop >= docViewTop)) {
 						this.viewed_notifications.push($(this).attr('data-notif-id'))
 					}
 				})
 			},
 			delViewedNotifications() {
-				if (!notifs.viewed_notifications.length)
+				if (!this.viewed_notifications.length)
 					return;
 				axios.get(location.origin + '/del_viewed_notifications', {
 					params: {
@@ -65,6 +68,17 @@ if ((elem = document.getElementById('user-notif'))) {
 	});
 }
 
+let user_list_created = false;
+elem = document.querySelector(".users_list");
+if (elem !== null) {
+	user_list_created = new Promise((resolve) => {
+		axios.get(location.origin + '/filter_users').then((response) => {
+			$('.users_list').html(response.data);
+			resolve(true);
+		});
+	})
+}
+
 $(document).ready(function() {
 	let elem;
 	let parts = window.location.search.substr(1).split("&");
@@ -74,38 +88,34 @@ $(document).ready(function() {
 		$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
 	}
 
-	let user_list_created = false;
-	if ((elem = document.querySelector(".users_list"))) {
-		user_list_created = new Promise((resolve, reject) => {
-			axios.get(location.origin + '/filter_users').then((response) => {
-				$('.users_list').html(response.data);
-				resolve(true);
-			});
-		})
-	}
-
-	function likeUserEvent() {
-		if ((elem = $('.likeUser')).attr('data-user-id') === '')
-			elem.attr('disabled', true);
-		$('.likeUser').click(function() {
-			axios.get(location.origin + '/like_user_ajax', {
-				params: {
-					unlike: $(this).hasClass('done'),
-					like_owner: $(this).attr('data-user-id'),
-					liked_user: $(this).attr('data-liked-user-id')
-				}
-			}).then((response) => {
-				if (response.data.success) {
-					$(this).toggleClass('done');
+	if (user_list_created !== false) {
+		user_list_created.then(() => {
+			let like_buttons = document.querySelectorAll('.like-user');
+			like_buttons.forEach((button) => {
+				button.onclick = async() => {
+					let data = {
+						unlike: button.classList.contains('done'),
+						like_owner: button.getAttribute('data-user-id'),
+						liked_user: button.getAttribute('data-liked-user-id'),
+						csrf_token: button.getAttribute('data-csrf')
+					};
+					fetch(`${window.origin}/ajax/like_user`, {
+						method: "POST",
+						credentials: "include",
+						body: JSON.stringify(data),
+						cache: 'no-cache',
+						headers: new Headers({
+							'Content-Type': 'application/json;charset=utf-8'
+						})
+					}).then(function(response) {
+						if (response.status !== 200)
+							return;
+						button.classList.toggle('done');
+					});
 				}
 			});
 		});
 	}
-
-	if (user_list_created)
-		user_list_created.then(likeUserEvent);
-	else
-		likeUserEvent();
 
 	$('.filters').submit(function(e) {
 		e.preventDefault();

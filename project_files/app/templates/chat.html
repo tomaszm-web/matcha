@@ -34,10 +34,10 @@
 						</div>
 					</div>
 					<form class="sendMessageForm" @submit.prevent="sendMessage">
-						{#						<input type="hidden" name="_csrf_token" value="%% csrf_token() %%">#}
+						<input type="hidden" name="csrf_token" value="%% csrf_token %%">
 						<input type="hidden" name="sender_id" value="%% cur_user.id %%">
 						<textarea name="text" placeholder="Type your text to %% recipient.login %% here"
-								  class="form-control chat__textarea" required maxlength="256"></textarea>
+								  class="form-control chat__textarea" required maxlength="256" @onen></textarea>
 						<button class="btn btn-block btn-primary">Send message</button>
 					</form>
 				</div>
