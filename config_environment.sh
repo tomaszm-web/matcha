@@ -10,7 +10,7 @@ SECRET_KEY=""
 
 echo "export MYSQL_HOST='${MYSQL_HOST}'"
 echo "export MYSQL_USER='${MYSQL_USER}'"
-echo "export MYSQL_DB='${mysqMYSQL_DBl_db}'"
+echo "export MYSQL_DB='${MYSQL_DB}'"
 echo "export MYSQL_PASSWORD='${MYSQL_PASSWORD}'"
 echo "export MAIL_USERNAME='${GMAIL_USERNAME}'"
 echo "export MAIL_PASSWORD='${GMAIL_PASSWORD}'"
