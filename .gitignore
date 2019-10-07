@@ -2,3 +2,4 @@
 project_files/app/__pycache__/
 project_files/__pycache__/
 venv
+config_environment.sh
