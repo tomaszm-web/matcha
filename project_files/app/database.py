@@ -18,6 +18,8 @@ class Database:
 									   cursorclass=MySQLdb.cursors.DictCursor)
 		except MySQLdb.OperationalError as e:
 			exit(f"MySql Connection Error. Cannot run app.\n{str(e)}")
+		except TypeError:
+			exit(f"MySQL Connection Error. Some environment variables are wrong!")
 
 	def query(self, sql, values=None, to_close=True):
 		try:
