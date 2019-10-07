@@ -6,7 +6,6 @@ Click==7.0
 dnspython==1.16.0
 eventlet==0.25.1
 Flask==1.0.3
-flask-csrf==0.9.2
 Flask-GoogleMaps==0.2.6
 Flask-Mail==0.9.1
 Flask-MySQLdb==0.2.0
