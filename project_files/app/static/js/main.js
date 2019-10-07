@@ -328,7 +328,7 @@ $(document).ready(function() {
 	}
 
 	/*--------GPS--------*/
-	if ((elem = document.getElementById('city')) && elem.value !== '') {
+	if ((city = document.getElementById('city')) && elem.value !== '') {
 		let geoOptions = {timeout: 5000};
 		let geoSuccess = function(position) {
 			axios.get("https://maps.googleapis.com/maps/api/geocode/json", {
@@ -347,7 +347,7 @@ $(document).ready(function() {
 				}
 				if (res) {
 					var splitted = res.split(', ');
-					elem.value = splitted[0] + ", " + splitted[1];
+					city.value = splitted[0] + ", " + splitted[1];
 				}
 			});
 		};
@@ -356,7 +356,9 @@ $(document).ready(function() {
 				if (!response.data.success) {
 					// console.warn(response.data.cause);
 				} else if (response.data.address.city && response.data.address.country_name) {
-					elem.value = response.data.address.city + ", " + response.data.address.country_name;
+					city.value = response.data.address.city + ", " + response.data.address.country_name;
+				} else {
+					city.value = "Kyiv, Ukraine";
 				}
 			});
 		};

@@ -33,6 +33,7 @@
 				</nav>
 			</div>
 			<div class="col-5 d-flex ml-auto align-items-center justify-content-end">
+            {% if 'user' in session: %}
 				<div class="dropdown" id="notifications">
 					<a href="#" class="text-success" data-toggle="dropdown" id="user-notif">
 						<i class="fas fa-bell"></i>
@@ -48,6 +49,7 @@
 						<div class="message" v-if="!length">No notifications yet</div>
 					</div>
 				</div>
+            {% endif %}
 				<div class="dropdown dropdown__profile">
 					<a href="#" class="profile-link rounded" data-toggle="dropdown" id="user-profile"
 					   style="background-image: url(%% cur_user.avatar if cur_user else 'static/img/default_avatar.png' %%)"></a>

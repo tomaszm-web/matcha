@@ -274,4 +274,6 @@ def uploaded_file(filename, userdir=None):
 		return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}/{userdir}", filename)
 	return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}", filename)
 
-# todo Notifications last notif cannot be deleted
+# todo Like after uploading photo
+# todo Sort by params
+# todo Get requests csrf

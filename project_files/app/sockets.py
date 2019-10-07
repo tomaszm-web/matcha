@@ -17,7 +17,6 @@ def connect_user_to_chat():
 	if 'user' in session:
 		users_in_chat[str(session['user'])] = request.sid
 
-
 @socketio.on('private_chat event', namespace='/private_chat')
 def send_message(data):
 	if 'sender_id' in data and 'recipient_id' in data and 'body' in data:
