@@ -1,5 +1,5 @@
 FROM python:3
-COPY requirements.txt config_environment.sh /matcha/
+COPY requirements.txt /matcha/
 WORKDIR /matcha
 ENV MYSQL_HOST=""
 ENV MYSQL_USER=""
