@@ -22,7 +22,6 @@ notification = Notification(db)
 @app.route('/index')
 @csrf_update
 def index():
-	res = db.get_row("SELECT COUNT(*) as row_num FROM `users` WHERE email='evgeny.ocheredko@gmail.com'")
 	if 'user' in session:
 		cur_user = account.get_user_info(session["user"])
 	else:
@@ -162,14 +161,15 @@ def filter_users():
 @app.route('/ajax/like_user', methods=["POST"])
 def like_user_ajax():
 	try:
-		req = request.get_json()
-		recipient = req['liked_user']
-		executioner = req['like_owner']
-		unlike = req['unlike']
+		executioner = session['user']
+		recipient = request.form['liked_user']
+		unlike = request.form['unlike']
 		action = account.like_user(executioner, recipient, unlike)
 		notification.send(recipient, action, account.get_user_info(executioner, extended=False))
+	except KeyError:
+		return jsonify({'success': False, 'error': 'KeyError'})
 	except Exception as e:
-		return jsonify({'success': False, 'error_message': str(e)})
+		return jsonify({'success': False, 'error': str(e)})
 	return jsonify({'success': True, 'unlike': unlike})
 
 

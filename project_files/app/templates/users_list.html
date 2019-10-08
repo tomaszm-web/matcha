@@ -15,7 +15,8 @@
 						City: %% user.city %%
 					</p>
 					<button class="btn btn-success like-user {% print('done') if user.id in cur_user.liked_users %}"
-							data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%" data-csrf="%% csrf_token %%">
+							data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%"
+							data-csrf="%% csrf_token %%">
 						<i class="fas fa-thumbs-up"></i>Like
 					</button>
 				</div>

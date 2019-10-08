@@ -34,15 +34,33 @@ if (document.getElementById('notifications')) {
 	});
 }
 
-let user_list_created = false;
-elem = document.querySelector(".users_list");
-if (elem !== null) {
-	user_list_created = new Promise((resolve) => {
-		axios.get(location.origin + '/filter_users').then((response) => {
-			$('.users_list').html(response.data);
+let user_list = document.querySelector(".users_list");
+if (user_list !== null) {
+	let user_list_created = new Promise(resolve => {
+		axios.get(`${window.origin}/filter_users`).then(response => {
+			user_list.innerHTML = response.data;
 			resolve(true);
 		});
-	})
+	});
+	user_list_created.then(() => {
+		let like_buttons = document.querySelectorAll('.like-user');
+		like_buttons.forEach(button => {
+			button.onclick = async() => {
+				let data = {
+					unlike: button.classList.contains('done'),
+					liked_user: button.getAttribute('data-liked-user-id'),
+					csrf_token: button.getAttribute('data-csrf')
+				};
+				axios.post(`${window.origin}/ajax/like_user`, data).then(response => {
+						if (response.data.success) {
+							button.classList.toggle('done');
+						} else if (response.data.error === 'KeyError') {
+							$('#logIn').modal();
+						}
+					 })
+			}
+		});
+	});
 }
 
 $(document).ready(function() {
@@ -53,40 +71,14 @@ $(document).ready(function() {
 		$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
 	}
 
-	if (user_list_created !== false) {
-		user_list_created.then(() => {
-			let like_buttons = document.querySelectorAll('.like-user');
-			like_buttons.forEach((button) => {
-				button.onclick = async() => {
-					let data = {
-						unlike: button.classList.contains('done'),
-						like_owner: button.getAttribute('data-user-id'),
-						liked_user: button.getAttribute('data-liked-user-id'),
-						csrf_token: button.getAttribute('data-csrf')
-					};
-					fetch(`${window.origin}/ajax/like_user`, {
-						method: "POST",
-						credentials: "include",
-						body: JSON.stringify(data),
-						cache: 'no-cache',
-						headers: new Headers({
-							'Content-Type': 'application/json;charset=utf-8'
-						})
-					}).then(function(response) {
-						if (response.status !== 200)
-							return;
-						button.classList.toggle('done');
-					});
-				}
-			});
-		});
-	}
-
+	let loadingGif = document.querySelector('.loading');
 	$('.filters').submit(function(e) {
 		e.preventDefault();
 		let data = new FormData(e.target);
-		axios.post(location.origin + '/filter_users', data).then((response) => {
-			$('.users_list').html(response.data);
+		user_list.innerHTML = "";
+		user_list.appendChild(loadingGif);
+		axios.post(`${window.origin}/filter_users`, data).then(response => {
+			user_list.innerHTML = response.data;
 		});
 	});
 
