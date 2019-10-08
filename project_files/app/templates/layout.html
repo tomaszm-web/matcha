@@ -3,16 +3,17 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta data-cur-user-id="%% cur_user.id if cur_user else '0' %%">
+	<meta data-cur-user="%% cur_user.id if cur_user else '-1' %%">
+	<meta data-csrf-token="%% csrf_token %%">
 	<title>Matcha</title>
-	<link rel='shortcut icon' href='static/img/favicon.png' type='image/x-icon'>
+	<link rel='shortcut icon' href="%% url_for('static', filename='img/favicon.png') %%" type='image/x-icon'>
 	<link href="https://fonts.googleapis.com/css?family=Montserrat:900|Poppins:300,400&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
 		  integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
 		  integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/css/select2.min.css" rel="stylesheet">
-	<link href="static/css/main.css" rel="stylesheet">
+	<link href="%% url_for('static', filename='css/main.css') %%" rel="stylesheet">
 </head>
 <body>
 <section id="nav">
@@ -20,7 +21,7 @@
 		<div class="row align-items-center">
 			<div class="col-2 text-center">
 				<a href="%% url_for('index') %%">
-					<img src="static/img/logo.png" alt="Matcha" class="img-fluid">
+					<img src="%% url_for('static', filename='img/logo.png') %%" alt="Matcha" class="img-fluid">
 				</a>
 			</div>
 			<div class="col-5 col-sm-3">
@@ -34,33 +35,36 @@
 				</nav>
 			</div>
 			<div class="col-5 d-flex ml-auto align-items-center justify-content-end">
-            {% if 'user' in session: %}
-				<div class="dropdown" id="notifications">
-					<a href="#" class="text-success" data-toggle="dropdown" id="user-notif">
-						<i class="fas fa-bell"></i>
-						{{ length }}
-					</a>
-					<div class="dropdown-menu dropdown-menu-right notifications" aria-labelledby="user-notif">
-						<div class="dropdown-header">Notifications:</div>
-						<a class="message text-info" v-for="notif in notifications" :href="notif.link"
-						   :data-notif-id="notif.id">
-							{{ notif.message }}
-							<span class="message__timestamp text-secondary">{{ notif.date_created }}</span>
+				{% if 'user' in session %}
+					<div class="dropdown" id="notifications">
+						<a href="#" class="text-success" data-toggle="dropdown" id="user-notif">
+							<i class="fas fa-bell"></i>
+							{{ notifications.length }}
 						</a>
-						<div class="message-empty" v-if="!length">No notifications yet</div>
+						<div class="dropdown-menu dropdown-menu-right notifications" aria-labelledby="user-notif">
+							<div class="dropdown-header">Notifications:</div>
+							<a class="message text-info" v-for="notif in notifications" :href="notif.link">
+								{{ notif.message }}
+								<span class="message__timestamp text-secondary">{{ notif.date_created }}</span>
+								<button type="button" class="close" @click.prevent="delNotification(notif.id)">
+									<span aria-hidden="true">&times;</span>
+								</button>
+							</a>
+							<div class="message-empty" v-if="!notifications.length">No notifications yet</div>
+						</div>
 					</div>
-				</div>
-            {% endif %}
+				{% endif %}
 				<div class="dropdown dropdown__profile">
 					<a href="#" class="profile-link rounded" data-toggle="dropdown" id="user-profile"
-					   style="background-image: url(%% cur_user.avatar if cur_user else 'static/img/default_avatar.png' %%)"></a>
+					   style="background-image: url(%% cur_user.avatar if cur_user else url_for('static', filename='img/default_avatar.png') %%)">
+					</a>
 					<div class="dropdown-menu dropdown-menu-right" aria-labelledby="user-profile">
 						{% if "user" not in session %}
 							<a href="#" class="btn btn-transparent" data-toggle="modal" data-target="#signUp">Sign
 								up</a>
 							<a href="#" class="btn btn-transparent" data-toggle="modal" data-target="#logIn">Log in</a>
 						{% else %}
-							<a href="%% url_for('profile', user_id=cur_user.id) %%" class="btn btn-transparent">My
+							<a href="%% url_for('profile', profile_id=cur_user.id) %%" class="btn btn-transparent">My
 								profile</a>
 							<a href="/logout" class="btn btn-transparent">Log out</a>
 						{% endif %}
@@ -200,9 +204,10 @@
 		crossorigin="anonymous"></script>
 <script type="text/javascript"
 		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyALTJ_4VStfdn39CkEBeyybal3FaxANm60&libraries=places&language=en"></script>
-<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="%% url_for('static', filename='node_modules/axios/dist/axios.js') %%"></script>
 <script src="https://cdn.jsdelivr.net/npm/vue"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/js/select2.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
-<script src="static/js/main.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"
+		integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+<script src="%% url_for('static', filename='js/main.js') %%"></script>
 </html>

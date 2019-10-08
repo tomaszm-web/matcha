@@ -2,7 +2,7 @@
 	{% if not cur_user or (user.id != cur_user.id and user.id not in cur_user.blocked_users) %}
 		<div class="col-12 col-sm-6 col-lg-4">
 			<div class="card">
-				<a href="%% url_for('profile', user_id=user.id) %%">
+				<a href="%% url_for('profile', profile_id=user.id) %%">
 					<img src="%% user.avatar %%" alt="Matcha" class="card-img-top">
 				</a>
 				<div class="card-body">

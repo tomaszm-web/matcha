@@ -15,12 +15,12 @@ class Account:
 		self.db = db
 
 	def check_login_existent(self, login):
-		sql = "SELECT * FROM `users` WHERE login=%s"
+		sql = "SELECT COUNT(login) FROM `users` WHERE login = %s"
 		row_num = self.db.get_row_num(sql, (login,))
 		return row_num > 0
 
 	def check_email_existent(self, email):
-		sql = "SELECT * FROM `users` WHERE email=%s"
+		sql = "SELECT COUNT(email) as row_num FROM `users` WHERE email = %s"
 		row_num = self.db.get_row_num(sql, (email,))
 		return row_num > 0
 
@@ -48,12 +48,10 @@ class Account:
 		tags = [k['name'] for k in tags]
 		return tags
 
-	def get_user_info(self, id, extended=True):
-		if not id:
-			return None
+	def get_user_info(self, user_id, extended=True):
 		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
 			   "biography, avatar, photos, age, online, last_login, city, token FROM `users`  WHERE id=%s")
-		user = self.db.get_row(sql, [id])
+		user = self.db.get_row(sql, [user_id])
 		if extended:
 			user['tags'] = self.get_tags(user["id"])
 			user['liked_users'] = self.get_liked_users(user['id'])
@@ -186,11 +184,11 @@ class Account:
 		sql = "SELECT id, password, confirmed FROM `users` WHERE login=%s"
 		user = self.db.get_row(sql, [form['login']])
 		if not user:
-			raise Exception("Wrong login!")
+			raise ValueError("Wrong login!")
 		if not check_password_hash(user["password"], form["pass"]):
-			raise Exception("Wrong password!")
+			raise ValueError("Wrong password!")
 		if not user["confirmed"]:
-			raise Exception("You should confirm your E-mail first!")
+			raise ValueError("You should confirm your E-mail first!")
 		session["user"] = user['id']
 		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 		sql = "UPDATE `users` SET online = 1, last_login=%s WHERE id=%s"
@@ -261,9 +259,8 @@ class Account:
 	def change(self, form, files=None):
 		user = self.get_user_info(session['user'])
 		sql, values, need_confirmation = self.get_changed_values(user, form)
-		# for a, b in form.items():
 		if need_confirmation and self.check_email_existent(form["email"]):
-			raise Exception("User with his E-mail already exists")
+			raise ValueError("User with his E-mail already exists")
 		if len(values) > 0:
 			sql = f"UPDATE `users` SET {sql} WHERE id=%s"
 			values.append(user['id'])
@@ -378,9 +375,6 @@ class Notification:
 			notif['date_created'] = datetime.strftime(notif['date_created'], self.timestamp_format)
 		return notifications
 
-	def delete_viewed(self, viewed):
-		arr_len = len(viewed)
-		vals = ', '.join('%s' for _ in range(len(viewed)))
-		sql = f"DELETE FROM `notifications` WHERE id IN ({vals})"
-		self.db.query(sql, viewed)
-		print(f"{viewed} was deleted! {vals}")
+	def delete(self, notification_id):
+		sql = "DELETE FROM `notifications` WHERE id = %s"
+		self.db.query(sql, (notification_id,))

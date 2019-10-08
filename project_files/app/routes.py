@@ -1,3 +1,5 @@
+import os
+
 from flask import (
 	render_template,
 	request,
@@ -6,7 +8,7 @@ from flask import (
 	flash,
 	redirect,
 	send_from_directory,
-	jsonify, abort)
+	jsonify, abort, make_response)
 import requests
 from app.models import Account, Chat, Notification
 from app import app, db, csrf_update, login_required
@@ -20,42 +22,51 @@ notification = Notification(db)
 @app.route('/index')
 @csrf_update
 def index():
+	res = db.get_row("SELECT COUNT(*) as row_num FROM `users` WHERE email='evgeny.ocheredko@gmail.com'")
 	if 'user' in session:
 		cur_user = account.get_user_info(session["user"])
-		cur_user['notifications'] = notification.get(cur_user['id'])
 	else:
 		cur_user = None
 	users = account.get_all_users(user_match=cur_user)
 	return render_template('index.html', users=users, cur_user=cur_user)
 
 
-@app.route('/settings')
+@app.route('/settings', methods=["GET", "POST"])
 @csrf_update
 @login_required
 def settings():
+	if request.method == "POST":
+		try:
+			account.change(request.form, request.files)
+		except KeyError:
+			flash("You haven't set some values!", 'danger')
+		except Exception as e:
+			flash(str(e), 'danger')
+		else:
+			flash("Your profile's info was successfully updated", 'success')
+		return redirect(request.url)
 	user = account.get_user_info(session["user"])
 	return render_template('settings.html', cur_user=user)
 
 
-@app.route('/profile', methods=["GET"])
+@app.route('/profile/<int:profile_id>')
 @csrf_update
-def profile():
-	user = account.get_user_info(id=request.args["user_id"])
-	if 'user' in session:
-		cur_user = account.get_user_info(session['user'])
-		if user['id'] not in cur_user['checked_users'] and user['id'] != cur_user['id']:
-			account.check_user(cur_user['id'], user['id'])
-			notification.send(user['id'], 'check_profile', cur_user)
-		return render_template('profile.html', cur_user=cur_user, user=user)
-	else:
+def profile(profile_id):
+	user = account.get_user_info(user_id=profile_id)
+	if 'user' not in session:
 		return render_template('profile.html', user=user)
+	cur_user = account.get_user_info(session['user'])
+	if user['id'] not in cur_user['checked_users'] and user['id'] != cur_user['id']:
+		account.check_user(cur_user['id'], user['id'])
+		notification.send(user['id'], 'check_profile', cur_user)
+	return render_template('profile.html', cur_user=cur_user, user=user)
 
 
 @app.route('/chat', methods=["GET"])
 @csrf_update
 @login_required
 def chat_page():
-	recipient = account.get_user_info(id=request.args["recipient_id"])
+	recipient = account.get_user_info(user_id=request.args["recipient_id"])
 	if not recipient:
 		flash("Wrong user id", 'danger')
 		return redirect(url_for('index'))
@@ -83,15 +94,15 @@ def registration():
 def login():
 	try:
 		account.login(request.form)
-	except Exception as e:
-		if type(e).__name__ == "KeyError":
-			cause = "You haven't set some values"
-		else:
-			cause = str(e)
-		return jsonify({'success': False, 'cause': cause})
+	except KeyError:
+		error = "You haven't set some values"
+		return make_response(jsonify({'success': False, 'error': error}), 203)
+	except ValueError as e:
+		error = str(e)
+		return make_response(jsonify({'success': False, 'error': error}), 203)
 	else:
 		flash("You successfully logged in!", 'success')
-	return jsonify({'success': True})
+	return make_response(jsonify({'success': True}), 202)
 
 
 @app.route('/logout')
@@ -120,20 +131,6 @@ def reset():
 	except Exception as e:
 		return jsonify({'success': False, 'error': str(e)})
 	return jsonify({'success': True})
-
-
-@app.route('/change_profile_info', methods=["POST"])
-def change():
-	try:
-		account.change(request.form, request.files)
-	except Exception as e:
-		if type(e).__name__ == "KeyError":
-			flash("You haven't set some values", 'danger')
-		else:
-			flash(str(e), 'danger')
-	else:
-		flash("Your profile's info was successfully updated", 'success')
-	return redirect(url_for('settings'))
 
 
 @app.route('/get_user_location_by_ip', methods=["GET"])
@@ -228,38 +225,38 @@ def send_notification():
 @app.route('/get_notifications', methods=["GET"])
 def get_notifications():
 	try:
-		notifications = notification.get(request.args['user_id'])
-		return jsonify({'success': True, 'notifications': notifications})
+		notifications = notification.get(session['user'])
+		res = make_response(jsonify(notifications), 200)
 	except Exception as e:
-		return jsonify({'success': False, 'cause': str(e)})
+		res = make_response(jsonify({'error': str(e)}), 404)
+	return res
 
 
-@app.route('/del_viewed_notifications', methods=["GET"])
-def del_viewed_notifications():
+@app.route('/del_notification/<int:notification_id>', methods=["DELETE"])
+def del_notification(notification_id):
 	try:
-		notification.delete_viewed(request.args.get('viewed_notifications').split(','))
-		return jsonify({'success': True})
+		notification.delete(notification_id)
+		res = make_response('', 204)
 	except Exception as e:
-		return jsonify({'success': False, 'cause': str(e)})
+		res = make_response(jsonify({'error': str(e)}), 401)
+	return res
 
 
 @app.before_request
 def before_request():
-	if request.method == "POST":
+	if request.method != "GET":
 		json = request.get_json()
 		token = session.get('csrf_token')
 		csrf_in_json = json is not None and 'csrf_token' in json and token == json['csrf_token']
 		if request.form.get('csrf_token') != token and not csrf_in_json:
-			return abort(404)
+			return abort(403)
 
 
 # Files
-@app.route('/uploads/<userdir>/<filename>')
-@app.route('/uploads/<filename>')
-def uploaded_file(filename, userdir=None):
-	if userdir:
-		return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}/{userdir}", filename)
-	return send_from_directory(f"../{app.config['UPLOAD_FOLDER']}", filename)
+@app.route('/uploads/<path:path>')
+def uploaded_file(path):
+	dirpath = os.path.join(os.getcwd(), app.config['UPLOAD_FOLDER'])
+	return send_from_directory(dirpath, path)
 
 
 # todo Like after uploading photo

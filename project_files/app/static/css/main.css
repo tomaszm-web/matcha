@@ -193,6 +193,11 @@ header {
 	position: relative;
 }
 
+.notifications .close {
+	font-size: 20px;
+	color: #17a2b8
+}
+
 .notifications .message:last-child, .notifications .message-empty {
 	border-bottom: 0;
 }

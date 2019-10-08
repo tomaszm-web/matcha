@@ -1,68 +1,34 @@
-var elem = null;
+let elem;
 
-if (document.getElementById('user-notif')) {
-	notifs = new Vue({
+if (document.getElementById('notifications')) {
+	$(document).on('click.bs.dropdown.data-api', '.notifications', function(e) {
+	   e.stopPropagation();
+	});
+	notifications = new Vue({
 		el: '#notifications',
 		data: {
-			user_id: $('meta[data-cur-user-id]').attr('data-cur-user-id'),
-			notifications: {},
-			viewed_notifications: []
+			notifications: [],
+			csrf_token: document.querySelector('meta[data-csrf-token]').getAttribute('data-csrf-token')
 		},
 		created() {
-			if (!this.user_id) return;
 			this.getNotifications();
 			setInterval(this.getNotifications, 10000);
 		},
-		computed: {
-			length() {
-				let size = 0, key;
-				for (key in this.notifications) {
-					if (this.notifications.hasOwnProperty(key))
-						size++;
-				}
-				return size;
-			}
-		},
-		updated() {
-			$('#notifications')
-				.on('shown.bs.dropdown', this.addViewedMessagesHandler)
-				.on('hide.bs.dropdown', this.delViewedNotifications);
-			$('.notifications').on('scroll', this.addViewedMessagesHandler);
-		},
 		methods: {
-			addViewedMessagesHandler() {
-				let container = $('.notifications');
-				let docViewTop = container.scrollTop() + container.offset().top;
-				let docViewBottom = docViewTop + container.height();
-				let messages = container.children('.message');
-				messages.each(function() {
-					let elemTop = $(this).offset().top;
-					let elemBottom = elemTop + $(this).height();
-					let messageNotInArray = this.viewed_notifications.indexOf($(this).attr('data-notif-id')) === -1;
-					if (messageNotInArray && (elemBottom <= docViewBottom) && (elemTop >= docViewTop)) {
-						this.viewed_notifications.push($(this).attr('data-notif-id'))
-					}
-				})
-			},
-			delViewedNotifications() {
-				if (!this.viewed_notifications.length)
-					return;
-				axios.get(location.origin + '/del_viewed_notifications', {
-					params: {
-						viewed_notifications: this.viewed_notifications.join(',')
-					}
-				}).then(() => {
-					this.viewed_notifications = [];
-					this.getNotifications();
-				});
+			delNotification(notif_id) {
+				let url = `${window.origin}/del_notification/${notif_id}`;
+				axios.delete(url, { data: {csrf_token: this.csrf_token} })
+					 .then(() => {
+						 for (let i = this.notifications.length - 1; i >= 0; i--)
+							 if (this.notifications[i].id === notif_id)
+							 	this.notifications.splice(i, 1);
+					});
 			},
 			getNotifications() {
-				axios.get(location.origin + '/get_notifications', {
-					params: {user_id: this.user_id}
-				}).then((response) => {
-					if (response.data.success)
-						this.notifications = response.data.notifications;
-				});
+				axios.get(`${window.origin}/get_notifications`)
+					.then((response) => {
+						this.notifications = response.data;
+					})
 			}
 		}
 	});
@@ -80,7 +46,6 @@ if (elem !== null) {
 }
 
 $(document).ready(function() {
-	let elem;
 	let parts = window.location.search.substr(1).split("&");
 	let $_GET = {};
 	for (let i = 0; i < parts.length; i++) {
@@ -174,20 +139,19 @@ $(document).ready(function() {
 		},
 		methods: {
 			sendForm(e) {
-				this.errors = [];
 				axios({
 					method: 'post',
-					url: '/login',
+					url: `${window.origin}/login`,
 					data: new FormData(e.target)
 				}).then((response) => {
 					if (response.data.success) {
 						this.error = null;
 						location.reload()
 					} else {
-						this.error = response.data.cause
+						this.error = response.data.error
 					}
-				}).catch(() => {
-					this.errors.push("Something went wrong! Try again")
+				}).catch((error) => {
+					this.error = error
 				});
 			}
 		}
