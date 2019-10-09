@@ -61,11 +61,11 @@ def profile(profile_id):
 	return render_template('profile.html', cur_user=cur_user, user=user)
 
 
-@app.route('/chat', methods=["GET"])
+@app.route('/chat/<int:recipient_id>')
 @csrf_update
 @login_required
-def chat_page():
-	recipient = account.get_user_info(user_id=request.args["recipient_id"])
+def chat_page(recipient_id):
+	recipient = account.get_user_info(recipient_id)
 	if not recipient:
 		flash("Wrong user id", 'danger')
 		return redirect(url_for('index'))
@@ -82,10 +82,10 @@ def registration():
 		account.registration(request.form)
 	except Exception as e:
 		if type(e).__name__ == "KeyError":
-			cause = "You haven't set some values"
+			error = "You haven't set some values"
 		else:
-			cause = str(e)
-		return jsonify({'success': False, 'cause': cause})
+			error = str(e)
+		return jsonify({'success': False, 'error': error})
 	return jsonify({'success': True})
 
 
@@ -141,7 +141,7 @@ def get_user_location_by_ip():
 		})
 		response.raise_for_status()
 	except Exception as e:
-		return jsonify({'success': False, 'cause': str(e)})
+		return jsonify({'success': False, 'error': str(e)})
 	return jsonify({'success': True, 'address': response.json()})
 
 
@@ -204,13 +204,14 @@ def report_user():
 
 
 # Chat
-@app.route('/get_messages', methods=["GET", "POST"])
+@app.route('/ajax/get_messages', methods=["POST"])
 def get_messages():
+	req = request.get_json()
 	try:
-		messages = chat.get_messages(request.args['sender_id'], request.args['recipient_id'])
+		messages = chat.get_messages(req['sender_id'], req['recipient_id'])
 		return jsonify({'success': True, 'messages': messages})
 	except Exception as e:
-		return jsonify({'success': False, 'cause': str(e)})
+		return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/send_notification', methods=["GET"])
@@ -219,7 +220,7 @@ def send_notification():
 		notification.send(request.args['sender_id'], request.args['message'], )
 		return jsonify({'success': True})
 	except Exception as e:
-		return jsonify({'success': False, 'cause': str(e)})
+		return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/get_notifications', methods=["GET"])
@@ -245,10 +246,11 @@ def del_notification(notification_id):
 @app.before_request
 def before_request():
 	if request.method != "GET":
-		json = request.get_json()
-		token = session.get('csrf_token')
-		csrf_in_json = json is not None and 'csrf_token' in json and token == json['csrf_token']
-		if request.form.get('csrf_token') != token and not csrf_in_json:
+		if request.is_json:
+			req = request.get_json()
+		else:
+			req = request.form
+		if req.get('csrf_token') != session.get('csrf_token'):
 			return abort(403)
 
 

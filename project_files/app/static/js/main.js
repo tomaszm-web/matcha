@@ -1,5 +1,6 @@
 let elem;
 
+/*===================Notifications===================*/
 if (document.getElementById('notifications')) {
 	$(document).on('click.bs.dropdown.data-api', '.notifications', function(e) {
 	   e.stopPropagation();
@@ -26,7 +27,7 @@ if (document.getElementById('notifications')) {
 			},
 			getNotifications() {
 				axios.get(`${window.origin}/get_notifications`)
-					.then((response) => {
+					.then(response => {
 						this.notifications = response.data;
 					})
 			}
@@ -110,7 +111,7 @@ $(document).ready(function() {
 						data: new FormData(e.target)
 					}).then((response) => {
 						if (!response.data.success)
-							this.errors.push(response.data.cause);
+							this.errors.push(response.data.error);
 						else {
 							this.message = "Registration is almost done! You should confirm your E-mail to log in."
 							e.target.reset();
@@ -241,58 +242,55 @@ $(document).ready(function() {
 				$(this).toggleClass('done')
 		})
 	});
-
 	/*--------Chat--------*/
-	if (document.getElementById('chat')) {
-		const chat = new Vue({
-			el: '#chat',
-			data: {
-				messages: [],
-				sender_id: null,
-				recipient_id: null,
-				socket: null
-			},
-			created() {
-				this.socket = io.connect(location.origin + '/private_chat');
-				this.recipient_id = $_GET['recipient_id'];
-				this.sender_id = $(".sendMessageForm input[name='sender_id']").val();
-				this.showMessages();
-				this.socket.on('private_chat response', (msg) => {
-					this.messages.push(msg)
+	const chat_page = document.querySelector('#chat .chat');
+	let chat = new Vue({
+		el: '#chat',
+		data: {
+			messages: [],
+			sender_id: null,
+			recipient_id: null,
+			socket: null,
+			csrf_token: null
+		},
+		created() {
+			this.socket = io.connect(`${window.origin}/private_chat`);
+			this.sender_id = document.querySelector('meta[data-cur-user]')
+									 .getAttribute('data-cur-user');
+			this.csrf_token = document.querySelector('meta[data-csrf-token]')
+									  .getAttribute('data-csrf-token');
+			this.recipient_id = location.href.substring(location.href.lastIndexOf('/') + 1);
+			this.showMessages();
+			this.socket.on('private_chat response', msg => {
+				this.messages.push(msg)
+			});
+		},
+		updated: function() {
+			chat_page.scrollTop = chat_page.scrollHeight;
+		},
+		methods: {
+			showMessages() {
+				axios.post(`${window.origin}/ajax/get_messages`, {
+					sender_id: this.sender_id,
+					recipient_id: this.recipient_id,
+					csrf_token: this.csrf_token
+				}).then(response => {
+					if (response.data.success) {
+						this.messages = response.data.messages;
+						chat_page.scrollTop = chat_page.scrollHeight;
+					}
 				});
 			},
-			updated: function() {
-				const el = document.querySelector('#chat .chat');
-				el.scrollTop = el.scrollHeight;
-			},
-			methods: {
-				showMessages() {
-					axios.get(location.origin + '/get_messages', {
-						params: {
-							sender_id: this.sender_id,
-							recipient_id: this.recipient_id,
-						}
-					}).then((response) => {
-						if (response.data.success) {
-							this.messages = response.data.messages;
-						}
-					});
-				},
-				sendMessage(e) {
-					this.socket.emit('private_chat event', {
-						sender_id: this.sender_id,
-						recipient_id: this.recipient_id,
-						body: e.target.text.value
-					});
-					e.target.text.value = ""
-				}
+			sendMessage(e) {
+				this.socket.emit('private_chat event', {
+					sender_id: this.sender_id,
+					recipient_id: this.recipient_id,
+					body: e.target.text.value
+				});
+				e.target.text.value = ""
 			}
-		});
-	}
-
-	/*--------Notifications--------*/
-
-
+		}
+	});
 
 	/*--------GPS--------*/
 	let city;
@@ -322,7 +320,7 @@ $(document).ready(function() {
 		let geoError = function() {
 			axios.get(location.origin + '/get_user_location_by_ip').then((response) => {
 				if (!response.data.success) {
-					// console.warn(response.data.cause);
+					// console.warn(response.data.error);
 				} else if (response.data.address.city && response.data.address.country_name) {
 					city.value = response.data.address.city + ", " + response.data.address.country_name;
 				} else {
