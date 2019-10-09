@@ -24,14 +24,15 @@ class Database:
 	def query(self, sql, values=None, to_close=True):
 		try:
 			cur = self.con.cursor()
+		except MySQLdb.OperationalError:
+			self.connect()
+			cur = self.con.cursor()
+		try:
 			cur.execute(sql, values)
 			self.con.commit()
 			if cur and to_close:
 				cur.close()
 			return cur
-		except MySQLdb.OperationalError:
-			self.connect()
-			return self.query(sql, values, to_close)
 		except Exception:
 			self.con.rollback()
 
@@ -58,7 +59,3 @@ class Database:
 		res = cur.rowcount
 		cur.close()
 		return res
-
-	def create_tables(self):
-		return self.con
-

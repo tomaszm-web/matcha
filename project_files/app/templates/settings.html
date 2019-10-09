@@ -2,7 +2,8 @@
 {% block content %}
 	<section id="profile">
 		<div class="container">
-			<form action="%% url_for('settings') %%" method="POST" class="row settings-form" enctype="multipart/form-data">
+			<form action="%% url_for('settings') %%" method="POST" class="row settings-form"
+				  enctype="multipart/form-data">
 				<div class="col-12">
 					<h2>Account details</h2>
 				</div>
@@ -15,8 +16,9 @@
 					<div class="profile__info">
 						<code>%% cur_user.login %%</code>
 						<div class="progress">
-							<div class="progress-bar" style="width: %% cur_user.fame %%%">Your Fame Rating: %%
-								cur_user.fame %%%
+							<div class="progress-bar" style="width: %% cur_user.fame %%%">
+								Your Fame Rating:
+								%% cur_user.fame %%%
 							</div>
 						</div>
 					</div>
@@ -40,27 +42,27 @@
 					</label>
 					<label class="form-group">
 						Biography:
-						<textarea name="biography" placeholder="Type a few words about you" class="form-control"
-								  required>%% cur_user.biography %%</textarea>
+						<textarea required name="biography" placeholder="Few words about yourself" class="form-control">{% if cur_user.biography %}%% cur_user.biography %%{% endif %}</textarea>
 					</label>
 				</div>
 				<div class="col-12 col-sm-6">
 					<label class="form-group">
 						Age:
-						<input type="number" name="age" class="form-control" value="%% cur_user.age %%" min="0"
-							   max="100">
+						<input type="number" name="age" class="form-control" value="%% cur_user.age %%"
+							   min="0" max="100" placeholder="Fill in your age">
 					</label>
 					<label class="form-group">
 						Gender:
 						<select class="form-control" name="gender" required>
+							<option value="" selected disabled>Select your gender</option>
 							<option value="male" {% print('selected') if cur_user.gender == "male" %}>Male</option>
-							<option value="female" {% print('selected') if cur_user.gender == "female" %}>Female
-							</option>
+							<option value="female" {% print('selected') if cur_user.gender == "female" %}>Female</option>
 						</select>
 					</label>
 					<label class="form-group">
 						Sexual preferences:
 						<select class="form-control" name="preferences" required>
+							<option value="" selected disabled>Select your preferences</option>
 							<option value="bisexual" {% print('selected') if cur_user.preferences == "bisexual" %}>
 								Bisexual
 							</option>
@@ -82,7 +84,9 @@
 					</label>
 					<label class="form-group">
 						Your city:
-						<input id="city" type="text" name="city" class="form-control" placeholder="Type in your city" value="%% cur_user.city %%">
+						<input required id="city" type="text" name="city" class="form-control" placeholder="Type in your city"
+							   {% if cur_user.city %}value="%% cur_user.city %%"{% endif %}
+						>
 					</label>
 				</div>
 				<div class="col-12">

@@ -1,24 +1,33 @@
 {% for user in users %}
 	{% if not cur_user or (user.id != cur_user.id and user.id not in cur_user.blocked_users) %}
 		<div class="col-12 col-sm-6 col-lg-4">
-			<div class="card">
+			<div class="card user-list__card">
 				<a href="%% url_for('profile', profile_id=user.id) %%">
 					<img src="%% user.avatar %%" alt="Matcha" class="card-img-top">
 				</a>
 				<div class="card-body">
 					<h5 class="card-title">%% user.login %%</h5>
 					<p class="card-text">%% user.biography %%</p>
+
+					<div class="progress">
+						<div class="progress-bar" style="width: %% user.fame %%%">
+							%% user.login %%'s Fame Rating:
+							%% user.fame %%%
+						</div>
+					</div>
 					<p class="card-text text-muted">
 						Age: %% user.age %%<br>
 						Gender: %% user.gender %%<br>
 						Preferences: %% user.preferences %%<br>
 						City: %% user.city %%
 					</p>
-					<button class="btn btn-success like-user {% print('done') if user.id in cur_user.liked_users %}"
-							data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%"
-							data-csrf="%% csrf_token %%">
-						<i class="fas fa-thumbs-up"></i>Like
-					</button>
+					{% if cur_user %}
+						<button class="btn btn-success like-user {% print('done') if user.id in cur_user.liked_users %}"
+								data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%"
+								data-csrf="%% csrf_token %%">
+							<i class="fas fa-thumbs-up"></i>Like
+						</button>
+					{% endif %}
 				</div>
 			</div>
 		</div>

@@ -135,6 +135,10 @@ form input {
 	margin: 7px 0;
 }
 
+.dropdown__profile .dropdown-menu {
+	top: 95%;
+}
+
 .dropdown-menu {
 	background-color: #2f2c3c;
 }
@@ -221,6 +225,7 @@ header {
 	background-position: center center;
 	-webkit-background-size: cover;
 	background-size: cover;
+	background-image: url('../img/default_avatar.png');
 }
 
 .profile-link:hover {
@@ -239,6 +244,27 @@ header {
 
 #users .card {
 	margin-bottom: 20px;
+}
+
+@keyframes slide_from_bottom {
+  from {
+	  transform: translateY(100%);
+  }
+  to {
+	  transform: translateY(0);
+  }
+}
+
+.user-list__card {
+	animation: .3s ease-out slide_from_bottom;
+}
+
+.user-list__card a {
+	text-align: center;
+}
+
+.user-list__card a img {
+	max-width: 100%;
 }
 
 .filters {

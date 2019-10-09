@@ -55,8 +55,11 @@
 					</div>
 				{% endif %}
 				<div class="dropdown dropdown__profile">
-					<a href="#" class="profile-link rounded" data-toggle="dropdown" id="user-profile"
-					   style="background-image: url(%% cur_user.avatar if cur_user else url_for('static', filename='img/default_avatar.png') %%)">
+					<a href="#" class="profile-link rounded"id="user-profile"
+					   {% if cur_user %}
+					   style="background-image: url(%% cur_user.avatar %%)"
+					   {% endif %}
+					>
 					</a>
 					<div class="dropdown-menu dropdown-menu-right" aria-labelledby="user-profile">
 						{% if "user" not in session %}
@@ -108,9 +111,9 @@
 						   required>
 					<input class="form-control" type="password" name="repass" placeholder="Repeat password"
 						   v-model="repass" required>
-					<ul class="errors" v-if="errors.length">
-						<li class="alert alert-danger" v-for="error in errors">{{ error }}</li>
-					</ul>
+					<div class="alert alert-danger" v-if="error">
+						{{ error }}
+					</div>
 					<div class="alert alert-success" v-show="message">
 						{{ message }}
 					</div>
@@ -136,7 +139,7 @@
 					<input type="hidden" name="csrf_token" value="%% csrf_token %%">
 					<input class="form-control" type="text" name="login" placeholder="Login" required maxlength="30">
 					<input class="form-control" type="password" name="pass" placeholder="Password" required>
-					<li class="alert alert-danger" v-if="error">{{ error }}</li>
+					<div class="alert alert-danger" v-if="error">{{ error }}</div>
 					<button class="btn btn-danger">Log In</button>
 					<button class="btn btn-info" data-dismiss="modal" data-toggle="modal" data-target="#reset">Forgot
 						your password?
@@ -167,10 +170,10 @@
 						   placeholder="New password">
 					<input class="form-control" v-show="action == 'reset'" v-model="repass" type="password"
 						   name="repass" placeholder="Repeat new password">
-					<ul class="errors" v-if="errors.length">
-						<li class="alert alert-danger" v-for="error in errors">{{ error }}</li>
-					</ul>
-					<div class="alert alert-success" v-show="message">
+					<div class="alert alert-danger" v-if="error">
+						{{ error }}
+					</div>
+					<div class="alert alert-success" v-if="message">
 						{{ message }}
 					</div>
 					<button class="btn btn-danger">Reset Password</button>

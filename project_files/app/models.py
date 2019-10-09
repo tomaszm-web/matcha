@@ -1,7 +1,7 @@
 import os
 import json
 import secrets
-import pygeoip
+import itertools
 from datetime import datetime
 from flask import render_template, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -15,13 +15,13 @@ class Account:
 		self.db = db
 
 	def check_login_existent(self, login):
-		sql = "SELECT COUNT(login) FROM `users` WHERE login = %s"
-		row_num = self.db.get_row_num(sql, (login,))
+		sql = "SELECT COUNT(login) as row_num FROM `users` WHERE login = %s"
+		row_num = self.db.get_row(sql, (login,))['row_num']
 		return row_num > 0
 
 	def check_email_existent(self, email):
 		sql = "SELECT COUNT(email) as row_num FROM `users` WHERE email = %s"
-		row_num = self.db.get_row_num(sql, (email,))
+		row_num = self.db.get_row(sql, (email,))['row_num']
 		return row_num > 0
 
 	def check_img_extension(self, filename):
@@ -47,6 +47,12 @@ class Account:
 		tags = self.db.get_all_rows(sql, (user_id,))
 		tags = [k['name'] for k in tags]
 		return tags
+
+	def check_user_info(self, user):
+		return (
+				user.get('city') and user.get('biography') and user.get('gender') and
+				user.get('preferences') and user.get('age')
+		)
 
 	def get_user_info(self, user_id, extended=True):
 		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
@@ -84,13 +90,9 @@ class Account:
 			else:
 				matches['male'] = 'heterosexual'
 				matches['female'] = 'homosexual'
-		sql += ' WHERE '
-		values = []
-		for gender, preferences in matches.items():
-			sql += "(gender=%s AND (preferences=%s OR preferences='bisexual')) OR "
-			values.append(gender)
-			values.append(preferences)
-		sql = sql[:-4]
+		sql_part = "gender=%s AND (preferences=%s OR preferences='bisexual')"
+		sql += ' AND ({})'.format(' OR '.join(sql_part for _ in range(len(matches))))
+		values = itertools.chain.from_iterable((gender, preferences) for gender, preferences in matches.items())
 		return sql, values
 
 	def filter_by_criterias(self, users, filters):
@@ -108,7 +110,8 @@ class Account:
 		return filtered_users
 
 	def get_all_users(self, user_match, filters=None):
-		sql = "SELECT id, login, age, biography, avatar, city, gender, preferences FROM `users`"
+		sql = ("SELECT id, login, age, biography, avatar, city, gender, preferences FROM `users` "
+			   "WHERE NOT (age IS NULL OR city IS NULL OR gender IS NULL OR preferences IS NULL)")
 		if user_match:
 			sql, values = self.filter_by_preferences(sql, user_match)
 			users = self.db.get_all_rows(sql, values)
@@ -138,6 +141,7 @@ class Account:
 		all_tags_names = (tag["name"] for tag in all_tags)
 		sql = "INSERT INTO `tags` (name) VALUES"
 		tag_list = []
+		sql = ', '.join('%s' for tag_name in range(len(tags)) if tag_name not in all_tags_names)
 		for tag_name in tags:
 			if tag_name not in all_tags_names:
 				sql += " (%s),"
@@ -145,7 +149,7 @@ class Account:
 		if len(tag_list):
 			self.db.query(sql[:-1], tag_list)
 
-	def update_users_tags(self, user, new_tags):
+	def update_user_tags(self, user, new_tags):
 		if new_tags and user['tags'] == new_tags:
 			return None
 		self.insert_nonexistent_tags(new_tags)
@@ -189,17 +193,17 @@ class Account:
 			raise ValueError("Wrong password!")
 		if not user["confirmed"]:
 			raise ValueError("You should confirm your E-mail first!")
-		session["user"] = user['id']
+		session['user'] = user['id']
 		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 		sql = "UPDATE `users` SET online = 1, last_login=%s WHERE id=%s"
-		self.db.query(sql, [last_login_date, user['id']])
+		self.db.query(sql, (last_login_date, user['id']))
 
 	def confirmation(self, login, token):
-		sql = "SELECT token FROM `users` WHERE login=%s"
-		user = self.db.get_row(sql, [login])
+		sql = "SELECT token FROM `users` WHERE login = %s"
+		user = self.db.get_row(sql, (login,))
 		if user and user["token"] == token:
-			sql = "UPDATE `users` SET confirmed='1' WHERE login=%s"
-			self.db.query(sql, [login])
+			sql = "UPDATE `users` SET confirmed = 1 WHERE login = %s"
+			self.db.query(sql, (login,))
 			return True
 		return False
 
@@ -208,13 +212,13 @@ class Account:
 		user = self.db.get_row(sql, [form["email"]])
 		if action == "check":
 			if not user:
-				raise Exception("No user with such E-mail")
+				raise ValueError("No user with such E-mail")
 			send_email("Matcha: Reset password", app.config["ADMINS"][0],
 					   [form["email"]], "It seems you want to change your password?",
 					   render_template('reset_password.html', user=user))
 		elif action == "reset":
 			if form["token"] != user["token"]:
-				raise Exception("Wrong token!")
+				raise ValueError("Wrong token!")
 			sql = "UPDATE `users` SET password=%s WHERE email=%s"
 			self.db.query(sql, (generate_password_hash(form["pass"]), form["email"]))
 			flash("You successfully updated your password!", 'success')
@@ -265,7 +269,7 @@ class Account:
 			sql = f"UPDATE `users` SET {sql} WHERE id=%s"
 			values.append(user['id'])
 			self.db.query(sql, values)
-		self.update_users_tags(user, form.getlist('tags'))
+		self.update_user_tags(user, form.getlist('tags'))
 		self.update_user_files(user, files)
 		if need_confirmation:
 			self.email_confirmation(form["email"], user['login'], user["token"])
@@ -296,7 +300,7 @@ class Account:
 		return liked_users
 
 	def like_user(self, like_owner, like_to, unlike):
-		if unlike == "True":
+		if unlike:
 			sql = "DELETE FROM `likes` WHERE like_owner=%s AND liked_user=%s"
 			action = 'unlike'
 		else:
@@ -360,7 +364,7 @@ class Notification:
 
 	def send(self, recipient_id, notif_type, executive_user):
 		links = {
-			'user_action': url_for('profile', user_id=executive_user['id']),
+			'user_action': url_for('profile', profile_id=executive_user['id']),
 			'message': url_for('chat_page', recipient_id=executive_user['id'])
 		}
 		sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"

@@ -24,6 +24,9 @@ notification = Notification(db)
 def index():
 	if 'user' in session:
 		cur_user = account.get_user_info(session["user"])
+		if not account.check_user_info(cur_user):
+			flash('Please, fill in information about yourself', 'info')
+			return redirect(url_for('settings'))
 	else:
 		cur_user = None
 	users = account.get_all_users(user_match=cur_user)
@@ -55,6 +58,9 @@ def profile(profile_id):
 	if 'user' not in session:
 		return render_template('profile.html', user=user)
 	cur_user = account.get_user_info(session['user'])
+	if not account.check_user_info(cur_user):
+		flash('Please, fill in information about yourself', 'info')
+		return redirect(url_for('settings'))
 	if user['id'] not in cur_user['checked_users'] and user['id'] != cur_user['id']:
 		account.check_user(cur_user['id'], user['id'])
 		notification.send(user['id'], 'check_profile', cur_user)
@@ -70,6 +76,9 @@ def chat_page(recipient_id):
 		flash("Wrong user id", 'danger')
 		return redirect(url_for('index'))
 	user = account.get_user_info(session["user"])
+	if not account.check_user_info(user):
+		flash('Please, fill in information about yourself', 'info')
+		return redirect(url_for('settings'))
 	if recipient['id'] not in user['liked_users'] or user['id'] not in recipient['liked_users']:
 		flash("You should like each other before chatting", 'danger')
 		return redirect(url_for('profile', user_id=recipient['id']))
@@ -80,13 +89,13 @@ def chat_page(recipient_id):
 def registration():
 	try:
 		account.registration(request.form)
+	except KeyError:
+		res = jsonify({'success': False, 'error': "You haven't set some values"})
 	except Exception as e:
-		if type(e).__name__ == "KeyError":
-			error = "You haven't set some values"
-		else:
-			error = str(e)
-		return jsonify({'success': False, 'error': error})
-	return jsonify({'success': True})
+		res = jsonify({'success': False, 'error': str(e)})
+	else:
+		res = jsonify({'success': True})
+	return res
 
 
 @app.route('/login', methods=["POST"])
@@ -160,10 +169,11 @@ def filter_users():
 
 @app.route('/ajax/like_user', methods=["POST"])
 def like_user_ajax():
+	req = request.get_json() if request.is_json else request.form
 	try:
 		executioner = session['user']
-		recipient = request.form['liked_user']
-		unlike = request.form['unlike']
+		recipient = req['liked_user']
+		unlike = req['unlike']
 		action = account.like_user(executioner, recipient, unlike)
 		notification.send(recipient, action, account.get_user_info(executioner, extended=False))
 	except KeyError:
@@ -182,7 +192,7 @@ def like_user():
 		notification.send(recipient, action, account.get_user_info(executioner, extended=False))
 	except Exception:
 		flash("Something went wrong. Try again a bit later!", 'danger')
-	return redirect(url_for('profile', user_id=request.form.get('liked_user')))
+	return redirect(url_for('profile', profile_id=request.form.get('liked_user')))
 
 
 @app.route('/block_user', methods=["GET"])
@@ -210,6 +220,8 @@ def get_messages():
 	try:
 		messages = chat.get_messages(req['sender_id'], req['recipient_id'])
 		return jsonify({'success': True, 'messages': messages})
+	except KeyError:
+		return jsonify({'success': False, 'error': 'KeyError'})
 	except Exception as e:
 		return jsonify({'success': False, 'error': str(e)})
 
@@ -246,10 +258,7 @@ def del_notification(notification_id):
 @app.before_request
 def before_request():
 	if request.method != "GET":
-		if request.is_json:
-			req = request.get_json()
-		else:
-			req = request.form
+		req = request.get_json() if request.is_json else request.form
 		if req.get('csrf_token') != session.get('csrf_token'):
 			return abort(403)
 
