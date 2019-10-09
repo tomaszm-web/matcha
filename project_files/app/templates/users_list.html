@@ -22,11 +22,19 @@
 						City: %% user.city %%
 					</p>
 					{% if cur_user %}
-						<button class="btn btn-success like-user {% print('done') if user.id in cur_user.liked_users %}"
-								data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%"
-								data-csrf="%% csrf_token %%">
-							<i class="fas fa-thumbs-up"></i>Like
-						</button>
+						{% if user.id in cur_user.liked_users %}
+							<button class="btn btn-danger like-user"
+									data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%"
+									data-csrf="%% csrf_token %%" data-unlike="1">
+									<i class="fas fa-thumbs-down"></i>Unlike
+							</button>
+						{% else %}
+							<button class="btn btn-success like-user"
+									data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%"
+									data-csrf="%% csrf_token %%" data-unlike="0">
+									<i class="fas fa-thumbs-up"></i>Like
+							</button>
+						{% endif %}
 					{% endif %}
 				</div>
 			</div>

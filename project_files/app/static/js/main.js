@@ -60,14 +60,21 @@ if (user_list !== null) {
 		like_buttons.forEach(button => {
 			button.onclick = async() => {
 				let data = {
-					unlike: button.classList.contains('done'),
+					unlike: button.getAttribute('data-unlike') == '1' ? true : false,
 					liked_user: button.getAttribute('data-liked-user-id'),
 					csrf_token: button.getAttribute('data-csrf')
 				};
 				axios.post(`${window.origin}/ajax/like_user`, data)
 					.then(response => {
 						if (response.data.success) {
-							button.classList.toggle('done');
+							button.classList.toggle('btn-success');
+							button.classList.toggle('btn-danger');
+							if (!data.unlike) {
+								button.innerHTML = "<i class='fas fa-thumbs-down'></i>Unlike"
+							} else {
+								button.innerHTML = "<i class='fas fa-thumbs-up'></i>Like"
+							}
+							data.unlike = !data.unlike;
 						} else if (response.data.error === 'KeyError') {
 							$('#logIn').modal();
 						}
