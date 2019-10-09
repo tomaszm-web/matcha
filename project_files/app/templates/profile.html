@@ -73,36 +73,32 @@
 						</select>
 					{% endif %}
 					{% if cur_user and user.id != cur_user.id %}
-						<div class="btn-group">
-							<form action="%% url_for('like_user') %%" method="POST">
-								<input type="hidden" name="csrf_token" value="%% csrf_token %%">
-								<input type="hidden" name="unlike" value="%% user.id in cur_user.liked_users %%">
-								<input type="hidden" name="liked_user" value="%% user.id %%">
-								<button class="btn btn-success {% print('done') if user.id in cur_user.liked_users %}">
-									<i class="fas fa-thumbs-up"></i>Like
-								</button>
-							</form>
-							{% if user.id in cur_user.liked_users and cur_user.id in user.liked_users %}
-								<a href="%% url_for('chat_page', recipient_id=user.id) %%" class="btn btn-primary chat-link">
-									<i class="fas fa-comment"></i>Chat
-								</a>
-							{% endif %}
-						</div>
-						{% if user.id not in cur_user.liked_users %}
-							<div class="btn-group">
-								<button class="btn btn-danger blockUser {% print('done') if user.id in cur_user.blocked_users %}"
-										data-blocked-user-id="%% user.id %%"
-										data-user-id="%% cur_user.id %%">
-									<i class="fas fa-ban"></i>Block user
-								</button>
-
-								<button class="btn btn-warning reportUser {% print('done') if user.id in cur_user.reported_users %}"
-										data-reported-user-id="%% user.id %%"
-										data-user-id="%% cur_user.id %%">
-									<i class="fas fa-ban"></i>Report as fake
-								</button>
-							</div>
+						{% if user.id in cur_user.liked_users and cur_user.id in user.liked_users %}
+							<a href="%% url_for('chat_page', recipient_id=user.id) %%" class="btn btn-primary chat-link btn-lg btn-block">
+								<i class="fas fa-comment"></i>Chat
+							</a>
 						{% endif %}
+						<div class="d-flex justify-content-between">
+							<form action="%% url_for('like_user', user_id=user.id) %%" method="POST">
+								<input type="hidden" name="csrf_token" value="%% csrf_token %%">
+								<input type="hidden" name="unlike" value="%% (user.id in cur_user.liked_users)|int %%">
+								{% if user.id in cur_user.liked_users %}
+									<button class="btn btn-danger"><i class="fas fa-thumbs-down"></i>Unlike</button>
+								{% else %}
+									<button class="btn btn-success"><i class="fas fa-thumbs-up"></i>Like</button>
+								{% endif %}
+							</form>
+							<button class="btn btn-warning reportUser {% print('done') if user.id in cur_user.reported_users %}"
+									data-reported-user-id="%% user.id %%"
+									data-user-id="%% cur_user.id %%">
+								<i class="fas fa-ban"></i>Report as fake
+							</button>
+							<button class="btn btn-dark blockUser {% print('done') if user.id in cur_user.blocked_users %}"
+									data-blocked-user-id="%% user.id %%"
+									data-user-id="%% cur_user.id %%">
+								<i class="fas fa-ban"></i>Block user
+							</button>
+						</div>
 					{% endif %}
 				</div>
 			</div>

@@ -183,16 +183,15 @@ def like_user_ajax():
 	return jsonify({'success': True, 'unlike': unlike})
 
 
-@app.route('/like_user', methods=["POST"])
-def like_user():
+@app.route('/like_user/<int:user_id>/', methods=["POST"])
+def like_user(user_id):
 	try:
-		recipient = request.form.get('liked_user')
-		executioner = session['user']
-		action = account.like_user(executioner, recipient, request.form.get('unlike'))
-		notification.send(recipient, action, account.get_user_info(executioner, extended=False))
+		like_owner = session['user']
+		action = account.like_user(like_owner, user_id, int(request.form['unlike']))
+		notification.send(user_id, action, account.get_user_info(like_owner, extended=False))
 	except Exception:
 		flash("Something went wrong. Try again a bit later!", 'danger')
-	return redirect(url_for('profile', profile_id=request.form.get('liked_user')))
+	return redirect(url_for('profile', profile_id=user_id))
 
 
 @app.route('/block_user', methods=["GET"])
