@@ -1,3 +1,4 @@
+{% set avatar = cur_user.avatar if cur_user.avatar else url_for('static', filename='img/default_avatar.png') %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -57,7 +58,7 @@
 				<div class="dropdown dropdown__profile">
 					<a href="#" class="profile-link rounded"id="user-profile"
 					   {% if cur_user %}
-					   style="background-image: url(%% cur_user.avatar %%)"
+					   style="background-image: url(%% avatar %%)"
 					   {% endif %}
 					>
 					</a>

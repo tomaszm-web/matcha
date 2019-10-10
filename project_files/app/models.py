@@ -3,6 +3,7 @@ import json
 import secrets
 import itertools
 from datetime import datetime
+import MySQLdb.cursors
 from flask import render_template, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -44,14 +45,14 @@ class Account:
 		sql = ("SELECT tags.name FROM `tags` "
 			   "INNER JOIN `users_tags` ON tags.id = users_tags.tag_id "
 			   "WHERE users_tags.user_id = %s")
-		tags = self.db.get_all_rows(sql, (user_id,))
-		tags = [k['name'] for k in tags]
+		tags = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
+		tags = [tag_name for tag_name, in tags]
 		return tags
 
 	def check_user_info(self, user):
 		return (
-				user.get('city') and user.get('biography') and user.get('gender') and
-				user.get('preferences') and user.get('age')
+				user.get('avatar') and user.get('city') and user.get('biography') and
+				user.get('gender') and user.get('preferences') and user.get('age')
 		)
 
 	def get_user_info(self, user_id, extended=True):
@@ -134,38 +135,29 @@ class Account:
 				   "You should confirm your E-mail!",
 				   render_template('signup_email.html', login=login, token=token))
 
-	def insert_nonexistent_tags(self, tags):
-		if not tags:
-			return False
-		all_tags = self.db.get_all_rows("SELECT * FROM `tags`")
-		all_tags_names = (tag["name"] for tag in all_tags)
-		sql = "INSERT INTO `tags` (name) VALUES"
-		tag_list = []
-		sql = ', '.join('%s' for tag_name in range(len(tags)) if tag_name not in all_tags_names)
-		for tag_name in tags:
-			if tag_name not in all_tags_names:
-				sql += " (%s),"
-				tag_list.append(tag_name)
-		if len(tag_list):
-			self.db.query(sql[:-1], tag_list)
-
 	def update_user_tags(self, user, new_tags):
-		if new_tags and user['tags'] == new_tags:
+		if not new_tags or user['tags'] == new_tags:
 			return None
-		self.insert_nonexistent_tags(new_tags)
-		all_tags = self.db.get_all_rows("SELECT * FROM `tags`")
+		all_tags = self.db.get_all_rows("SELECT * FROM `tags`", cursorclass=MySQLdb.cursors.Cursor)
+		all_tags = {tag_name for _, tag_name in all_tags}
+		sql = ', '.join('%s' for tag_name in new_tags if tag_name not in all_tags)
+		new_tags_set = set(new_tags)
+		nonexistent_tags = new_tags_set - all_tags
+		if nonexistent_tags:
+			sql = f"INSERT INTO `tags` (name) VALUES ({sql})"
+			self.db.query(sql, nonexistent_tags)
 
 		sql = "DELETE FROM `users_tags` WHERE user_id=%s"
-		self.db.query(sql, [user["id"]])
-		sql = "INSERT INTO `users_tags` (user_id, tag_id) VALUES"
-		tag_list = []
-		for tag in new_tags:
-			sql += " (%s, %s),"
-			tag_id = next(item["id"] for item in all_tags if item["name"] == tag)
-			tag_list.append(user["id"])
-			tag_list.append(tag_id)
-		if len(tag_list):
-			self.db.query(sql[:-1], tag_list)
+		self.db.query(sql, (user['id'],))
+
+		all_tags = self.db.get_all_rows("SELECT * FROM `tags`", cursorclass=MySQLdb.cursors.Cursor)
+		sql = ', '.join("(%s, %s)" for _ in range(len(new_tags)))
+		user_tag_ids = itertools.chain.from_iterable(
+			(user['id'], tag_id) for tag_id, tag_name in all_tags if tag_name in new_tags_set
+		)
+		if len(sql):
+			sql = f"INSERT INTO `users_tags` (user_id, tag_id) VALUES {sql}"
+			self.db.query(sql, user_tag_ids)
 
 	def registration(self, form):
 		if self.check_login_existent(form["login"]):
@@ -175,12 +167,9 @@ class Account:
 		sql = "INSERT INTO `users`(login, name, surname, email, password, token) VALUES(%s, %s, %s, %s, %s, %s)"
 		user_token = secrets.token_hex(10)
 		self.db.query(sql, (
-			form["login"],
-			form["name"],
-			form["surname"],
-			form["email"],
-			generate_password_hash(form["pass"]),
-			user_token
+			form["login"], form["name"],
+			form["surname"], form["email"],
+			generate_password_hash(form["pass"]), user_token
 		))
 		self.email_confirmation(form["email"], form["login"], user_token)
 
@@ -223,33 +212,46 @@ class Account:
 			self.db.query(sql, (generate_password_hash(form["pass"]), form["email"]))
 			flash("You successfully updated your password!", 'success')
 
-	def upload_photo(self, user_dir, photo):
-		if photo and self.check_img_extension(photo.filename):
-			photo_path = secure_filename(photo.filename)
-			photo_path = os.path.join(user_dir, photo_path)
-			if not os.path.exists(user_dir):
-				os.mkdir(user_dir)
-			if not os.path.exists(photo_path):
-				photo.save(photo_path)
-			return photo_path
-		return None
+	def upload_photo(self, relative_dir, photo):
+		"""
+		Save photo in folder from app config.
+		:return:filename of new photo
+		"""
+		if not photo or not self.check_img_extension(photo.filename):
+			return None
+		photo_filename = secure_filename(photo.filename)
+		absolute_dir = os.path.join(app.config['UPLOAD_PATH'], relative_dir)
+		if not os.path.exists(absolute_dir):
+			os.makedirs(absolute_dir)
+		absolute_path = os.path.join(absolute_dir, photo_filename)
+		if not os.path.exists(absolute_path):
+			photo.save(absolute_path)
+		return photo_filename
 
 	def update_user_files(self, user, files):
+		"""
+		Uploads user avatar and 4 photos.
+		In database relative path is stored.
+		"""
 		if not files:
 			return None
-		user_dir = os.path.join(app.config['UPLOAD_FOLDER'], user['login'])
-		avatar_path = self.upload_photo(user_dir, files['avatar'])
-		if avatar_path is not None:
-			self.db.query('UPDATE users SET avatar = %s WHERE id = %s', ('/' + avatar_path, user['id']))
-		photo_filenames = []
+		relative_dir = os.path.join(app.config['UPLOAD_FOLDER'], user['login'])
+		avatar_filename = self.upload_photo(relative_dir, files['avatar'])
+		if avatar_filename is not None:
+			relative_path = os.path.join('/', relative_dir, avatar_filename)
+			self.db.query('UPDATE users SET avatar = %s WHERE id = %s', (relative_path, user['id']))
 		photos = files.getlist('photos[]')
+		photo_filenames = [photo for photo in user['photos']]
 		for i, photo in enumerate(photos):
-			photo_path = self.upload_photo(user_dir, photo)
-			photo_filenames.append('/' + photo_path if photo_path else user['photos'][i])
-		if len(photo_filenames) > 0:
+			if photo:
+				photo_filename = self.upload_photo(relative_dir, photo)
+				relative_path = os.path.join('/', relative_dir, photo_filename)
+				photo_filenames[i] = relative_path
+		if photo_filenames != user['photos']:
 			self.db.query('UPDATE users SET photos = %s WHERE id = %s', (json.dumps(photo_filenames), user['id']))
 
-	def get_changed_values(self, prev_val, new_val):
+	@classmethod
+	def get_changed_values(cls, prev_val, new_val):
 		"""Checks which values were updated"""
 		ignored = ('tags', 'csrf_token')
 		values = [val for key, val in new_val.items() if key not in ignored and str(prev_val[key]) != val]
@@ -278,25 +280,25 @@ class Account:
 	def get_liked_users(self, user_id):
 		sql = "SELECT * FROM `likes` WHERE like_owner=%s"
 		response = self.db.get_all_rows(sql, [user_id])
-		liked_users = tuple(k["liked_user"] for k in response)
+		liked_users = [k["liked_user"] for k in response]
 		return liked_users
 
 	def get_blocked_users(self, user_id):
 		sql = "SELECT * FROM `blocked` WHERE user_id=%s"
 		response = self.db.get_all_rows(sql, [user_id])
-		blocked_users = tuple(k["blocked_id"] for k in response)
+		blocked_users = [k["blocked_id"] for k in response]
 		return blocked_users
 
 	def get_reported_users(self, user_id):
 		sql = "SELECT * FROM `reports` WHERE user_id=%s"
 		response = self.db.get_all_rows(sql, [user_id])
-		reported_users = tuple(k["reported_id"] for k in response)
+		reported_users = [k["reported_id"] for k in response]
 		return reported_users
 
 	def get_checked_users(self, user_login):
 		sql = "SELECT * FROM `checked_profile` WHERE checking=%s"
 		response = self.db.get_all_rows(sql, [user_login])
-		liked_users = tuple(k["checked_user"] for k in response)
+		liked_users = [k["checked_user"] for k in response]
 		return liked_users
 
 	def like_user(self, like_owner, like_to, unlike):
@@ -313,12 +315,12 @@ class Account:
 		self.db.query(sql, (like_owner, like_to))
 		return action
 
-	def block_user(self, user_id, blocked_id, unblock):
-		if unblock == 'true':
-			sql = "DELETE FROM `blocked` WHERE user_id=%s AND blocked_id=%s"
-		else:
-			sql = "INSERT INTO `blocked` SET user_id=%s, blocked_id=%s"
+	def block_user(self, user_id, blocked_id):
+		sql = "INSERT INTO `blocked` SET user_id = %s, blocked_id = %s"
 		self.db.query(sql, (user_id, blocked_id))
+		sql = "DELETE FROM `likes` WHERE (like_owner = %s AND liked_user = %s) OR (like_owner = %s AND liked_user = %s)"
+		self.db.query(sql, (user_id, blocked_id, blocked_id, user_id))
+		sql = "DELETE FROM `notifications`"
 
 	def report_user(self, user_id, reported_id, unreport):
 		if unreport == 'true':

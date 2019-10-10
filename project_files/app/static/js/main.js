@@ -232,19 +232,6 @@ $(document).ready(function() {
 		e.target.parentNode.classList.add("selected");
 	};
 
-	$('.blockUser').click(function() {
-		axios.get('/block_user', {
-			params: {
-				unblock: $(this).hasClass('done'),
-				user_id: $(this).attr('data-user-id'),
-				blocked_id: $(this).attr('data-blocked-user-id')
-			}
-		}).then((response) => {
-			if (response.data.success)
-				$(this).toggleClass('done')
-		})
-	});
-
 	$('.reportUser').click(function() {
 		axios.get('/report_user', {
 			params: {

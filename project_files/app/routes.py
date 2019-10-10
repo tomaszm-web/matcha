@@ -38,7 +38,7 @@ def settings():
 		except KeyError:
 			flash("You haven't set some values!", 'danger')
 		except Exception as e:
-			flash(str(e), 'danger')
+			flash(f'{type(e).__name__}: {str(e)}', 'danger')
 		else:
 			flash("Your profile's info was successfully updated", 'success')
 		return redirect(request.url)
@@ -53,6 +53,10 @@ def profile(profile_id):
 	if 'user' not in session:
 		return render_template('profile.html', user=user)
 	cur_user = account.get_user_info(session['user'])
+	if profile_id in cur_user['blocked_users']:
+		flash("This user was blocked by yourself."
+			  "If you want to delete him from black list, donate me 10$ for future development of this feature!", 'info')
+		return redirect(url_for('index'))
 	if not account.check_user_info(cur_user):
 		flash('Please, fill in information about yourself', 'info')
 		return redirect(url_for('settings'))
@@ -166,11 +170,11 @@ def filter_users():
 def like_user_ajax():
 	req = request.get_json() if request.is_json else request.form
 	try:
-		executioner = session['user']
+		like_owner = session['user']
 		recipient = req['liked_user']
 		unlike = int(req['unlike'])
-		action = account.like_user(executioner, recipient, unlike)
-		notification.send(recipient, action, account.get_user_info(executioner, extended=False))
+		action = account.like_user(like_owner, recipient, unlike)
+		notification.send(recipient, action, account.get_user_info(like_owner, extended=False))
 	except KeyError:
 		return jsonify({'success': False, 'error': 'KeyError'})
 	except Exception as e:
@@ -189,13 +193,15 @@ def like_user(user_id):
 	return redirect(url_for('profile', profile_id=user_id))
 
 
-@app.route('/block_user', methods=["GET"])
-def block_user():
+@app.route('/block_user/<int:user_id>', methods=["POST"])
+def block_user(user_id):
 	try:
-		account.block_user(request.args['user_id'], request.args['blocked_id'], request.args['unblock'])
+		account.block_user(session['user'], user_id)
 	except Exception as e:
-		return jsonify({'success': False, 'error_message': str(e)})
-	return jsonify({'success': True, 'unblock': request.args.get('unblock')})
+		flash("Error" + str(e), 'danger')
+	else:
+		flash("This user was permanently banned. He won't appear anymore in your search", 'info')
+	return redirect(url_for('index'))
 
 
 @app.route('/report_user', methods=["GET"])
@@ -225,6 +231,7 @@ def get_messages():
 def get_tag_list():
 	res = db.get_all_rows("SELECT name as id, name AS text FROM tags")
 	return jsonify({'success': True, 'tags': res})
+
 
 @app.route('/send_notification', methods=["GET"])
 def send_notification():

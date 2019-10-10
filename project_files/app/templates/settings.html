@@ -9,9 +9,10 @@
 				</div>
 				<input type="hidden" name="csrf_token" value="%% csrf_token %%">
 				<div class="col-12 d-flex align-items-center">
-					<label class="profile__avatar" style="background-image: url(%% cur_user.avatar %%)">
+					<label class="profile__avatar" style="background-image: url(%% avatar %%)"
+						   data-toggle="tooltip" data-placement="top" title="You should upload avatar to use this website">
 						<i class="fa fa-upload"></i>
-						<input type="file" name="avatar" accept="image/*">
+						<input type="file" class="form-control" name="avatar" accept="image/*" {% if not cur_user.avatar %}required{% endif %}>
 					</label>
 					<div class="profile__info">
 						<code>%% cur_user.login %%</code>
@@ -48,7 +49,8 @@
 				<div class="col-12 col-sm-6">
 					<label class="form-group">
 						Age:
-						<input type="number" name="age" class="form-control" value="%% cur_user.age %%"
+						<input type="number" name="age" class="form-control"
+							   {% if cur_user.age %}value="%% cur_user.age %%"{% endif %}
 							   min="0" max="100" placeholder="Fill in your age">
 					</label>
 					<label class="form-group">

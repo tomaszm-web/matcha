@@ -93,10 +93,10 @@
 									data-user-id="%% cur_user.id %%">
 								<i class="fas fa-ban"></i>Report as fake
 							</button>
-							<button class="btn btn-dark blockUser {% print('done') if user.id in cur_user.blocked_users %}"
-									data-blocked-user-id="%% user.id %%"
-									data-user-id="%% cur_user.id %%">
-								<i class="fas fa-ban"></i>Block user
+							<form action="%% url_for('block_user', user_id=user.id) %%" method="POST">
+								<input type="hidden" name="csrf_token" value="%% csrf_token %%">
+								<button class="btn btn-dark"><i class="fas fa-ban"></i>Block user</button>
+							</form>
 							</button>
 						</div>
 					{% endif %}
