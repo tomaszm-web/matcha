@@ -158,8 +158,8 @@ def filter_users():
 		else:
 			users = account.get_all_users(cur_user)
 		return render_template('users_list.html', cur_user=cur_user, users=users)
-	except Exception:
-		return "Something went wrong!"
+	except Exception as e:
+		return "Something went wrong!" + str(e)
 
 
 @app.route('/ajax/like_user', methods=["POST"])
@@ -168,14 +168,14 @@ def like_user_ajax():
 	try:
 		executioner = session['user']
 		recipient = req['liked_user']
-		unlike = req['unlike']
+		unlike = int(req['unlike'])
 		action = account.like_user(executioner, recipient, unlike)
 		notification.send(recipient, action, account.get_user_info(executioner, extended=False))
 	except KeyError:
 		return jsonify({'success': False, 'error': 'KeyError'})
 	except Exception as e:
 		return jsonify({'success': False, 'error': str(e)})
-	return jsonify({'success': True, 'unlike': unlike})
+	return jsonify({'success': True, 'unlike': bool(unlike)})
 
 
 @app.route('/like_user/<int:user_id>/', methods=["POST"])
@@ -219,6 +219,12 @@ def get_messages():
 	except Exception as e:
 		return jsonify({'success': False, 'error': str(e)})
 
+
+# Tags
+@app.route('/ajax/get_tag_list', methods=["GET"])
+def get_tag_list():
+	res = db.get_all_rows("SELECT name as id, name AS text FROM tags")
+	return jsonify({'success': True, 'tags': res})
 
 @app.route('/send_notification', methods=["GET"])
 def send_notification():

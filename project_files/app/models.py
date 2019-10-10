@@ -73,7 +73,7 @@ class Account:
 			e['city'] != user_match['city'],
 			abs(user_match['age'] - e['age']),
 			-e['fame'],
-			-len(set(user_match['tags']).intersection(set(e['tags'])))
+			-len(set(user_match['tags']).intersection(e['tags']))
 		)
 
 	def filter_by_preferences(self, sql, user):
@@ -278,25 +278,25 @@ class Account:
 	def get_liked_users(self, user_id):
 		sql = "SELECT * FROM `likes` WHERE like_owner=%s"
 		response = self.db.get_all_rows(sql, [user_id])
-		liked_users = [k["liked_user"] for k in response]
+		liked_users = tuple(k["liked_user"] for k in response)
 		return liked_users
 
 	def get_blocked_users(self, user_id):
 		sql = "SELECT * FROM `blocked` WHERE user_id=%s"
 		response = self.db.get_all_rows(sql, [user_id])
-		blocked_users = [k["blocked_id"] for k in response]
+		blocked_users = tuple(k["blocked_id"] for k in response)
 		return blocked_users
 
 	def get_reported_users(self, user_id):
 		sql = "SELECT * FROM `reports` WHERE user_id=%s"
 		response = self.db.get_all_rows(sql, [user_id])
-		reported_users = [k["reported_id"] for k in response]
+		reported_users = tuple(k["reported_id"] for k in response)
 		return reported_users
 
 	def get_checked_users(self, user_login):
 		sql = "SELECT * FROM `checked_profile` WHERE checking=%s"
 		response = self.db.get_all_rows(sql, [user_login])
-		liked_users = [k["checked_user"] for k in response]
+		liked_users = tuple(k["checked_user"] for k in response)
 		return liked_users
 
 	def like_user(self, like_owner, like_to, unlike):

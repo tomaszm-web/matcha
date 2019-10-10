@@ -1,4 +1,5 @@
 let elem;
+let tag_list;
 let parts = window.location.search.substr(1).split("&");
 let $_GET = {};
 for (let i = 0; i < parts.length; i++) {
@@ -14,7 +15,7 @@ let loginVue;
 /*===================Notifications===================*/
 if (document.getElementById('notifications')) {
 	$(document).on('click.bs.dropdown.data-api', '.notifications', function(e) {
-	   e.stopPropagation();
+		e.stopPropagation();
 	});
 	notificationsVue = new Vue({
 		el: '#notifications',
@@ -29,11 +30,11 @@ if (document.getElementById('notifications')) {
 		methods: {
 			delNotification(notif_id) {
 				let url = `${window.origin}/del_notification/${notif_id}`;
-				axios.delete(url, { data: {csrf_token: this.csrf_token} })
-					 .then(() => {
-						 for (let i = this.notifications.length - 1; i >= 0; i--)
-							 if (this.notifications[i].id === notif_id)
-							 	this.notifications.splice(i, 1);
+				axios.delete(url, {data: {csrf_token: this.csrf_token}})
+					.then(() => {
+						for (let i = this.notifications.length - 1; i >= 0; i--)
+							if (this.notifications[i].id === notif_id)
+								this.notifications.splice(i, 1);
 					});
 			},
 			getNotifications() {
@@ -56,32 +57,41 @@ if (user_list !== null) {
 		});
 	});
 	user_list_created.then(() => {
-		let like_buttons = document.querySelectorAll('.like-user');
-		like_buttons.forEach(button => {
-			button.onclick = async() => {
-				let data = {
-					unlike: button.getAttribute('data-unlike') == '1' ? true : false,
-					liked_user: button.getAttribute('data-liked-user-id'),
-					csrf_token: button.getAttribute('data-csrf')
-				};
+		let like_user_forms = document.querySelectorAll('.like-user-ajax');
+		like_user_forms.forEach(form => {
+			form.onsubmit = async (e) => {
+				e.preventDefault();
+				let data = new FormData(form);
+				form.unlike.value = data.get('unlike') == "0" ? "1" : "0";
 				axios.post(`${window.origin}/ajax/like_user`, data)
 					.then(response => {
 						if (response.data.success) {
-							button.classList.toggle('btn-success');
-							button.classList.toggle('btn-danger');
-							if (!data.unlike) {
-								button.innerHTML = "<i class='fas fa-thumbs-down'></i>Unlike"
-							} else {
-								button.innerHTML = "<i class='fas fa-thumbs-up'></i>Like"
-							}
-							data.unlike = !data.unlike;
+							form.send_button.classList.toggle('btn-success');
+							form.send_button.classList.toggle('btn-danger');
+							if (!response.data.unlike)
+								form.send_button.innerHTML = "<i class='fas fa-thumbs-down'></i>Unlike"
+							else
+								form.send_button.innerHTML = "<i class='fas fa-thumbs-up'></i>Like"
+							form.unlike = !form.unlike;
 						} else if (response.data.error === 'KeyError') {
 							$('#logIn').modal();
 						}
-					 })
+					})
 			}
 		});
 	});
+}
+
+if (!tag_list && document.querySelector('.filter-tags')) {
+	axios.get(`${window.origin}/ajax/get_tag_list`).then(response => {
+		if (response.data.success) {
+			tag_list = response.data.tags;
+			$('.filter-tags').select2({
+				placeholder: "Filter Tags",
+				data: tag_list
+			})
+		}
+	})
 }
 
 $(document).ready(function() {
@@ -355,5 +365,9 @@ $(document).ready(function() {
 	$('.multiple-tags').select2({
 		placeholder: "Interest tags",
 		tags: true
+	});
+
+	$('.filter-tags').select2({
+		placeholder: "Filter tags",
 	});
 });

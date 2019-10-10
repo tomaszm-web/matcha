@@ -1,43 +1,46 @@
 {% for user in users %}
 	{% if not cur_user or (user.id != cur_user.id and user.id not in cur_user.blocked_users) %}
+		{% set liked_user = user.id in cur_user.liked_users %}
 		<div class="col-12 col-sm-6 col-lg-4">
-			<div class="card user-list__card">
-				<a href="%% url_for('profile', profile_id=user.id) %%">
+			<a href="%% url_for('profile', profile_id=user.id) %%">
+				<div class="card user-list__card">
 					<img src="%% user.avatar %%" alt="Matcha" class="card-img-top">
-				</a>
-				<div class="card-body">
-					<h5 class="card-title">%% user.login %%</h5>
-					<p class="card-text">%% user.biography %%</p>
+					<div class="card-body text-dark">
+						<h5 class="card-title">%% user.login %%</h5>
+						<p class="card-text">%% user.biography %%</p>
 
-					<div class="progress">
-						<div class="progress-bar" style="width: %% user.fame %%%">
-							%% user.login %%'s Fame Rating:
-							%% user.fame %%%
+						<div class="progress">
+							<div class="progress-bar" style="width: %% user.fame %%%">
+								%% user.login %%'s Fame Rating:
+								%% user.fame %%%
+							</div>
 						</div>
-					</div>
-					<p class="card-text text-muted">
-						Age: %% user.age %%<br>
-						Gender: %% user.gender %%<br>
-						Preferences: %% user.preferences %%<br>
-						City: %% user.city %%
-					</p>
-					{% if cur_user %}
-						{% if user.id in cur_user.liked_users %}
-							<button class="btn btn-danger like-user"
-									data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%"
-									data-csrf="%% csrf_token %%" data-unlike="1">
-									<i class="fas fa-thumbs-down"></i>Unlike
-							</button>
-						{% else %}
-							<button class="btn btn-success like-user"
-									data-liked-user-id="%% user.id %%" data-user-id="%% cur_user.id %%"
-									data-csrf="%% csrf_token %%" data-unlike="0">
-									<i class="fas fa-thumbs-up"></i>Like
-							</button>
+						<p class="card-text text-muted">
+							Age: %% user.age %%<br>
+							Gender: %% user.gender %%<br>
+							Preferences: %% user.preferences %%<br>
+							City: %% user.city %%
+						</p>
+						{% if cur_user and cur_user.avatar %}
+							<form action="#" class="like-user-ajax">
+								<input type="hidden" name="csrf_token" value="%% csrf_token %%">
+								<input type="hidden" name="like_owner" value="%% cur_user.id %%">
+								<input type="hidden" name="liked_user" value="%% user.id %%">
+								<input type="hidden" name="unlike" value="%% liked_user | int %%">
+								{% if liked_user %}
+									<button type="submit" name="send_button" class="btn btn-danger like-user">
+										<i class='fas fa-thumbs-down'></i>Unlike
+									</button>
+								{% else %}
+									<button type="submit" name="send_button" class="btn btn-success like-user">
+										<i class='fas fa-thumbs-up'></i>Like
+									</button>
+								{% endif %}
+							</form>
 						{% endif %}
-					{% endif %}
+					</div>
 				</div>
-			</div>
+			</a>
 		</div>
 	{% endif %}
 {% endfor %}
