@@ -278,28 +278,25 @@ class Account:
 			flash("You will have to confirm your new E-mail!", 'success')
 
 	def get_liked_users(self, user_id):
-		sql = "SELECT * FROM `likes` WHERE like_owner=%s"
-		response = self.db.get_all_rows(sql, [user_id])
-		liked_users = [k["liked_user"] for k in response]
-		return liked_users
+		sql = "SELECT liked_user FROM `likes` WHERE like_owner=%s"
+		response = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
+		return [liked_user for liked_user, in response]
 
 	def get_blocked_users(self, user_id):
-		sql = "SELECT * FROM `blocked` WHERE user_id=%s"
-		response = self.db.get_all_rows(sql, [user_id])
-		blocked_users = [k["blocked_id"] for k in response]
-		return blocked_users
+		sql = "SELECT blocked_id FROM `blocked` WHERE user_id=%s"
+		response = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
+		return [blocked_user for blocked_user, in response]
 
 	def get_reported_users(self, user_id):
-		sql = "SELECT * FROM `reports` WHERE user_id=%s"
-		response = self.db.get_all_rows(sql, [user_id])
-		reported_users = [k["reported_id"] for k in response]
-		return reported_users
+		sql = "SELECT reported_id FROM `reports` WHERE user_id=%s"
+		response = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
+		return [reported_user for reported_user, in response]
 
-	def get_checked_users(self, user_login):
-		sql = "SELECT * FROM `checked_profile` WHERE checking=%s"
-		response = self.db.get_all_rows(sql, [user_login])
-		liked_users = [k["checked_user"] for k in response]
-		return liked_users
+	# todo rename in database to fit one standart (checked_id or (for, who) columns)
+	def get_checked_users(self, user_id):
+		sql = "SELECT checked_user FROM `checked_profile` WHERE checking=%s"
+		response = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
+		return [checked_user for checked_user, in response]
 
 	def like_user(self, like_owner, like_to, unlike):
 		if unlike:
@@ -366,7 +363,7 @@ class Notification:
 
 	def send(self, recipient_id, notif_type, executive_user):
 		links = {
-			'user_action': url_for('profile', profile_id=executive_user['id']),
+			'user_action': url_for('profile', user_id=executive_user['id']),
 			'message': url_for('chat_page', recipient_id=executive_user['id'])
 		}
 		sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"

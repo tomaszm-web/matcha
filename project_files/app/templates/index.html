@@ -20,9 +20,13 @@
 					<h2>Meet our Active Members</h2>
 				</div>
 			</div>
-			<div class="row">
+			<div class="row mb-3">
 				<div class="col">
-					<form action="%% url_for('filter_users') %%" method="POST" class="filters">
+					<a class="btn btn-primary mb-3" data-toggle="collapse" href="#filters" role="button"
+					   aria-expanded="false" aria-controls="collapseExample">
+						Set Filters
+					</a>
+					<form id="filters" action="%% url_for('filter_users') %%" method="POST" class="collapse filters show">
 						<div class="form-row">
 							<input type="hidden" name="csrf_token" value="%% csrf_token %%">
 							<div class="col-12 col-sm-6">
@@ -54,10 +58,12 @@
 							</div>
 							<div class="col-12 col-sm-6">
 								<label for="city">City:</label>
-								<input type="text" name="city" id="select-city" class="form-control" placeholder="Choose city">
+								<input type="text" name="city" id="select-city" class="form-control"
+									   placeholder="Choose city">
 							</div>
 							<div class="col">
-								<button class="btn btn-danger">Apply changes</button>
+								<button class="btn btn-success mb-1">Apply filters</button>
+								<button class="btn btn-secondary reset_filters mb-1">Reset Filters</button>
 							</div>
 						</div>
 					</form>

@@ -55,6 +55,10 @@ $(document).ready(function() {
 		tags: true
 	});
 
+	$('.filter-tags').select2({
+		placeholder: "Filter Tags"
+	});
+
 	/*===================List of Users===================*/
 	let user_list = document.querySelector(".users_list");
 	if (user_list !== null) {
@@ -102,6 +106,11 @@ $(document).ready(function() {
 		});
 	});
 
+	elem = document.querySelector('.reset_filters');
+	if (elem) elem.onclick = e => {
+		e.target.form.reset();
+	};
+
 	if (!tag_list && document.querySelector('.filter-tags')) {
 		axios.get(`${window.origin}/ajax/get_tag_list`).then(response => {
 			if (response.data.success) {
@@ -113,7 +122,6 @@ $(document).ready(function() {
 			}
 		})
 	}
-
 
 	/*===================Reset Password===================*/
 	if (document.getElementById('reset')) {

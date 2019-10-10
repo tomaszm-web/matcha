@@ -2,14 +2,13 @@
 	{% if not cur_user or (user.id != cur_user.id and user.id not in cur_user.blocked_users) %}
 		{% set liked_user = user.id in cur_user.liked_users %}
 		<div class="col-12 col-sm-6 col-lg-4">
-			<a href="%% url_for('profile', profile_id=user.id) %%">
+			<a href="%% url_for('profile', user_id=user.id) %%">
 				<div class="card user-list__card">
 					<img src="%% user.avatar %%" alt="Matcha" class="card-img-top">
 					<div class="card-body text-dark">
 						<h5 class="card-title">%% user.login %%</h5>
 						<p class="card-text">%% user.biography %%</p>
-
-						<div class="progress">
+						<div class="progress mb-2">
 							<div class="progress-bar" style="width: %% user.fame %%%">
 								%% user.login %%'s Fame Rating:
 								%% user.fame %%%

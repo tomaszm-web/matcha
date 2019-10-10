@@ -24,7 +24,7 @@
 						</div>
 					</div>
 				</div>
-				<div class="col-12 col-sm-6">
+				<div class="col-12 col-sm-6 settings-animate-left">
 					<label class="form-group">
 						E-mail:
 						<input class="form-control" type="email" name="email" value="%% cur_user.email %%" required
@@ -46,7 +46,7 @@
 						<textarea required name="biography" placeholder="Few words about yourself" class="form-control">{% if cur_user.biography %}%% cur_user.biography %%{% endif %}</textarea>
 					</label>
 				</div>
-				<div class="col-12 col-sm-6">
+				<div class="col-12 col-sm-6 settings-animate-right">
 					<label class="form-group">
 						Age:
 						<input type="number" name="age" class="form-control"
@@ -91,7 +91,7 @@
 						>
 					</label>
 				</div>
-				<div class="col-12">
+				<div class="col-12 settings-animate-bottom">
 					Profile photos:
 					<label class="form-group d-sm-flex">
 						{% for photo in cur_user.photos %}

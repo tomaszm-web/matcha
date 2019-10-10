@@ -25,15 +25,14 @@ class Database:
 		cursor = cursorclass if cursorclass is not None else self.default_cursor
 		try:
 			cur = self.con.cursor(cursor)
-		except MySQLdb.OperationalError:
-			self.connect()
-			cur = self.con.cursor(cursor)
-		try:
 			cur.execute(sql, values)
 			self.con.commit()
 			if cur and to_close:
 				cur.close()
 			return cur
+		except MySQLdb.OperationalError:
+			self.connect()
+			self.query(sql, values, to_close, cursorclass)
 		except Exception as e:
 			print(str(e))
 			self.con.rollback()

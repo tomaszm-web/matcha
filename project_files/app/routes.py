@@ -46,16 +46,16 @@ def settings():
 	return render_template('settings.html', cur_user=user)
 
 
-@app.route('/profile/<int:profile_id>')
+@app.route('/profile/<int:user_id>')
 @csrf_update
-def profile(profile_id):
-	user = account.get_user_info(user_id=profile_id)
+def profile(user_id):
+	user = account.get_user_info(user_id=user_id)
 	if 'user' not in session:
 		return render_template('profile.html', user=user)
 	cur_user = account.get_user_info(session['user'])
-	if profile_id in cur_user['blocked_users']:
-		flash("This user was blocked by yourself."
-			  "If you want to delete him from black list, donate me 10$ for future development of this feature!", 'info')
+	if user_id in cur_user['blocked_users']:
+		flash("This user was blocked by yourself. If you want to delete him from black list,"
+			  "donate me 10$ for future development of this feature!", 'info')
 		return redirect(url_for('index'))
 	if not account.check_user_info(cur_user):
 		flash('Please, fill in information about yourself', 'info')
@@ -190,7 +190,7 @@ def like_user(user_id):
 		notification.send(user_id, action, account.get_user_info(like_owner, extended=False))
 	except Exception:
 		flash("Something went wrong. Try again a bit later!", 'danger')
-	return redirect(url_for('profile', profile_id=user_id))
+	return redirect(url_for('profile', user_id=user_id))
 
 
 @app.route('/block_user/<int:user_id>', methods=["POST"])
@@ -213,7 +213,6 @@ def report_user():
 	return jsonify({'success': True, 'unreport': request.args.get('unreport')})
 
 
-# Chat
 @app.route('/ajax/get_messages', methods=["POST"])
 def get_messages():
 	req = request.get_json()
@@ -226,20 +225,10 @@ def get_messages():
 		return jsonify({'success': False, 'error': str(e)})
 
 
-# Tags
 @app.route('/ajax/get_tag_list', methods=["GET"])
 def get_tag_list():
 	res = db.get_all_rows("SELECT name as id, name AS text FROM tags")
 	return jsonify({'success': True, 'tags': res})
-
-
-@app.route('/send_notification', methods=["GET"])
-def send_notification():
-	try:
-		notification.send(request.args['sender_id'], request.args['message'], )
-		return jsonify({'success': True})
-	except Exception as e:
-		return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/get_notifications', methods=["GET"])
@@ -270,13 +259,10 @@ def before_request():
 			return abort(403)
 
 
-# Files
 @app.route('/uploads/<path:path>')
 def uploaded_file(path):
 	dirpath = os.path.join(app.config['UPLOAD_PATH'], app.config['UPLOAD_FOLDER'])
 	return send_from_directory(dirpath, path)
 
 
-# todo Like after uploading photo
 # todo Sort by params
-# todo Get requests csrf

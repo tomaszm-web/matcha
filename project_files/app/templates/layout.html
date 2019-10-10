@@ -68,7 +68,7 @@
 								up</a>
 							<a href="#" class="btn btn-transparent" data-toggle="modal" data-target="#logIn">Log in</a>
 						{% else %}
-							<a href="%% url_for('profile', profile_id=cur_user.id) %%" class="btn btn-transparent">My
+							<a href="%% url_for('profile', user_id=cur_user.id) %%" class="btn btn-transparent">My
 								profile</a>
 							<a href="/logout" class="btn btn-transparent">Log out</a>
 						{% endif %}
