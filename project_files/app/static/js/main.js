@@ -12,89 +12,84 @@ let notificationsVue;
 let registrationVue;
 let loginVue;
 
-/*===================Notifications===================*/
-if (document.getElementById('notifications')) {
-	$(document).on('click.bs.dropdown.data-api', '.notifications', function(e) {
-		e.stopPropagation();
-	});
-	notificationsVue = new Vue({
-		el: '#notifications',
-		data: {
-			notifications: [],
-			csrf_token: document.querySelector('meta[data-csrf-token]').getAttribute('data-csrf-token')
-		},
-		created() {
-			this.getNotifications();
-			setInterval(this.getNotifications, 10000);
-		},
-		methods: {
-			delNotification(notif_id) {
-				let url = `${window.origin}/del_notification/${notif_id}`;
-				axios.delete(url, {data: {csrf_token: this.csrf_token}})
-					.then(() => {
-						for (let i = this.notifications.length - 1; i >= 0; i--)
-							if (this.notifications[i].id === notif_id)
-								this.notifications.splice(i, 1);
-					});
-			},
-			getNotifications() {
-				axios.get(`${window.origin}/get_notifications`)
-					.then(response => {
-						this.notifications = response.data;
-					})
-			}
-		}
-	});
-}
-
-/*===================List of Users===================*/
-let user_list = document.querySelector(".users_list");
-if (user_list !== null) {
-	let user_list_created = new Promise(resolve => {
-		axios.get(`${window.origin}/filter_users`).then(response => {
-			user_list.innerHTML = response.data;
-			resolve(true);
-		});
-	});
-	user_list_created.then(() => {
-		let like_user_forms = document.querySelectorAll('.like-user-ajax');
-		like_user_forms.forEach(form => {
-			form.onsubmit = async (e) => {
-				e.preventDefault();
-				let data = new FormData(form);
-				form.unlike.value = data.get('unlike') == "0" ? "1" : "0";
-				axios.post(`${window.origin}/ajax/like_user`, data)
-					.then(response => {
-						if (response.data.success) {
-							form.send_button.classList.toggle('btn-success');
-							form.send_button.classList.toggle('btn-danger');
-							if (!response.data.unlike)
-								form.send_button.innerHTML = "<i class='fas fa-thumbs-down'></i>Unlike"
-							else
-								form.send_button.innerHTML = "<i class='fas fa-thumbs-up'></i>Like"
-							form.unlike = !form.unlike;
-						} else if (response.data.error === 'KeyError') {
-							$('#logIn').modal();
-						}
-					})
-			}
-		});
-	});
-}
-
-if (!tag_list && document.querySelector('.filter-tags')) {
-	axios.get(`${window.origin}/ajax/get_tag_list`).then(response => {
-		if (response.data.success) {
-			tag_list = response.data.tags;
-			$('.filter-tags').select2({
-				placeholder: "Filter Tags",
-				data: tag_list
-			})
-		}
-	})
-}
 
 $(document).ready(function() {
+	/*===================Notifications===================*/
+	if (document.getElementById('notifications')) {
+		$(document).on('click.bs.dropdown.data-api', '.notifications', function(e) {
+			e.stopPropagation();
+		});
+		notificationsVue = new Vue({
+			el: '#notifications',
+			data: {
+				notifications: [],
+				csrf_token: document.querySelector('meta[data-csrf-token]').getAttribute('data-csrf-token')
+			},
+			created() {
+				this.getNotifications();
+				setInterval(this.getNotifications, 10000);
+			},
+			methods: {
+				delNotification(notif_id) {
+					let url = `${window.origin}/del_notification/${notif_id}`;
+					axios.delete(url, {data: {csrf_token: this.csrf_token}})
+						.then(() => {
+							for (let i = this.notifications.length - 1; i >= 0; i--)
+								if (this.notifications[i].id === notif_id)
+									this.notifications.splice(i, 1);
+						});
+				},
+				getNotifications() {
+					axios.get(`${window.origin}/get_notifications`)
+						.then(response => {
+							this.notifications = response.data;
+						})
+				}
+			}
+		});
+	}
+
+	/*===================Select2===================*/
+	$('.multiple-tags').select2({
+		placeholder: "Interest tags",
+		tags: true
+	});
+
+	/*===================List of Users===================*/
+	let user_list = document.querySelector(".users_list");
+	if (user_list !== null) {
+		let user_list_created = new Promise(resolve => {
+			axios.get(`${window.origin}/filter_users`).then(response => {
+				user_list.innerHTML = response.data;
+				resolve(true);
+			});
+		});
+		user_list_created.then(() => {
+			let like_user_forms = document.querySelectorAll('.like-user-ajax');
+			like_user_forms.forEach(form => {
+				form.onsubmit = async (e) => {
+					e.preventDefault();
+					let data = new FormData(form);
+					form.unlike.value = data.get('unlike') == "0" ? "1" : "0";
+					axios.post(`${window.origin}/ajax/like_user`, data)
+						.then(response => {
+							if (response.data.success) {
+								form.send_button.classList.toggle('btn-success');
+								form.send_button.classList.toggle('btn-danger');
+								if (!response.data.unlike)
+									form.send_button.innerHTML = "<i class='fas fa-thumbs-down'></i>Unlike"
+								else
+									form.send_button.innerHTML = "<i class='fas fa-thumbs-up'></i>Like"
+								form.unlike = !form.unlike;
+							} else if (response.data.error === 'KeyError') {
+								$('#logIn').modal();
+							}
+						})
+				}
+			});
+		});
+	}
+
 	/*===================Filter Users===================*/
 	let loadingGif = document.querySelector('.loading');
 	$('.filters').submit(function(e) {
@@ -106,6 +101,19 @@ $(document).ready(function() {
 			user_list.innerHTML = response.data;
 		});
 	});
+
+	if (!tag_list && document.querySelector('.filter-tags')) {
+		axios.get(`${window.origin}/ajax/get_tag_list`).then(response => {
+			if (response.data.success) {
+				tag_list = response.data.tags;
+				$('.filter-tags').select2({
+					placeholder: "Filter Tags",
+					data: tag_list
+				})
+			}
+		})
+	}
+
 
 	/*===================Reset Password===================*/
 	if (document.getElementById('reset')) {
@@ -199,6 +207,7 @@ $(document).ready(function() {
 		});
 	}
 
+	/*===================Login Form===================*/
 	if (document.getElementById('logIn')) {
 		loginVue = new Vue({
 			el: "#logIn form",
@@ -244,7 +253,8 @@ $(document).ready(function() {
 				$(this).toggleClass('done')
 		})
 	});
-	/*--------Chat--------*/
+
+	/*===================Chat===================*/
 	const chat_page = document.querySelector('#chat .chat');
 	if (chat_page) {
 		let chat = new Vue({
@@ -296,18 +306,19 @@ $(document).ready(function() {
 		});
 	}
 
-	/*--------GPS--------*/
+	/*===================GPS===================*/
 	let city;
-	if ((city = document.getElementById('city')) && elem.value !== '') {
+	if ((city = document.getElementById('city')) && city.value === '') {
 		let geoOptions = {timeout: 5000};
 		let geoSuccess = function(position) {
+			console.log(position);
 			axios.get("https://maps.googleapis.com/maps/api/geocode/json", {
 				params: {
-					latlng: position.coords.latitude + ', ' + position.coords.longitude,
-					key: "AIzaSyAjzkW8XWRsKcQhs7hcY-Rc7wPSSSIQVQM",
+					latlng: `${position.coords.latitude}, ${position.coords.longitude}`,
+					key: "AIzaSyALTJ_4VStfdn39CkEBeyybal3FaxANm60",
 					language: "en"
 				}
-			}).then((response) => {
+			}).then(response => {
 				let res = null;
 				for (let i = 0; i < response.data.results.length; i++) {
 					if (response.data.results[i].types.indexOf('locality') > -1) {
@@ -316,20 +327,19 @@ $(document).ready(function() {
 					}
 				}
 				if (res) {
-					var splitted = res.split(', ');
+					let splitted = res.split(', ');
 					city.value = splitted[0] + ", " + splitted[1];
 				}
 			});
 		};
 		let geoError = function() {
-			axios.get(location.origin + '/get_user_location_by_ip').then((response) => {
-				if (!response.data.success) {
-					// console.warn(response.data.error);
-				} else if (response.data.address.city && response.data.address.country_name) {
-					city.value = response.data.address.city + ", " + response.data.address.country_name;
-				} else {
+			axios.get(location.origin + '/get_user_location_by_ip').then(response => {
+				if (!response.data.success)
+					console.warn(response.data.error);
+				else if (response.data.address.city && response.data.address.country_name)
+					city.value = `${response.data.address.city}, ${response.data.address.country_name}`;
+				else
 					city.value = "Kyiv, Ukraine";
-				}
 			});
 		};
 		navigator.geolocation.getCurrentPosition(geoSuccess, geoError, geoOptions);
@@ -347,14 +357,4 @@ $(document).ready(function() {
 	setTimeout(function() {
 		$('.flashes').css('opacity', 0);
 	}, 4000);
-
-	/*===================Select2===================*/
-	$('.multiple-tags').select2({
-		placeholder: "Interest tags",
-		tags: true
-	});
-
-	$('.filter-tags').select2({
-		placeholder: "Filter tags",
-	});
 });
