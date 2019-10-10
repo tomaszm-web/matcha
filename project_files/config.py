@@ -28,6 +28,7 @@ class Config(object):
 	ADMINS = ["evgeny.ocheredko@gmail.com"]
 
 	# Upload folder
+	UPLOAD_PATH = os.path.dirname(os.path.abspath(__file__))
 	UPLOAD_FOLDER = "uploads"
 
 	# Google Maps Key

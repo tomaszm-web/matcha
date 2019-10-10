@@ -1,15 +1,10 @@
 import os
-
-from flask import (
-	render_template,
-	request,
-	url_for,
-	session,
-	flash,
-	redirect,
-	send_from_directory,
-	jsonify, abort, make_response)
 import requests
+from flask import (
+	render_template, request, url_for, session,
+	flash, redirect, send_from_directory,
+	jsonify, abort, make_response
+)
 from app.models import Account, Chat, Notification
 from app import app, db, csrf_update, login_required
 
@@ -265,7 +260,7 @@ def before_request():
 # Files
 @app.route('/uploads/<path:path>')
 def uploaded_file(path):
-	dirpath = os.path.join(os.getcwd(), app.config['UPLOAD_FOLDER'])
+	dirpath = os.path.join(app.config['UPLOAD_PATH'], app.config['UPLOAD_FOLDER'])
 	return send_from_directory(dirpath, path)
 
 
