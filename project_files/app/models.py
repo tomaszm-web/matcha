@@ -28,18 +28,18 @@ class Account:
 	def check_img_extension(self, filename):
 		return '.' in filename and filename.rsplit('.', 1)[1] in ["png", "jpg", "jpeg"]
 
-	def get_fame_rating(self, user_id, search_in=None):
+	def get_fame_rating(self, user_id=None):
+		sql = "SELECT liked_user AS user, COUNT(liked_user) AS like_num FROM `likes` GROUP BY user"
+		search_in = self.db.get_all_rows(sql, cursorclass=MySQLdb.cursors.Cursor)
 		if not search_in:
-			sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
-			search_in = self.db.get_all_rows(sql)
-		user_like_num = 0
-		max_likes = max(row['like_num'] for row in search_in)
-		for row in search_in:
-			if row['liked_user'] == user_id:
-				user_like_num = row['like_num']
-		if not max_likes:
-			return 0
-		return round(user_like_num / max_likes * 100)
+			return None
+		max_likes = max(like_num for _, like_num in search_in)
+		if user_id:
+			user_likes = [like_num for user, like_num in search_in if user == user_id]
+			if not user_likes:
+				return 0
+			return round(user_likes[0] / max_likes * 100)
+		return {user_id: round(like_num / max_likes * 100) for user_id, like_num in search_in}
 
 	def get_tags(self, user_id):
 		sql = ("SELECT tags.name FROM `tags` "
@@ -69,13 +69,17 @@ class Account:
 			user['fame'] = self.get_fame_rating(user['id'])
 		return user
 
-	def create_filter_func(self, user_match):
-		return lambda e: (
-			e['city'] != user_match['city'],
-			abs(user_match['age'] - e['age']),
-			-e['fame'],
-			-len(set(user_match['tags']).intersection(e['tags']))
-		)
+	def sort_func(self, user_match, sort_params=None):
+		if sort_params:
+			pass
+			# if sort_params['sort_by'] == ''
+		else:
+			return lambda e: (
+				e['city'] != user_match['city'],
+				abs(user_match['age'] - e['age']),
+				-e['fame'],
+				-len(set(user_match['tags']).intersection(e['tags']))
+			)
 
 	def filter_by_preferences(self, sql, user):
 		matches = {}
@@ -97,6 +101,8 @@ class Account:
 		return sql, values
 
 	def filter_by_criterias(self, users, filters):
+		if not filters:
+			return users
 		filtered_users = []
 		tags = filters.getlist('tags')
 		for user in users:
@@ -110,7 +116,7 @@ class Account:
 				filtered_users.append(user)
 		return filtered_users
 
-	def get_all_users(self, user_match, filters=None):
+	def get_all_users(self, user_match, filters=None, sort_params=None):
 		sql = ("SELECT id, login, age, biography, avatar, city, gender, preferences FROM `users` "
 			   "WHERE NOT (age IS NULL OR city IS NULL OR gender IS NULL OR preferences IS NULL)")
 		if user_match:
@@ -118,15 +124,15 @@ class Account:
 			users = self.db.get_all_rows(sql, values)
 		else:
 			users = self.db.get_all_rows(sql)
-		sql = "SELECT liked_user, COUNT(liked_user) as like_num FROM `likes` GROUP BY liked_user"
-		fame_table = self.db.get_all_rows(sql)
+
+		fame_rates = self.get_fame_rating()
 		for user in users:
-			user['fame'] = self.get_fame_rating(user['id'], search_in=fame_table)
+			user['fame'] = fame_rates[user['id']]
 			user['tags'] = self.get_tags(user['id'])
-		if filters:
-			users = self.filter_by_criterias(users, filters)
-		if user_match:
-			users = sorted(users, key=self.create_filter_func(user_match))
+
+		users = self.filter_by_criterias(users, filters)
+		if user_match or sort_params:
+			users = sorted(users, key=self.sort_func(user_match, sort_params))
 		return users
 
 	def email_confirmation(self, email, login, token):
@@ -300,15 +306,15 @@ class Account:
 
 	def like_user(self, like_owner, like_to, unlike):
 		if unlike:
-			sql = "DELETE FROM `likes` WHERE like_owner=%s AND liked_user=%s"
+			sql = "DELETE FROM `likes` WHERE like_owner = %s AND liked_user = %s"
 			action = 'unlike'
 		else:
-			sql = "SELECT * FROM `likes` WHERE like_owner=%s AND liked_user=%s"
-			if self.db.get_row_num(sql, (like_to, like_owner)) > 0:
+			sql = "SELECT COUNT(id) as row_num FROM `likes` WHERE like_owner = %s AND liked_user = %s"
+			if self.db.get_row(sql, (like_to, like_owner))['row_num'] > 0:
 				action = 'like_back'
 			else:
 				action = 'like'
-			sql = "INSERT INTO `likes` SET like_owner=%s, liked_user=%s"
+			sql = "INSERT INTO `likes` SET like_owner = %s, liked_user = %s"
 		self.db.query(sql, (like_owner, like_to))
 		return action
 
@@ -317,7 +323,6 @@ class Account:
 		self.db.query(sql, (user_id, blocked_id))
 		sql = "DELETE FROM `likes` WHERE (like_owner = %s AND liked_user = %s) OR (like_owner = %s AND liked_user = %s)"
 		self.db.query(sql, (user_id, blocked_id, blocked_id, user_id))
-		sql = "DELETE FROM `notifications`"
 
 	def report_user(self, user_id, reported_id, unreport):
 		if unreport == 'true':
@@ -361,6 +366,7 @@ class Notification:
 			'like_back': "You have been liked back by {}"
 		}
 
+	# todo Check if user not in black list for recipient
 	def send(self, recipient_id, notif_type, executive_user):
 		links = {
 			'user_action': url_for('profile', user_id=executive_user['id']),
