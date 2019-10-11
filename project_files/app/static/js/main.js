@@ -62,6 +62,32 @@ $(document).ready(function() {
 	});
 
 	/*===================List of Users===================*/
+	function hook_like_buttons() {
+		console.log("button hooked");
+		let like_user_forms = document.querySelectorAll('.like-user-ajax');
+		like_user_forms.forEach(form => {
+			form.onsubmit = async (e) => {
+				e.preventDefault();
+				let data = new FormData(form);
+				form.unlike.value = data.get('unlike') == "0" ? "1" : "0";
+				axios.post(`${window.origin}/ajax/like_user`, data)
+					.then(response => {
+						if (response.data.success) {
+							form.send_button.classList.toggle('btn-success');
+							form.send_button.classList.toggle('btn-danger');
+							if (!response.data.unlike)
+								form.send_button.innerHTML = "<i class='fas fa-thumbs-down'></i>Unlike";
+							else
+								form.send_button.innerHTML = "<i class='fas fa-thumbs-up'></i>Like";
+							form.unlike = !form.unlike;
+						} else if (response.data.error === 'KeyError') {
+							$('#logIn').modal();
+						}
+					})
+			}
+		});
+	}
+
 	let user_list = document.querySelector(".users_list");
 	if (user_list !== null) {
 		let user_list_created = new Promise(resolve => {
@@ -70,35 +96,12 @@ $(document).ready(function() {
 				resolve(true);
 			});
 		});
-		//todo Doesn't recognize after filter users post form submit
-		user_list_created.then(() => {
-			let like_user_forms = document.querySelectorAll('.like-user-ajax');
-			like_user_forms.forEach(form => {
-				form.onsubmit = async (e) => {
-					e.preventDefault();
-					let data = new FormData(form);
-					form.unlike.value = data.get('unlike') == "0" ? "1" : "0";
-					axios.post(`${window.origin}/ajax/like_user`, data)
-						.then(response => {
-							if (response.data.success) {
-								form.send_button.classList.toggle('btn-success');
-								form.send_button.classList.toggle('btn-danger');
-								if (!response.data.unlike)
-									form.send_button.innerHTML = "<i class='fas fa-thumbs-down'></i>Unlike";
-								else
-									form.send_button.innerHTML = "<i class='fas fa-thumbs-up'></i>Like";
-								form.unlike = !form.unlike;
-							} else if (response.data.error === 'KeyError') {
-								$('#logIn').modal();
-							}
-						})
-				}
-			});
-		});
+		user_list_created.then(hook_like_buttons);
 	}
 
 	/*===================Filter Users===================*/
 	let loadingGif = document.querySelector('.loading');
+
 	function getUserList(e, url) {
 		e.preventDefault();
 		let data = new FormData(e.target);
@@ -106,8 +109,10 @@ $(document).ready(function() {
 		user_list.appendChild(loadingGif);
 		axios.post(url, data).then(response => {
 			user_list.innerHTML = response.data;
+			hook_like_buttons();
 		});
 	}
+
 	$('.filters').submit(function(e) {
 		getUserList(e, `${window.origin}/filter_users`)
 	});

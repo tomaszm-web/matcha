@@ -29,20 +29,21 @@
 				<nav class="main-menu">
 					<ul class="main-menu__list justify-content-center">
 						<li class="main-menu__item"><a href="%% url_for('index') %%">Main</a></li>
-						{% if 'user' in session %}
+						{% if cur_user %}
 							<li class="main-menu__item"><a href="%% url_for('settings') %%">Settings</a></li>
 						{% endif %}
 					</ul>
 				</nav>
 			</div>
 			<div class="col-5 d-flex ml-auto align-items-center justify-content-end">
-				{% if 'user' in session %}
+				{% if cur_user %}
 					<div class="dropdown" id="notifications">
-						<a href="#" class="text-success" data-toggle="dropdown" id="user-notif">
+						<a href="#" class="text-info" data-toggle="dropdown" id="user-notif">
 							<i class="fas fa-bell"></i>
+							<span class="badge badge-info">
 							{{ notifications.length }}
+							</span>
 						</a>
-
 						<div class="dropdown-menu dropdown-menu-right notifications" aria-labelledby="user-notif">
 							<div class="dropdown-header">Notifications:</div>
 							<a class="message text-info" v-for="notif in notifications" :href="notif.link">

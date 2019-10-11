@@ -20,14 +20,14 @@
 					<h2>Meet our Active Members</h2>
 				</div>
 			</div>
-			<div class="row mb-5" id="accordion">
+			<div class="row mb-5">
 				<div class="col-12 col-lg-8">
 					<button class="btn btn-info btn-block mb-3" data-toggle="collapse" data-target="#collapseOne"
 							aria-expanded="true" aria-controls="collapseOne">
+						<i class="fas fa-filter"></i>
 						Set Filters
 					</button>
-					<form id="collapseOne" class="collapse filters show" aria-labelledby="headingOne"
-						  data-parent="#accordion">
+					<form id="collapseOne" class="collapse filters show" aria-labelledby="headingOne">
 						<div class="form-row">
 							<input type="hidden" name="csrf_token" value="%% csrf_token %%">
 							<div class="col-12 col-sm-6">
@@ -68,9 +68,10 @@
 				<div class="col-12 col-lg-4">
 					<button class="btn btn-info btn-block collapsed mb-3" data-toggle="collapse"
 							data-target="#collapse_two" aria-expanded="false" aria-controls="collapse_two">
+						<i class="fas fa-sort"></i>
 						Sort By
 					</button>
-					<form id="collapse_two" class="collapse sort" aria-labelledby="headingTwo" data-parent="#accordion">
+					<form id="collapse_two" class="collapse sort" aria-labelledby="headingTwo">
 						<input type="hidden" name="csrf_token" value="%% csrf_token %%">
 						<label for="sort-param">Sort By</label>
 						<select name="sort_by" class="form-control" id="sort-param">

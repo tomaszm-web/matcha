@@ -234,13 +234,14 @@ header {
 }
 
 #notifications {
-	animation: .7s ease-out fade_animation;
+	animation: .6s ease-out fade_animation;
 }
 
 .notifications {
 	width: 30vw;
 	max-height: 60vh;
 	overflow-y: scroll;
+	animation: .5s ease-out fade_animation;
 }
 
 .notifications .message, .notifications .message-empty {

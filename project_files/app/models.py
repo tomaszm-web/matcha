@@ -65,8 +65,8 @@ class Account:
 
 	def get_user_info(self, user_id, extended=True):
 		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
-			   "biography, avatar, photos, age, online, last_login, city, token FROM `users`  WHERE id=%s")
-		user = self.db.get_row(sql, [user_id])
+			   "biography, avatar, photos, age, online, last_login, city, token FROM `users`  WHERE id = %s")
+		user = self.db.get_row(sql, (user_id,))
 		if extended:
 			user['tags'] = self.get_tags(user["id"])
 			user['liked_users'] = self.get_liked_users(user['id'])
@@ -131,6 +131,7 @@ class Account:
 		return filtered_users
 
 	def get_all_users(self, user_match, filters=None, sort_by=None):
+		# todo Sort and filter must work together
 		sql = ("SELECT id, login, age, biography, avatar, city, gender, preferences FROM `users` "
 			   "WHERE NOT (biography is NULL OR age IS NULL OR city IS NULL OR gender IS NULL OR preferences IS NULL)")
 		if user_match:
