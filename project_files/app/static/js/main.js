@@ -340,7 +340,6 @@ $(document).ready(function() {
 	if ((city = document.getElementById('city')) && city.value === '') {
 		let geoOptions = {timeout: 5000};
 		let geoSuccess = function(position) {
-			console.log(position);
 			axios.get("https://maps.googleapis.com/maps/api/geocode/json", {
 				params: {
 					latlng: `${position.coords.latitude}, ${position.coords.longitude}`,

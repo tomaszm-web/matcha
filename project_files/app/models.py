@@ -67,12 +67,12 @@ class Account:
 		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
 			   "biography, avatar, photos, age, online, last_login, city, token FROM `users`  WHERE id = %s")
 		user = self.db.get_row(sql, (user_id,))
+		user['blocked_users'] = self.get_blocked_users(user['id'])
 		if extended:
 			user['tags'] = self.get_tags(user["id"])
 			user['liked_users'] = self.get_liked_users(user['id'])
-			user['blocked_users'] = self.get_blocked_users(user['id'])
 			user['reported_users'] = self.get_reported_users(user['id'])
-			user['checked_users'] = self.get_checked_users(user['id'])
+			user['visited'] = self.get_visited_users(user['id'])
 			user['photos'] = json.loads(user['photos'])
 			user['fame'] = self.get_fame_rating(user['id'])
 		return user
@@ -309,15 +309,15 @@ class Account:
 		return [blocked_user for blocked_user, in response]
 
 	def get_reported_users(self, user_id):
-		sql = "SELECT reported_id FROM `reports` WHERE user_id=%s"
+		sql = "SELECT reported_id FROM `reports` WHERE user_id = %s"
 		response = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
 		return [reported_user for reported_user, in response]
 
 	# todo rename in database to fit one standart (checked_id or (for, who) columns)
-	def get_checked_users(self, user_id):
-		sql = "SELECT checked_user FROM `checked_profile` WHERE checking=%s"
+	def get_visited_users(self, user_id):
+		sql = "SELECT visited FROM `visits` WHERE visitor = %s"
 		response = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
-		return [checked_user for checked_user, in response]
+		return [visited for visited, in response]
 
 	def like_user(self, like_owner, like_to, unlike):
 		if unlike:
@@ -346,9 +346,9 @@ class Account:
 			sql = "INSERT INTO `reports` SET user_id=%s, reported_id=%s"
 		self.db.query(sql, (user_id, reported_id))
 
-	def check_user(self, checking, checked_user):
-		sql = "INSERT INTO `checked_profile` SET checking=%s, checked_user=%s"
-		self.db.query(sql, (checking, checked_user))
+	def visit_user(self, visitor, visited):
+		sql = "INSERT INTO `visits` SET visitor = %s, visited = %s"
+		self.db.query(sql, (visitor, visited))
 
 
 class Chat:
@@ -376,7 +376,7 @@ class Notification:
 		self.notifications = {
 			'like': "You have been liked by {}",
 			'unlike': "You have been unliked by {}",
-			'check_profile': "Your profile was checked by {}",
+			'visit': "Your profile was visited by {}",
 			'message': "You received a message from {}",
 			'like_back': "You have been liked back by {}"
 		}
@@ -387,10 +387,11 @@ class Notification:
 			'user_action': url_for('profile', user_id=executive_user['id']),
 			'message': url_for('chat_page', recipient_id=executive_user['id'])
 		}
-		sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"
-		link = 'message' if notif_type == 'message' else 'user_action'
-		message = self.notifications[notif_type].format(executive_user['login'])
-		self.db.query(sql, (recipient_id, message, links[link]))
+		if recipient_id not in executive_user['blocked_users']:
+			sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"
+			link = 'message' if notif_type == 'message' else 'user_action'
+			message = self.notifications[notif_type].format(executive_user['login'])
+			self.db.query(sql, (recipient_id, message, links[link]))
 
 	def get(self, user_id):
 		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created DESC"

@@ -48,20 +48,20 @@ def settings():
 @app.route('/profile/<int:user_id>')
 @csrf_update
 def profile(user_id):
-	user = account.get_user_info(user_id=user_id)
+	user = account.get_user_info(user_id)
 	if 'user' not in session:
 		return render_template('profile.html', user=user)
 	cur_user = account.get_user_info(session['user'])
+	if not account.check_user_info(cur_user):
+		flash('Please, fill in information about yourself', 'info')
+		return redirect(url_for('settings'))
 	if user_id in cur_user['blocked_users']:
 		flash("This user was blocked by yourself. If you want to delete him from black list,"
 			  "donate me 10$ for future development of this feature!", 'info')
 		return redirect(url_for('index'))
-	if not account.check_user_info(cur_user):
-		flash('Please, fill in information about yourself', 'info')
-		return redirect(url_for('settings'))
-	if user['id'] not in cur_user['checked_users'] and user['id'] != cur_user['id']:
-		account.check_user(cur_user['id'], user['id'])
-		notification.send(user['id'], 'check_profile', cur_user)
+	if user['id'] != cur_user['id'] and user['id'] not in cur_user['visited']:
+		account.visit_user(cur_user['id'], user['id'])
+		notification.send(user['id'], 'visit', cur_user)
 	return render_template('profile.html', cur_user=cur_user, user=user)
 
 
