@@ -222,13 +222,14 @@ def block_user(user_id):
 	return redirect(url_for('index'))
 
 
-@app.route('/report_user', methods=["GET"])
+@app.route('/report_user', methods=["POST"])
 def report_user():
+	req = request.get_json() if request.is_json else request.form
 	try:
-		account.report_user(request.args['user_id'], request.args['reported_id'], request.args['unreport'])
+		account.report_user(req['user_id'], req['reported_id'], req['unreport'])
 	except Exception as e:
-		return jsonify({'success': False, 'error_message': str(e)})
-	return jsonify({'success': True, 'unreport': request.args.get('unreport')})
+		return jsonify({'success': False, 'error': str(e)})
+	return jsonify({'success': True, 'unreport': req['unreport']})
 
 
 @app.route('/ajax/get_messages', methods=["POST"])

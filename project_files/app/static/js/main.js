@@ -271,15 +271,16 @@ $(document).ready(function() {
 	};
 
 	$('.reportUser').click(function() {
-		axios.get('/report_user', {
-			params: {
-				unreport: $(this).hasClass('done'),
-				user_id: $(this).attr('data-user-id'),
-				reported_id: $(this).attr('data-reported-user-id')
-			}
-		}).then((response) => {
+		axios.post(`${window.origin}/report_user`, {
+			csrf_token: $("meta[data-csrf-token]").attr('data-csrf-token'),
+			unreport: $(this).hasClass('done'),
+			user_id: $(this).attr('data-user-id'),
+			reported_id: $(this).attr('data-reported-user-id')
+		}).then(response => {
 			if (response.data.success)
 				$(this).toggleClass('done')
+		}).catch(error => {
+			console.log(error.message);
 		})
 	});
 

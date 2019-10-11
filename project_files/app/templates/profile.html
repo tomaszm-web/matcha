@@ -47,7 +47,8 @@
 					</div>
 					<h4 class="profile__title">Fame Rating:</h4>
 					<div class="progress profile__fame">
-						<div class="progress-bar" style="width: %% user.fame %%%">%% user.login %%'s fame rating: %% user.fame %%%
+						<div class="progress-bar" style="width: %% user.fame %%%">%% user.login %%'s fame rating: %%
+							user.fame %%%
 						</div>
 					</div>
 					<h4 class="profile__title">Age:</h4>
@@ -64,17 +65,17 @@
 						<div class="profile__bio">%% user.biography %%</div>
 					{% endif %}
 
-					{% if user['tags'] | length > 0 %}
-						<h4 class="profile__title">Interest tags:</h4>
-						<select class="form-control multiple-tags" disabled multiple>#}
-							{% for tag in user["tags"] %}
-								<option value="%% tag %%" selected>#%% tag %%</option>
-							{% endfor %}
-						</select>
-					{% endif %}
+					<h4 class="profile__title">Interest Tags:</h4>
+					<div class="d-flex flex-wrap mb-3">
+						{% for tag in user.tags %}
+							<span class="badge badge-info m-1">#%% tag %%</span>
+						{% endfor %}
+					</div>
 					{% if cur_user and user.id != cur_user.id %}
 						{% if user.id in cur_user.liked_users and cur_user.id in user.liked_users %}
-							<a href="%% url_for('chat_page', recipient_id=user.id) %%" class="btn btn-primary chat-link btn-lg btn-block">
+							<h4 class="profile__title text-secondary">Great!!! You are connected and can chat with each other.</h4>
+							<a href="%% url_for('chat_page', recipient_id=user.id) %%"
+							   class="btn btn-primary chat-link btn-lg btn-block">
 								<i class="fas fa-comment"></i>Chat
 							</a>
 						{% endif %}
