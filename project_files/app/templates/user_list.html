@@ -20,17 +20,17 @@
 							Preferences: %% user.preferences %%<br>
 							City: %% user.city %%
 						</p>
+						<div class="d-flex flex-wrap mb-3">
+							{% for tag in user.tags %}
+								<span class="badge badge-info m-1">#%% tag %%</span>
+							{% endfor %}
+						</div>
 						{% if cur_user and cur_user.avatar %}
 							<form action="#" class="like-user-ajax">
 								<input type="hidden" name="csrf_token" value="%% csrf_token %%">
 								<input type="hidden" name="like_owner" value="%% cur_user.id %%">
 								<input type="hidden" name="liked_user" value="%% user.id %%">
 								<input type="hidden" name="unlike" value="%% liked_user | int %%">
-								<div class="d-flex flex-wrap mb-3">
-									{% for tag in user.tags %}
-										<span class="badge badge-info m-1">#%% tag %%</span>
-									{% endfor %}
-								</div>
 								{% if liked_user %}
 									<button type="submit" name="send_button" class="btn btn-danger like-user">
 										<i class='fas fa-thumbs-down'></i>Unlike

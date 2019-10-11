@@ -24,8 +24,7 @@ def index():
 			return redirect(url_for('settings'))
 	else:
 		cur_user = None
-	users = account.get_all_users(user_match=cur_user)
-	return render_template('index.html', users=users, cur_user=cur_user)
+	return render_template('index.html', cur_user=cur_user)
 
 
 @app.route('/settings', methods=["GET", "POST"])

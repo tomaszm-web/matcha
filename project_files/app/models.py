@@ -82,16 +82,18 @@ class Account:
 		if sort_by is not None:
 			if sort_by == 'age' or sort_by == 'fame':
 				return lambda e: -e[sort_by]
-			elif user_match and sort_by == 'common_tags':
+			elif user_match is not None and sort_by == 'common_tags':
 				return lambda e: -len(set(user_match['tags']).intersection(e['tags']))
-			elif user_match and sort_by == 'city':
+			elif user_match is not None and sort_by == 'city':
 				return lambda e: e['city'] != user_match['city']
-		return lambda e: (
-			e['city'] != user_match['city'],
-			abs(user_match['age'] - e['age']),
-			-e['fame'],
-			-len(set(user_match['tags']).intersection(e['tags']))
-		)
+		elif user_match is not None:
+			return lambda e: (
+				e['city'] != user_match['city'],
+				abs(user_match['age'] - e['age']),
+				-e['fame'],
+				-len(set(user_match['tags']).intersection(e['tags']))
+			)
+		return None
 
 	def filter_by_preferences(self, sql, user):
 		matches = {}
@@ -129,7 +131,6 @@ class Account:
 		return filtered_users
 
 	def get_all_users(self, user_match, filters=None, sort_by=None):
-		# todo Not correct. okherson with null values
 		sql = ("SELECT id, login, age, biography, avatar, city, gender, preferences FROM `users` "
 			   "WHERE NOT (biography is NULL OR age IS NULL OR city IS NULL OR gender IS NULL OR preferences IS NULL)")
 		if user_match:
@@ -140,11 +141,12 @@ class Account:
 		fame_rates = self.get_fame_rating()
 		tags_groups = self.get_tags()
 		for user in users:
-			user['fame'] = fame_rates[user['id']] if fame_rates else 0
-			user['tags'] = tags_groups[user['id']] if tags_groups else None
+			user['fame'] = fame_rates.get(user['id'], 0) if fame_rates else 0
+			user['tags'] = tags_groups.get(user['id']) if tags_groups else None
 		users = self.filter_by_criterias(users, filters)
-		if user_match or sort_by:
-			users = sorted(users, key=self.sort_func(user_match, sort_by))
+		sort_lambda = self.sort_func(user_match, sort_by)
+		if sort_lambda is not None:
+			users = sorted(users, key=sort_lambda)
 		return users
 
 	def email_confirmation(self, email, login, token):
@@ -202,7 +204,7 @@ class Account:
 			raise ValueError("You should confirm your E-mail first!")
 		session['user'] = user['id']
 		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-		sql = "UPDATE `users` SET online = 1, last_login=%s WHERE id=%s"
+		sql = "UPDATE `users` SET online = 1, last_login = %s WHERE id = %s"
 		self.db.query(sql, (last_login_date, user['id']))
 
 	def confirmation(self, login, token):

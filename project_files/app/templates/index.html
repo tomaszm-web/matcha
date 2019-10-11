@@ -77,8 +77,10 @@
 							<option disabled selected>Choose Sort Parameter</option>
 							<option value="age">Age</option>
 							<option value="fame">Fame Rating</option>
-							<option value="common_tags">Common tags</option>
-							<option value="city">Location</option>
+							{% if cur_user %}
+								<option value="common_tags">Common tags</option>
+								<option value="city">Location</option>
+							{% endif %}
 						</select>
 						<div class="form-check mb-3">
 							<input type="checkbox" class="form-check-input" name="reversed" id="sort-reversed">
