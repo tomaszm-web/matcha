@@ -32,7 +32,7 @@ class Account:
 		sql = "SELECT liked_user AS user, COUNT(liked_user) AS like_num FROM `likes` GROUP BY user"
 		search_in = self.db.get_all_rows(sql, cursorclass=MySQLdb.cursors.Cursor)
 		if not search_in:
-			return None
+			return 0
 		max_likes = max(like_num for _, like_num in search_in)
 		if user_id:
 			user_likes = [like_num for user, like_num in search_in if user == user_id]
@@ -41,18 +41,26 @@ class Account:
 			return round(user_likes[0] / max_likes * 100)
 		return {user_id: round(like_num / max_likes * 100) for user_id, like_num in search_in}
 
-	def get_tags(self, user_id):
-		sql = ("SELECT tags.name FROM `tags` "
-			   "INNER JOIN `users_tags` ON tags.id = users_tags.tag_id "
-			   "WHERE users_tags.user_id = %s")
-		tags = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
-		tags = [tag_name for tag_name, in tags]
-		return tags
+	def get_tags(self, user_id=None):
+		if user_id:
+			sql = ("SELECT tags.name FROM `tags` INNER JOIN `users_tags` "
+				   "ON tags.id = users_tags.tag_id WHERE users_tags.user_id = %s")
+			tags = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
+			if not tags:
+				return None
+			return [tag_name for tag_name, in tags]
+		else:
+			sql = "SELECT users_tags.user_id, tags.name FROM tags INNER JOIN users_tags ON tags.id = users_tags.tag_id"
+			tags_groups = self.db.get_all_rows(sql, cursorclass=MySQLdb.cursors.Cursor)
+			if not tags_groups:
+				return None
+			tags_groups = itertools.groupby(tags_groups, lambda pair: pair[0])
+			return {user: list(tag for _, tag in group) for user, group in tags_groups}
 
 	def check_user_info(self, user):
 		return (
-				user.get('avatar') and user.get('city') and user.get('biography') and
-				user.get('gender') and user.get('preferences') and user.get('age')
+			user.get('avatar') and user.get('city') and user.get('biography') and
+			user.get('gender') and user.get('preferences') and user.get('age')
 		)
 
 	def get_user_info(self, user_id, extended=True):
@@ -124,11 +132,11 @@ class Account:
 			users = self.db.get_all_rows(sql, values)
 		else:
 			users = self.db.get_all_rows(sql)
-
 		fame_rates = self.get_fame_rating()
+		tags_groups = self.get_tags()
 		for user in users:
-			user['fame'] = fame_rates[user['id']]
-			user['tags'] = self.get_tags(user['id'])
+			user['fame'] = fame_rates[user['id']] if fame_rates else 0
+			user['tags'] = tags_groups[user['id']] if tags_groups else None
 
 		users = self.filter_by_criterias(users, filters)
 		if user_match or sort_params:
