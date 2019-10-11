@@ -6,48 +6,47 @@ for (let i = 0; i < parts.length; i++) {
 	let temp = parts[i].split("=");
 	$_GET[decodeURIComponent(temp[0])] = decodeURIComponent(temp[1]);
 }
+let filter_tags;
 let passRegExp = new RegExp("^(((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})");
 let resetPasswordVue;
 let notificationsVue;
 let registrationVue;
 let loginVue;
 
+/*===================Notifications===================*/
+notificationsVue = new Vue({
+	el: '#notifications',
+	data: {
+		notifications: [],
+		csrf_token: document.querySelector('meta[data-csrf-token]').getAttribute('data-csrf-token')
+	},
+	created() {
+		this.getNotifications();
+		setInterval(this.getNotifications, 10000);
+	},
+	methods: {
+		delNotification(notif_id) {
+			let url = `${window.origin}/del_notification/${notif_id}`;
+			axios.delete(url, {data: {csrf_token: this.csrf_token}})
+				.then(() => {
+					for (let i = this.notifications.length - 1; i >= 0; i--)
+						if (this.notifications[i].id === notif_id)
+							this.notifications.splice(i, 1);
+				});
+		},
+		getNotifications() {
+			axios.get(`${window.origin}/get_notifications`)
+				.then(response => {
+					this.notifications = response.data;
+				})
+		}
+	}
+});
 
 $(document).ready(function() {
-	/*===================Notifications===================*/
-	if (document.getElementById('notifications')) {
-		$(document).on('click.bs.dropdown.data-api', '.notifications', function(e) {
-			e.stopPropagation();
-		});
-		notificationsVue = new Vue({
-			el: '#notifications',
-			data: {
-				notifications: [],
-				csrf_token: document.querySelector('meta[data-csrf-token]').getAttribute('data-csrf-token')
-			},
-			created() {
-				this.getNotifications();
-				setInterval(this.getNotifications, 10000);
-			},
-			methods: {
-				delNotification(notif_id) {
-					let url = `${window.origin}/del_notification/${notif_id}`;
-					axios.delete(url, {data: {csrf_token: this.csrf_token}})
-						.then(() => {
-							for (let i = this.notifications.length - 1; i >= 0; i--)
-								if (this.notifications[i].id === notif_id)
-									this.notifications.splice(i, 1);
-						});
-				},
-				getNotifications() {
-					axios.get(`${window.origin}/get_notifications`)
-						.then(response => {
-							this.notifications = response.data;
-						})
-				}
-			}
-		});
-	}
+	$(document).on('click.bs.dropdown.data-api', '.notifications', function(e) {
+		e.stopPropagation();
+	});
 
 	/*===================Select2===================*/
 	$('.multiple-tags').select2({
@@ -55,7 +54,8 @@ $(document).ready(function() {
 		tags: true
 	});
 
-	$('.filter-tags').select2({
+	filter_tags = $('.filter-tags');
+	filter_tags.select2({
 		placeholder: "Filter Tags"
 	});
 
@@ -68,6 +68,7 @@ $(document).ready(function() {
 				resolve(true);
 			});
 		});
+		//todo Doesn't recognize after filter users post form submit
 		user_list_created.then(() => {
 			let like_user_forms = document.querySelectorAll('.like-user-ajax');
 			like_user_forms.forEach(form => {
@@ -81,9 +82,9 @@ $(document).ready(function() {
 								form.send_button.classList.toggle('btn-success');
 								form.send_button.classList.toggle('btn-danger');
 								if (!response.data.unlike)
-									form.send_button.innerHTML = "<i class='fas fa-thumbs-down'></i>Unlike"
+									form.send_button.innerHTML = "<i class='fas fa-thumbs-down'></i>Unlike";
 								else
-									form.send_button.innerHTML = "<i class='fas fa-thumbs-up'></i>Like"
+									form.send_button.innerHTML = "<i class='fas fa-thumbs-up'></i>Like";
 								form.unlike = !form.unlike;
 							} else if (response.data.error === 'KeyError') {
 								$('#logIn').modal();
@@ -96,17 +97,30 @@ $(document).ready(function() {
 
 	/*===================Filter Users===================*/
 	let loadingGif = document.querySelector('.loading');
-	$('.filters').submit(function(e) {
+	function getUserList(e, url) {
 		e.preventDefault();
 		let data = new FormData(e.target);
 		user_list.innerHTML = "";
 		user_list.appendChild(loadingGif);
-		axios.post(`${window.origin}/filter_users`, data).then(response => {
+		axios.post(url, data).then(response => {
 			user_list.innerHTML = response.data;
 		});
+	}
+	$('.filters').submit(function(e) {
+		getUserList(e, `${window.origin}/filter_users`)
+	});
+	$('.sort').submit(function(e) {
+		getUserList(e, `${window.origin}/sort_users`)
 	});
 
 	elem = document.querySelector('.reset_filters');
+	if (elem) elem.onclick = e => {
+		e.target.form.reset();
+		filter_tags.val("");
+		filter_tags.trigger("change");
+	};
+
+	elem = document.querySelector('.reset_sort');
 	if (elem) elem.onclick = e => {
 		e.target.form.reset();
 	};
@@ -115,7 +129,7 @@ $(document).ready(function() {
 		axios.get(`${window.origin}/ajax/get_tag_list`).then(response => {
 			if (response.data.success) {
 				tag_list = response.data.tags;
-				$('.filter-tags').select2({
+				filter_tags.select2({
 					placeholder: "Filter Tags",
 					data: tag_list
 				})

@@ -77,17 +77,21 @@ class Account:
 			user['fame'] = self.get_fame_rating(user['id'])
 		return user
 
-	def sort_func(self, user_match, sort_params=None):
-		if sort_params:
-			pass
-			# if sort_params['sort_by'] == ''
-		else:
-			return lambda e: (
-				e['city'] != user_match['city'],
-				abs(user_match['age'] - e['age']),
-				-e['fame'],
-				-len(set(user_match['tags']).intersection(e['tags']))
-			)
+	def sort_func(self, user_match, sort_by=None):
+		# todo location should be refactored. For example make 2 selects for city and country.
+		if sort_by is not None:
+			if sort_by == 'age' or sort_by == 'fame':
+				return lambda e: -e[sort_by]
+			elif user_match and sort_by == 'common_tags':
+				return lambda e: -len(set(user_match['tags']).intersection(e['tags']))
+			elif user_match and sort_by == 'city':
+				return lambda e: e['city'] != user_match['city']
+		return lambda e: (
+			e['city'] != user_match['city'],
+			abs(user_match['age'] - e['age']),
+			-e['fame'],
+			-len(set(user_match['tags']).intersection(e['tags']))
+		)
 
 	def filter_by_preferences(self, sql, user):
 		matches = {}
@@ -124,9 +128,10 @@ class Account:
 				filtered_users.append(user)
 		return filtered_users
 
-	def get_all_users(self, user_match, filters=None, sort_params=None):
+	def get_all_users(self, user_match, filters=None, sort_by=None):
+		# todo Not correct. okherson with null values
 		sql = ("SELECT id, login, age, biography, avatar, city, gender, preferences FROM `users` "
-			   "WHERE NOT (age IS NULL OR city IS NULL OR gender IS NULL OR preferences IS NULL)")
+			   "WHERE NOT (biography is NULL OR age IS NULL OR city IS NULL OR gender IS NULL OR preferences IS NULL)")
 		if user_match:
 			sql, values = self.filter_by_preferences(sql, user_match)
 			users = self.db.get_all_rows(sql, values)
@@ -137,10 +142,9 @@ class Account:
 		for user in users:
 			user['fame'] = fame_rates[user['id']] if fame_rates else 0
 			user['tags'] = tags_groups[user['id']] if tags_groups else None
-
 		users = self.filter_by_criterias(users, filters)
-		if user_match or sort_params:
-			users = sorted(users, key=self.sort_func(user_match, sort_params))
+		if user_match or sort_by:
+			users = sorted(users, key=self.sort_func(user_match, sort_by))
 		return users
 
 	def email_confirmation(self, email, login, token):

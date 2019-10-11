@@ -113,37 +113,50 @@ h2 {
 
 /*===================Animations===================*/
 @keyframes slide_from_bottom {
-  from {
-	  opacity: 0;
-	  transform: translateY(100%);
-  }
-  to {
-	  opacity: 1;
-	  transform: translateY(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(100%);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 @keyframes slide_from_left {
-  from {
-	  opacity: 0;
-	  transform: translateX(-100%);
-  }
-  to {
-	  opacity: 1;
-	  transform: translateX(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateX(-100%);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
 
 @keyframes slide_from_right {
-  from {
-	  opacity: 0;
-	  transform: translateX(100%);
-  }
-  to {
-	  opacity: 1;
-	  transform: translateX(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateX(100%);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
+
+@keyframes fade_animation {
+	0% {
+		opacity: 0;
+	}
+	50% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
 
 /*===================Header===================*/
 #nav {
@@ -220,10 +233,14 @@ header {
 	font-size: 20px;
 }
 
+#notifications {
+	animation: .7s ease-out fade_animation;
+}
+
 .notifications {
 	width: 30vw;
 	max-height: 60vh;
-	overflow-y: scroll
+	overflow-y: scroll;
 }
 
 .notifications .message, .notifications .message-empty {
@@ -293,7 +310,7 @@ header {
 	max-width: 100%;
 }
 
-.filters .form-control {
+.filters .form-control, .sort .form-control {
 	margin-top: 0;
 	margin-bottom: 10px;
 	background-color: #fff;
@@ -307,6 +324,7 @@ header {
 .settings-animate-left {
 	animation: .5s ease-out slide_from_left;
 }
+
 .settings-animate-right {
 	animation: .5s ease-out slide_from_right;
 }
@@ -365,9 +383,9 @@ header {
 
 .profile__avatar input {
 	opacity: 0;
-    z-index: -1;
-    position: absolute;
-    left: 40px;
+	z-index: -1;
+	position: absolute;
+	left: 40px;
 	top: 0;
 	bottom: 30%;
 	width: 100px;
@@ -542,7 +560,7 @@ footer {
 /*SELECT2*/
 
 .select2-container {
-	width: 100%!important;
+	width: 100% !important;
 }
 
 .select2-container .select2-selection--multiple {

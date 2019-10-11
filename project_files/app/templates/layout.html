@@ -42,6 +42,7 @@
 							<i class="fas fa-bell"></i>
 							{{ notifications.length }}
 						</a>
+
 						<div class="dropdown-menu dropdown-menu-right notifications" aria-labelledby="user-notif">
 							<div class="dropdown-header">Notifications:</div>
 							<a class="message text-info" v-for="notif in notifications" :href="notif.link">
@@ -56,10 +57,8 @@
 					</div>
 				{% endif %}
 				<div class="dropdown dropdown__profile">
-					<a href="#" class="profile-link rounded"id="user-profile"
-					   {% if cur_user %}
-					   style="background-image: url(%% avatar %%)"
-					   {% endif %}
+					<a href="#" class="profile-link rounded" id="user-profile"
+					   {% if cur_user %}style="background-image: url(%% avatar %%)"{% endif %}
 					>
 					</a>
 					<div class="dropdown-menu dropdown-menu-right" aria-labelledby="user-profile">

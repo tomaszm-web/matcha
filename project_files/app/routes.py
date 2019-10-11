@@ -158,12 +158,24 @@ def filter_users():
 	try:
 		cur_user = account.get_user_info(session['user']) if 'user' in session else None
 		if len(request.form) > 0:
-			users = account.get_all_users(cur_user, request.form)
+			users = account.get_all_users(cur_user, filters=request.form)
 		else:
 			users = account.get_all_users(cur_user)
-		return render_template('users_list.html', cur_user=cur_user, users=users)
-	except Exception as e:
-		return "Something went wrong!" + str(e)
+		return render_template('user_list.html', cur_user=cur_user, users=users)
+	except Exception:
+		return "Something went wrong!"
+
+
+@app.route('/sort_users', methods=["POST"])
+def sort_users():
+	try:
+		cur_user = account.get_user_info(session['user']) if 'user' in session else None
+		users = account.get_all_users(cur_user, sort_by=request.form.get('sort_by'))
+		if request.form.get('reversed'):
+			users = reversed(users)
+		return render_template('user_list.html', cur_user=cur_user, users=users)
+	except Exception:
+		return "Something went wrong!"
 
 
 @app.route('/ajax/like_user', methods=["POST"])
@@ -187,6 +199,13 @@ def like_user(user_id):
 	try:
 		like_owner = session['user']
 		action = account.like_user(like_owner, user_id, int(request.form['unlike']))
+		if action == 'like':
+			msg = "Your liked was received. If you get liked back, you'll be able to chat"
+		elif action == 'like_back':
+			msg = "Great! You can chat now."
+		else:
+			msg = "You successfully disconnected from that user."
+		flash(msg, 'success')
 		notification.send(user_id, action, account.get_user_info(like_owner, extended=False))
 	except Exception:
 		flash("Something went wrong. Try again a bit later!", 'danger')
