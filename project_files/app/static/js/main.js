@@ -93,6 +93,10 @@ $(document).ready(function() {
 		let user_list_created = new Promise(resolve => {
 			axios.get(`${window.origin}/filter_users`).then(response => {
 				user_list.innerHTML = response.data;
+				let user_cards = document.querySelectorAll('.user-list__card');
+				for (let i = 0; i < user_cards.length; i++) {
+					user_cards[i].style.animationDuration = `${.5 + (.2 * i)}s`;
+				}
 				resolve(true);
 			});
 		});
@@ -109,6 +113,10 @@ $(document).ready(function() {
 		user_list.appendChild(loadingGif);
 		axios.post(url, data).then(response => {
 			user_list.innerHTML = response.data;
+			let user_cards = document.querySelectorAll('.user-list__card');
+			for (let i = 0; i < user_cards.length; i++) {
+				user_cards[i].style.animationDuration = `${.5 + (.2 * i)}s`;
+			}
 			hook_like_buttons();
 		});
 	}

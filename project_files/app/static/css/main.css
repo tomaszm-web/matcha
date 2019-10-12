@@ -299,8 +299,23 @@ header {
 	margin-bottom: 20px;
 }
 
+.card-img-top {
+	height: 320px;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+}
+
+.card-img-top img {
+	width: 100%;
+}
+
 .user-list__card {
-	animation: .5s ease-out slide_from_bottom;
+	-webkit-animation-name: slide_from_bottom;
+	-moz-animation-name: slide_from_bottom;
+	-o-animation-name: slide_from_bottom;
+	animation-name: slide_from_bottom;
+	transition-timing-function: ease-out;
 }
 
 .user-list__card a {
