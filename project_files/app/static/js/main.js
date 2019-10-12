@@ -21,7 +21,8 @@ notificationsVue = new Vue({
 		csrf_token: document.querySelector('meta[data-csrf-token]').getAttribute('data-csrf-token')
 	},
 	created() {
-		if (!document.querySelector("meta[data-cur-user]").getAttribute('data-cur-user') !== -1)
+		elem = document.querySelector("meta[data-cur-user]");
+		if (!elem || elem.getAttribute('data-cur-user') === -1)
 			return;
 		this.getNotifications();
 		setInterval(this.getNotifications, 10000);

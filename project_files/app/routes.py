@@ -49,6 +49,9 @@ def settings():
 @csrf_update
 def profile(user_id):
 	user = account.get_user_info(user_id)
+	if not user:
+		flash('No user with that id!', 'danger')
+		return redirect(url_for('index'))
 	if 'user' not in session:
 		return render_template('profile.html', user=user)
 	cur_user = account.get_user_info(session['user'])
@@ -71,6 +74,9 @@ def profile(user_id):
 def chat_page(recipient_id):
 	recipient = account.get_user_info(recipient_id)
 	if not recipient:
+		flash('No user with that id!', 'danger')
+		return redirect(url_for('index'))
+	if not recipient:
 		flash("Wrong user id", 'danger')
 		return redirect(url_for('index'))
 	user = account.get_user_info(session["user"])
@@ -81,6 +87,14 @@ def chat_page(recipient_id):
 		flash("You should like each other before chatting", 'danger')
 		return redirect(url_for('profile', user_id=recipient['id']))
 	return render_template('chat.html', cur_user=user, recipient=recipient)
+
+
+@app.route('/chat-list')
+@csrf_update
+@login_required
+def chat_list():
+	cur_user = account.get_user_info(session['user'])
+	return render_template('chat-list.html', cur_user=cur_user)
 
 
 @app.route('/registration', methods=["POST"])
@@ -162,18 +176,6 @@ def filter_users():
 				users = reversed(users)
 		else:
 			users = account.get_all_users(cur_user)
-		return render_template('user_list.html', cur_user=cur_user, users=users)
-	except Exception:
-		return "Something went wrong!"
-
-
-@app.route('/sort_users', methods=["POST"])
-def sort_users():
-	try:
-		cur_user = account.get_user_info(session['user']) if 'user' in session else None
-		users = account.get_all_users(cur_user, sort_by=request.form.get('sort_by'))
-		if request.form.get('reversed'):
-			users = reversed(users)
 		return render_template('user_list.html', cur_user=cur_user, users=users)
 	except Exception:
 		return "Something went wrong!"
@@ -284,5 +286,3 @@ def before_request():
 def uploaded_file(path):
 	dirpath = os.path.join(app.config['UPLOAD_PATH'], app.config['UPLOAD_FOLDER'])
 	return send_from_directory(dirpath, path)
-
-# todo Sort by params

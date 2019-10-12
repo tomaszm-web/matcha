@@ -562,6 +562,32 @@ header {
 	border-radius: 0 0 4px 4px;
 }
 
+/*Chat List*/
+#chat-list {
+	padding: 80px 0;
+}
+
+.chat-list {
+	background-color: #fff;
+    padding: 40px 20px;
+    border-radius: .25rem;
+    box-shadow: 0 0 15px 0 rgba(0, 0, 0, 0.04);
+}
+
+.chat-list .list-group-item img {
+	max-width: 80px;
+}
+
+.chat-list .list-group-item {
+	display: flex;
+	align-items: center;
+	background-color: #3B354D;
+}
+
+.chat-list .list-group-item:hover {
+	background-color: #1d2124;
+}
+
 /*Footer*/
 footer {
 	position: absolute;

@@ -67,6 +67,8 @@ class Account:
 		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
 			   "biography, avatar, photos, age, online, last_login, city, token FROM `users`  WHERE id = %s")
 		user = self.db.get_row(sql, (user_id,))
+		if not user:
+			return None
 		user['blocked_users'] = self.get_blocked_users(user['id'])
 		if extended:
 			user['tags'] = self.get_tags(user["id"])
@@ -87,7 +89,6 @@ class Account:
 			elif user_match is not None and sort_by == 'city':
 				return lambda e: e['city'] != user_match['city']
 		elif user_match is not None:
-			print("Nu i sho")
 			return lambda e: (
 				e['city'] != user_match['city'],
 				abs(user_match['age'] - e['age']),
@@ -132,7 +133,6 @@ class Account:
 		return filtered_users
 
 	def get_all_users(self, user_match, filters=None, sort_by=None):
-		# todo Sort and filter must work together
 		sql = ("SELECT id, login, age, biography, avatar, city, gender, preferences FROM `users` "
 			   "WHERE NOT (biography is NULL OR age IS NULL OR city IS NULL OR gender IS NULL OR preferences IS NULL)")
 		if user_match:
@@ -314,7 +314,6 @@ class Account:
 		response = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
 		return [reported_user for reported_user, in response]
 
-	# todo rename in database to fit one standart (checked_id or (for, who) columns)
 	def get_visited_users(self, user_id):
 		sql = "SELECT visited FROM `visits` WHERE visitor = %s"
 		response = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
@@ -382,7 +381,6 @@ class Notification:
 			'like_back': "You have been liked back by {}"
 		}
 
-	# todo Check if user not in black list for recipient
 	def send(self, recipient_id, notif_type, executive_user):
 		links = {
 			'user_action': url_for('profile', user_id=executive_user['id']),
