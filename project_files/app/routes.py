@@ -157,7 +157,9 @@ def filter_users():
 	try:
 		cur_user = account.get_user_info(session['user']) if 'user' in session else None
 		if len(request.form) > 0:
-			users = account.get_all_users(cur_user, filters=request.form)
+			users = account.get_all_users(cur_user, filters=request.form, sort_by=request.form.get('sort_by'))
+			if request.form.get('reversed') == 'on':
+				users = reversed(users)
 		else:
 			users = account.get_all_users(cur_user)
 		return render_template('user_list.html', cur_user=cur_user, users=users)
@@ -282,6 +284,5 @@ def before_request():
 def uploaded_file(path):
 	dirpath = os.path.join(app.config['UPLOAD_PATH'], app.config['UPLOAD_FOLDER'])
 	return send_from_directory(dirpath, path)
-
 
 # todo Sort by params

@@ -79,7 +79,7 @@ class Account:
 
 	def sort_func(self, user_match, sort_by=None):
 		# todo location should be refactored. For example make 2 selects for city and country.
-		if sort_by is not None:
+		if sort_by:
 			if sort_by == 'age' or sort_by == 'fame':
 				return lambda e: -e[sort_by]
 			elif user_match is not None and sort_by == 'common_tags':
@@ -87,6 +87,7 @@ class Account:
 			elif user_match is not None and sort_by == 'city':
 				return lambda e: e['city'] != user_match['city']
 		elif user_match is not None:
+			print("Nu i sho")
 			return lambda e: (
 				e['city'] != user_match['city'],
 				abs(user_match['age'] - e['age']),

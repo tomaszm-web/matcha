@@ -63,10 +63,9 @@ $(document).ready(function() {
 
 	/*===================List of Users===================*/
 	function hook_like_buttons() {
-		console.log("button hooked");
 		let like_user_forms = document.querySelectorAll('.like-user-ajax');
 		like_user_forms.forEach(form => {
-			form.onsubmit = async (e) => {
+			form.onsubmit = async(e) => {
 				e.preventDefault();
 				let data = new FormData(form);
 				form.unlike.value = data.get('unlike') == "0" ? "1" : "0";
@@ -106,27 +105,32 @@ $(document).ready(function() {
 	/*===================Filter Users===================*/
 	let loadingGif = document.querySelector('.loading');
 
-	function getUserList(e, url) {
-		e.preventDefault();
-		let data = new FormData(e.target);
-		user_list.innerHTML = "";
-		user_list.appendChild(loadingGif);
-		axios.post(url, data).then(response => {
-			user_list.innerHTML = response.data;
-			let user_cards = document.querySelectorAll('.user-list__card');
-			for (let i = 0; i < user_cards.length; i++) {
-				user_cards[i].style.animationDuration = `${.5 + (.2 * i)}s`;
-			}
-			hook_like_buttons();
-		});
-	}
+	let filter_form = document.querySelector('.filters');
+	if (filter_form) {
+		filter_form.onsubmit = e => {
+			user_list.innerHTML = "";
+			e.preventDefault();
+			let data = new FormData(filter_form);
+			user_list.appendChild(loadingGif);
+			let url = `${window.origin}/filter_users`;
+			axios.post(url, data).then(response => {
+				user_list.innerHTML = response.data;
+				let user_cards = document.querySelectorAll('.user-list__card');
+				for (let i = 0; i < user_cards.length; i++) {
+					user_cards[i].style.animationDuration = `${.5 + (.2 * i)}s`;
+				}
+				hook_like_buttons();
+			});
+		};
 
-	$('.filters').submit(function(e) {
-		getUserList(e, `${window.origin}/filter_users`)
-	});
-	$('.sort').submit(function(e) {
-		getUserList(e, `${window.origin}/sort_users`)
-	});
+		// sort_form.onsubmit = e => {
+		// 	e.preventDefault();
+		// 	let data = new FormData(filter_form);
+		// 	data.append('sort_by', sort_form.sort_by.value);
+		// 	data.append('reversed', sort_form.reversed.checked);
+		// 	getUserList(e, data);
+		// }
+	}
 
 	elem = document.querySelector('.reset_filters');
 	if (elem) elem.onclick = e => {

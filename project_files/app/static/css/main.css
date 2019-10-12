@@ -293,6 +293,7 @@ header {
 /*Users*/
 #users {
 	padding: 80px 0;
+	min-height: 700px;
 }
 
 #users .card {

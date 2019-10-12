@@ -21,7 +21,7 @@
 				</div>
 			</div>
 			<div class="row mb-5">
-				<div class="col-12 col-lg-8">
+				<div class="col-12 col-lg-10 m-auto">
 					<button class="btn btn-danger btn-block mb-3" data-toggle="collapse" data-target="#collapseOne"
 							aria-expanded="true" aria-controls="collapseOne">
 						<i class="fas fa-filter"></i>
@@ -43,12 +43,12 @@
 								<label for="age_from">Fame rating:</label>
 								<div class="input-group">
 									<input name="fame_from" type="number" id="fame_from"
-										   class="form-control" min="1" max="100" placeholder="from 1">
+										   class="form-control" min="0" max="100" placeholder="from 0">
 									<input name="fame_to" type="number" id="fame_to" class="form-control"
 										   min="1" max="100" placeholder="to 100">
 								</div>
 							</div>
-							<div class="col-12 col-sm-6">
+							<div class="col-12 col-sm-6 mb-2">
 								<label for="tags">Interests tags:</label>
 								<select name="tags" id="tags" class="form-control filter-tags" multiple>
 								</select>
@@ -58,39 +58,42 @@
 								<input type="text" name="city" id="select-city" class="form-control"
 									   placeholder="Choose city">
 							</div>
-							<div class="col">
+							<div class="col-12 col-md-4">
+								<label for="sort-param">Sort By:</label>
+								<select name="sort_by" class="form-control" id="sort-param">
+									<option value="" selected>Sort Parameter</option>
+									<option value="age">Age</option>
+									<option value="fame">Fame Rating</option>
+									{% if cur_user %}
+										<option value="common_tags">Common tags</option>
+										<option value="city">Location</option>
+									{% endif %}
+								</select>
+								<div class="form-check mb-3">
+									<input type="checkbox" class="form-check-input" name="reversed" id="sort-reversed">
+									<label for="sort-reversed" class="form-check-label">Reversed</label>
+								</div>
+							</div>
+							<div class="col-12">
 								<button class="btn btn-info mb-1">Apply filters</button>
 								<button class="btn btn-danger reset_filters mb-1">Reset Filters</button>
 							</div>
 						</div>
 					</form>
 				</div>
-				<div class="col-12 col-lg-4">
-					<button class="btn btn-info btn-block collapsed mb-3" data-toggle="collapse"
-							data-target="#collapse_two" aria-expanded="false" aria-controls="collapse_two">
-						<i class="fas fa-sort"></i>
-						Sort By
-					</button>
-					<form id="collapse_two" class="collapse sort" aria-labelledby="headingTwo">
-						<input type="hidden" name="csrf_token" value="%% csrf_token %%">
-						<label for="sort-param">Sort By</label>
-						<select name="sort_by" class="form-control" id="sort-param">
-							<option disabled selected>Choose Sort Parameter</option>
-							<option value="age">Age</option>
-							<option value="fame">Fame Rating</option>
-							{% if cur_user %}
-								<option value="common_tags">Common tags</option>
-								<option value="city">Location</option>
-							{% endif %}
-						</select>
-						<div class="form-check mb-3">
-							<input type="checkbox" class="form-check-input" name="reversed" id="sort-reversed">
-							<label for="sort-reversed" class="form-check-label">Reversed</label>
-						</div>
-						<button class="btn btn-info">Do sort</button>
-						<button class="btn btn-danger reset_sort">Reset Sort</button>
-					</form>
-				</div>
+				{#				<div class="col-12">#}
+				{#					<button class="btn btn-info btn-block collapsed mb-3" data-toggle="collapse"#}
+				{#							data-target="#collapse_two" aria-expanded="false" aria-controls="collapse_two">#}
+				{#						<i class="fas fa-sort"></i>#}
+				{#						Sort By#}
+				{#					</button>#}
+				{#					<form id="collapse_two" class="collapse sort" aria-labelledby="headingTwo">#}
+				{#						<input type="hidden" name="csrf_token" value="%% csrf_token %%">#}
+				{##}
+				{#						<button class="btn btn-info">Do sort on filters</button>#}
+				{#						<button class="btn btn-danger reset_sort">Reset Sort</button>#}
+				{#					</form>#}
+				{#				</div>#}
 			</div>
 			<div class="row users_list">
 				<div class="col-12 text-center loading">
