@@ -68,11 +68,11 @@ def profile(user_id):
 	return render_template('profile.html', cur_user=cur_user, user=user)
 
 
-@app.route('/chat/<int:recipient_id>')
+@app.route('/chat/<user_id>')
 @csrf_update
 @login_required
-def chat_page(recipient_id):
-	recipient = account.get_user_info(recipient_id)
+def chat_page(user_id):
+	recipient = account.get_user_info(user_id)
 	if not recipient:
 		flash('No user with that id!', 'danger')
 		return redirect(url_for('index'))
@@ -86,7 +86,7 @@ def chat_page(recipient_id):
 	if recipient['id'] not in user['liked_users'] or user['id'] not in recipient['liked_users']:
 		flash("You should like each other before chatting", 'danger')
 		return redirect(url_for('profile', user_id=recipient['id']))
-	return render_template('chat.html', cur_user=user, recipient=recipient)
+	return render_template('chat.html', cur_user=user, user=recipient)
 
 
 @app.route('/chat-list')

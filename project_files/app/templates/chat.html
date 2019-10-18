@@ -9,9 +9,9 @@
 			</div>
 			<div class="row justify-content-center mb-3">
 				<div class="col-12 col-md-10">
-					<a href="%% url_for('profile', user_id=recipient.id) %%" class="text-info">
-						<img src="%% recipient.avatar %%" alt="Matcha" class="img-fluid rounded chat__img">
-						@%% recipient.login %%
+					<a href="%% url_for('profile', user_id=user.id) %%" class="text-info">
+						<img src="%% user.avatar %%" alt="Matcha" class="img-fluid rounded chat__img">
+						@%% user.login %%
 					</a>
 				</div>
 			</div>
@@ -20,24 +20,28 @@
 					<div class="chat">
 						<div class="chat__message" v-for="message in messages"
 							 v-bind:class="{ 'right-align': message.sender_id == sender_id }">
-							<img :src="message.sender_id == sender_id ? '%% cur_user.avatar %%' : '%% recipient.avatar %%'"
+							<img :src="message.sender_id == sender_id ? '%% cur_user.avatar %%' : '%% user.avatar %%'"
 								 alt="Matcha" class="chat__img rounded">
 							<div class="d-flex flex-column">
 								<div class="d-flex align-items-center">
 									<div class="chat__login text-info">
-										@{{ message.sender_id == sender_id ? '%% cur_user.login %%' : '%% recipient.login %%' }}
+										@{{ message.sender_id == sender_id ? '%% cur_user.login %%' : '%% user.login %%' }}
 									</div>
 									<div class="chat__timestamp text-info">{{ message.timestamp }}</div>
 								</div>
 								<div class="chat__text card-body bg-light">{{ message.body }}</div>
 							</div>
 						</div>
+						<div class="chat__message_empty text-secondary text-center" v-if="!messages.length">
+							No messages...
+						</div>
 					</div>
-					<form class="sendMessageForm" @submit.prevent="sendMessage">
+					<form class="sendMessageForm" @submit.prevent="sendMessage" @keyup.ctrl.enter="sendMessage">
 						<input type="hidden" name="csrf_token" value="%% csrf_token %%">
 						<input type="hidden" name="sender_id" value="%% cur_user.id %%">
-						<textarea name="text" placeholder="Type your text to %% recipient.login %% here"
-								  class="form-control chat__textarea" required maxlength="256" @onen></textarea>
+						<input type="hidden" name="recipient_id" value="%% user.id %%">
+						<textarea required name="text" placeholder="Type your text to %% user.login %% here"
+								  class="form-control chat__textarea" maxlength="256"></textarea>
 						<button class="btn btn-block btn-primary">Send message</button>
 					</form>
 				</div>

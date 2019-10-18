@@ -357,6 +357,7 @@ class Chat:
 		self.timestamp_format = "%c"
 
 	def send_message(self, sender_id, recipient_id, message_text):
+		"""Problem key error!"""
 		sql = "INSERT INTO `messages` (sender_id, recipient_id, body) VALUES (%s, %s, %s)"
 		self.db.query(sql, (sender_id, recipient_id, message_text))
 
@@ -384,7 +385,7 @@ class Notification:
 	def send(self, recipient, notif_type, executive_user):
 		links = {
 			'user_action': url_for('profile', user_id=executive_user['id']),
-			'message': url_for('chat_page', recipient_id=executive_user['id'])
+			'message': url_for('chat_page', user_id=executive_user['id'])
 		}
 		if executive_user['id'] not in recipient['blocked_users']:
 			sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"

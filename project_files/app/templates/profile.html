@@ -74,7 +74,7 @@
 					{% if cur_user and user.id != cur_user.id %}
 						{% if user.id in cur_user.liked_users and cur_user.id in user.liked_users %}
 							<h4 class="profile__title text-secondary">Great!!! You are connected and can chat with each other.</h4>
-							<a href="%% url_for('chat_page', recipient_id=user.id) %%"
+							<a href="%% url_for('chat_page', user_id=user.id) %%"
 							   class="btn btn-primary chat-link btn-lg btn-block">
 								<i class="fas fa-comment"></i>Chat
 							</a>
