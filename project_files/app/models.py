@@ -4,6 +4,7 @@ import secrets
 import itertools
 from datetime import datetime
 
+from pytz import timezone
 import MySQLdb.cursors
 from flask import render_template, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -212,7 +213,7 @@ class Account:
 		if not user["confirmed"]:
 			raise ValueError("You should confirm your E-mail first!")
 		session['user'] = user['id']
-		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+		last_login_date = datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S')
 		sql = "UPDATE `users` SET online = 1, last_login = %s WHERE id = %s"
 		self.db.query(sql, (last_login_date, user['id']))
 
@@ -363,26 +364,28 @@ class Account:
 
 
 class Chat:
-	timestamp_format = "%s"
+	timestamp_format = "%H:%M %d %b %Y"
+	tz = timezone('Europe/Amsterdam')
 
 	def __init__(self, user1_id, user2_id):
 		self.user1_id = user1_id
 		self.user2_id = user2_id
 
-		sql = "SELECT id FROM chats WHERE user1_id = %s AND user2_id = %s"
+		select_sql = "SELECT id FROM chats WHERE user1_id = %s AND user2_id = %s"
 		user_pair = (user1_id, user2_id)
-		response = db.get_row(sql, user_pair) \
-				   or db.get_row(sql, reversed(user_pair))
+		response = db.get_row(select_sql, user_pair) \
+				   or db.get_row(select_sql, reversed(user_pair))
 		if response is None:
-			sql = "INSERT INTO chats (user1_id, user2_id) VALUE (%s, %s)"
-			db.query(sql, user_pair)
-			response = db.get_row(sql, user_pair)
+			insert_sql = "INSERT INTO chats (user1_id, user2_id) VALUE (%s, %s)"
+			db.query(insert_sql, user_pair)
+			response = db.get_row(select_sql, user_pair)
 		self.id, = response
 
 	def get_messages(self):
-		sql = "SELECT * FROM `messages` WHERE chat_id = %s"
+		sql = "SELECT * FROM `messages` WHERE chat_id = %s ORDER BY timestamp"
 		messages = db.get_all_rows(sql, (self.id,), cursorclass=MySQLdb.cursors.DictCursor)
 		for message in messages:
+			message['timestamp'] = self.tz.localize(message['timestamp'])
 			message['timestamp'] = datetime.strftime(message['timestamp'], self.timestamp_format)
 		return messages
 
@@ -390,6 +393,19 @@ class Chat:
 	def send_message(cls, chat_id, sender_id, recipient_id, message_text):
 		sql = "INSERT INTO `messages` (chat_id, sender_id, recipient_id, text) VALUES (%s, %s, %s, %s)"
 		db.query(sql, (chat_id, sender_id, recipient_id, message_text))
+
+	@classmethod
+	def get_chats(cls, user_id):
+		sql = ("SELECT chat_id, recipient_id, message, timestamp FROM messages "
+			   "INNER JOIN chats ON messages.chat_id = chats.id "
+			   "WHERE sender_id = %s OR recipient_id = %s ORDER BY timestamp DESC")
+		columns = ('chat_id', 'recipient_id', 'message', 'timestamp')
+		chats = db.get_all_rows(sql, (user_id, user_id))
+		if not chats:
+			return None
+		chats = itertools.groupby(chats, lambda row: row[0])
+		chats = (dict(zip(columns, message)) for _, (message, *_) in chats)
+		return chats
 
 
 class Notification:

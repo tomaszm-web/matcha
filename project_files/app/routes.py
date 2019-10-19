@@ -99,7 +99,13 @@ def chat_page(user_id):
 @login_required
 def chat_list():
 	cur_user = account.get_user_info(session['user'])
-	return render_template('chat-list.html', cur_user=cur_user)
+	if not account.check_user_info(cur_user):
+		flash('Please, fill in information about yourself', 'info')
+		return redirect(url_for('settings'))
+
+	chats = Chat.get_chats(session['user'])
+	print(chats)
+	return render_template('chat-list.html', cur_user=cur_user, chats=chats)
 
 
 @app.route('/registration', methods=["POST"])

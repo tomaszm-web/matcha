@@ -6,46 +6,21 @@
 				<div class="col"><h2>Chat List</h2></div>
 			</div>
 			<div class="row">
-				{#				{% for user in chats %}#}
 				<div class="col-12">
 					<div class="list-group">
-						<a href="#" class="list-group-item text-light">
-							<div class="col-2">
-								<img src="/static/img/default_avatar.png" alt="Matcha" class="img-fluid img-round">
-							</div>
-							<p class="text-truncate mb-0 col-6">
-								Consequuntur doloremque eius maiores, mollitia porro sapiente unde
-								Consequuntur doloremque eius maiores, mollitia porro sapiente unde
-							</p>
-							<span class="timestamp col-4 text-right">Mon 29 January 2019 13:02</span>
-						</a>
-						<a href="#" class="list-group-item text-light">
-							<div class="col-2">
-								<img src="/static/img/default_avatar.png" alt="Matcha" class="img-fluid img-round">
-							</div>
-							<p class="text-truncate mb-0 col-6">
-								Consequuntur doloremque eius maiores, mollitia porro sapiente unde
-								Consequuntur doloremque eius maiores, mollitia porro sapiente unde
-								Consequuntur doloremque eius maiores, mollitia porro sapiente unde
-								Consequuntur doloremque4eius maiores, mollitia porro sapiente unde
-							</p>
-							<span class="timestamp col-4 text-right">Mon 29 January 2019 13:02</span>
-						</a>
-						<a href="#" class="list-group-item text-light">
-							<div class="col-2">
-								<img src="/static/img/default_avatar.png" alt="Matcha" class="img-fluid img-round">
-							</div>
-							<p class="text-truncate mb-0 col-6">
-								Consequuntur doloremque eius maiores, mollitia porro sapiente unde
-								Consequuntur doloremque eius maiores, mollitia porro sapiente unde
-							</p>
-							<span class="timestamp col-4 text-right">Mon 29 January 2019 13:02</span>
-						</a>
+						{% for chat in chats %}
+							<a href="%% url_for('chat_page', user_id=chat.user_id) %%" class="list-group-item text-light">
+								<div class="col-2">
+									<img src="/static/img/default_avatar.png" alt="Matcha"
+										 class="img-fluid img-round">
+								</div>
+								<p class="text-truncate mb-0 col-6">%% chat.message %%</p>
+								<span class="timestamp col-4 text-right">%% chat.timestamp %%</span>
+							</a>
+						{% endfor %}
 					</div>
 				</div>
 			</div>
-			{#				{% endfor %}#}
-		</div>
 		</div>
 	</section>
 {% endblock %}
