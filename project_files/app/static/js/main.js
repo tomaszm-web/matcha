@@ -12,6 +12,7 @@ let resetPasswordVue;
 let notificationsVue;
 let registrationVue;
 let loginVue;
+let chatVue;
 
 /*===================Notifications===================*/
 notificationsVue = new Vue({
@@ -123,14 +124,6 @@ $(document).ready(function() {
 				hook_like_buttons();
 			});
 		};
-
-		// sort_form.onsubmit = e => {
-		// 	e.preventDefault();
-		// 	let data = new FormData(filter_form);
-		// 	data.append('sort_by', sort_form.sort_by.value);
-		// 	data.append('reversed', sort_form.reversed.checked);
-		// 	getUserList(e, data);
-		// }
 	}
 
 	elem = document.querySelector('.reset_filters');
@@ -298,9 +291,9 @@ $(document).ready(function() {
 	});
 
 	/*===================Chat===================*/
-	const chat_page = document.querySelector('#chat .chat');
-	if (chat_page) {
-		let chat = new Vue({
+	if (document.getElementById('chat')) {
+		let chatPage = document.querySelector('#chat .chat');
+		chatVue = new Vue({
 			el: '#chat',
 			data: {
 				messages: [],
@@ -309,20 +302,19 @@ $(document).ready(function() {
 				socket: null,
 				csrf_token: null
 			},
-			created() {
+			mounted() {
+				let sendMessageForm = this.$el.querySelector('form');
 				this.socket = io.connect(`${window.origin}/private_chat`);
-				this.sender_id = document.querySelector('meta[data-cur-user]')
-					.getAttribute('data-cur-user');
-				this.csrf_token = document.querySelector('meta[data-csrf-token]')
-					.getAttribute('data-csrf-token');
-				this.recipient_id = location.href.substring(location.href.lastIndexOf('/') + 1);
+				this.sender_id = sendMessageForm.sender_id.value;
+				this.recipient_id = sendMessageForm.recipient_id.value;
+				this.csrf_token = sendMessageForm.csrf_token.value;
 				this.showMessages();
-				this.socket.on('private_chat response', msg => {
+				this.socket.on('send_message response', msg => {
 					this.messages.push(msg)
 				});
 			},
 			updated: function() {
-				chat_page.scrollTop = chat_page.scrollHeight;
+				chatPage.scrollTop = chatPage.scrollHeight;
 			},
 			methods: {
 				showMessages() {
@@ -333,17 +325,18 @@ $(document).ready(function() {
 					}).then(response => {
 						if (response.data.success) {
 							this.messages = response.data.messages;
-							chat_page.scrollTop = chat_page.scrollHeight;
+							chatPage.scrollTop = chatPage.scrollHeight;
 						}
 					});
 				},
 				sendMessage(e) {
-					this.socket.emit('private_chat event', {
+					textInput = e.target.form.text;
+					this.socket.emit('send_message event', {
 						sender_id: this.sender_id,
 						recipient_id: this.recipient_id,
-						body: e.target.text.value
+						text: textInput.value
 					});
-					e.target.text.value = ""
+					textInput.value = ""
 				}
 			}
 		});

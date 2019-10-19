@@ -357,6 +357,7 @@ class Chat:
 		self.timestamp_format = "%c"
 
 	def send_message(self, sender_id, recipient_id, message_text):
+		"""Problem key error!"""
 		sql = "INSERT INTO `messages` (sender_id, recipient_id, body) VALUES (%s, %s, %s)"
 		self.db.query(sql, (sender_id, recipient_id, message_text))
 
@@ -381,16 +382,16 @@ class Notification:
 			'like_back': "You have been liked back by {}"
 		}
 
-	def send(self, recipient_id, notif_type, executive_user):
+	def send(self, recipient, notif_type, executive_user):
 		links = {
 			'user_action': url_for('profile', user_id=executive_user['id']),
-			'message': url_for('chat_page', recipient_id=executive_user['id'])
+			'message': url_for('chat_page', user_id=executive_user['id'])
 		}
-		if recipient_id not in executive_user['blocked_users']:
+		if executive_user['id'] not in recipient['blocked_users']:
 			sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"
 			link = 'message' if notif_type == 'message' else 'user_action'
 			message = self.notifications[notif_type].format(executive_user['login'])
-			self.db.query(sql, (recipient_id, message, links[link]))
+			self.db.query(sql, (recipient['id'], message, links[link]))
 
 	def get(self, user_id):
 		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created DESC"

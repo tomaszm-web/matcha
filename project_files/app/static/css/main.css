@@ -513,7 +513,10 @@ header {
 	border-radius: 4px;
 	padding: 50px 40px;
 	overflow-y: scroll;
-	max-height: 60vh;
+	height: 50vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
 }
 
 .chat__img {

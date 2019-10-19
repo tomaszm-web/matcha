@@ -64,15 +64,15 @@ def profile(user_id):
 		return redirect(url_for('index'))
 	if user['id'] != cur_user['id'] and user['id'] not in cur_user['visited']:
 		account.visit_user(cur_user['id'], user['id'])
-		notification.send(user['id'], 'visit', cur_user)
+		notification.send(user, 'visit', cur_user)
 	return render_template('profile.html', cur_user=cur_user, user=user)
 
 
-@app.route('/chat/<int:recipient_id>')
+@app.route('/chat/<user_id>')
 @csrf_update
 @login_required
-def chat_page(recipient_id):
-	recipient = account.get_user_info(recipient_id)
+def chat_page(user_id):
+	recipient = account.get_user_info(user_id)
 	if not recipient:
 		flash('No user with that id!', 'danger')
 		return redirect(url_for('index'))
@@ -86,7 +86,7 @@ def chat_page(recipient_id):
 	if recipient['id'] not in user['liked_users'] or user['id'] not in recipient['liked_users']:
 		flash("You should like each other before chatting", 'danger')
 		return redirect(url_for('profile', user_id=recipient['id']))
-	return render_template('chat.html', cur_user=user, recipient=recipient)
+	return render_template('chat.html', cur_user=user, user=recipient)
 
 
 @app.route('/chat-list')
@@ -185,11 +185,11 @@ def filter_users():
 def like_user_ajax():
 	req = request.get_json() if request.is_json else request.form
 	try:
-		like_owner = session['user']
-		recipient = req['liked_user']
+		like_owner = account.get_user_info(session['user'], extended=False)
+		recipient = account.get_user_info(req['liked_user'])
 		unlike = int(req['unlike'])
-		action = account.like_user(like_owner, recipient, unlike)
-		notification.send(recipient, action, account.get_user_info(like_owner, extended=False))
+		action = account.like_user(like_owner[id], recipient['id'], unlike)
+		notification.send(recipient, action, )
 	except KeyError:
 		return jsonify({'success': False, 'error': 'KeyError'})
 	except Exception as e:
@@ -200,8 +200,9 @@ def like_user_ajax():
 @app.route('/like_user/<int:user_id>/', methods=["POST"])
 def like_user(user_id):
 	try:
-		like_owner = session['user']
-		action = account.like_user(like_owner, user_id, int(request.form['unlike']))
+		like_owner = account.get_user_info(session['user'], extended=False)
+		recipient = account.get_user_info(user_id, extended=False)
+		action = account.like_user(like_owner['id'], recipient['id'], int(request.form['unlike']))
 		if action == 'like':
 			msg = "Your liked was received. If you get liked back, you'll be able to chat"
 		elif action == 'like_back':
@@ -209,7 +210,7 @@ def like_user(user_id):
 		else:
 			msg = "You successfully disconnected from that user."
 		flash(msg, 'success')
-		notification.send(user_id, action, account.get_user_info(like_owner, extended=False))
+		notification.send(recipient, action, like_owner)
 	except Exception:
 		flash("Something went wrong. Try again a bit later!", 'danger')
 	return redirect(url_for('profile', user_id=user_id))
