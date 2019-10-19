@@ -516,7 +516,6 @@ header {
 	height: 50vh;
 	display: flex;
 	flex-direction: column;
-	justify-content: flex-end;
 }
 
 .chat__img {
@@ -534,6 +533,10 @@ header {
 
 .chat__message.right-align {
 	flex-direction: row-reverse;
+}
+
+.chat__message_empty {
+	margin: auto;
 }
 
 .chat__login {

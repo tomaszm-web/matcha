@@ -67,7 +67,7 @@ $(document).ready(function() {
 	function hook_like_buttons() {
 		let like_user_forms = document.querySelectorAll('.like-user-ajax');
 		like_user_forms.forEach(form => {
-			form.onsubmit = async(e) => {
+			form.onsubmit = async (e) => {
 				e.preventDefault();
 				let data = new FormData(form);
 				form.unlike.value = data.get('unlike') == "0" ? "1" : "0";
@@ -292,7 +292,6 @@ $(document).ready(function() {
 
 	/*===================Chat===================*/
 	if (document.getElementById('chat')) {
-		let chatPage = document.querySelector('#chat .chat');
 		chatVue = new Vue({
 			el: '#chat',
 			data: {
@@ -304,34 +303,29 @@ $(document).ready(function() {
 			},
 			mounted() {
 				let sendMessageForm = this.$el.querySelector('form');
-				this.socket = io.connect(`${window.origin}/private_chat`);
-				this.sender_id = sendMessageForm.sender_id.value;
-				this.recipient_id = sendMessageForm.recipient_id.value;
+				this.chat_id = parseInt(sendMessageForm.chat_id.value);
+				this.sender_id = parseInt(sendMessageForm.sender_id.value);
+				this.recipient_id = parseInt(sendMessageForm.recipient_id.value);
 				this.csrf_token = sendMessageForm.csrf_token.value;
-				this.showMessages();
+				this.socket = io.connect(`${window.origin}/private_chat`, {
+					query: `recipient_id=${this.recipient_id}`
+				});
+				this.socket.on('connect response', messages => {
+					this.messages = messages.messages;
+				});
 				this.socket.on('send_message response', msg => {
 					this.messages.push(msg)
 				});
 			},
-			updated: function() {
-				chatPage.scrollTop = chatPage.scrollHeight;
+			updated() {
+				let chatPage = document.querySelector('#chat .chat');
+				chatPage.scrollTo({top: chatPage.scrollHeight, behavior: 'smooth'})
 			},
 			methods: {
-				showMessages() {
-					axios.post(`${window.origin}/ajax/get_messages`, {
-						sender_id: this.sender_id,
-						recipient_id: this.recipient_id,
-						csrf_token: this.csrf_token
-					}).then(response => {
-						if (response.data.success) {
-							this.messages = response.data.messages;
-							chatPage.scrollTop = chatPage.scrollHeight;
-						}
-					});
-				},
 				sendMessage(e) {
-					textInput = e.target.form.text;
+					let textInput = e.target.form.text;
 					this.socket.emit('send_message event', {
+						chat_id: this.chat_id,
 						sender_id: this.sender_id,
 						recipient_id: this.recipient_id,
 						text: textInput.value

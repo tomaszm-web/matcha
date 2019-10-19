@@ -6,7 +6,7 @@ class Database:
 	def __init__(self, app):
 		self.con = None
 		self.app = app
-		self.default_cursor = MySQLdb.cursors.DictCursor
+		self.default_cursor = MySQLdb.cursors.Cursor
 		self.connect()
 
 	def connect(self):

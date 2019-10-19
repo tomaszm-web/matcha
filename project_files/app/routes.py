@@ -1,15 +1,16 @@
 import os
 import requests
+
 from flask import (
 	render_template, request, url_for, session,
 	flash, redirect, send_from_directory,
 	jsonify, abort, make_response
 )
+
 from app.models import Account, Chat, Notification
 from app import app, db, csrf_update, login_required
 
 account = Account(db)
-chat = Chat(db)
 notification = Notification(db)
 
 
@@ -53,22 +54,26 @@ def profile(user_id):
 		flash('No user with that id!', 'danger')
 		return redirect(url_for('index'))
 	if 'user' not in session:
-		return render_template('profile.html', user=user)
+		return render_template('profile.html', cur_user=None, user=user)
+
 	cur_user = account.get_user_info(session['user'])
 	if not account.check_user_info(cur_user):
 		flash('Please, fill in information about yourself', 'info')
 		return redirect(url_for('settings'))
+	if user['id'] == cur_user['id']:
+		return render_template('profile.html', cur_user=user, user=user)
+
 	if user_id in cur_user['blocked_users']:
 		flash("This user was blocked by yourself. If you want to delete him from black list,"
 			  "donate me 10$ for future development of this feature!", 'info')
 		return redirect(url_for('index'))
-	if user['id'] != cur_user['id'] and user['id'] not in cur_user['visited']:
+	if user['id'] not in cur_user['visited']:
 		account.visit_user(cur_user['id'], user['id'])
 		notification.send(user, 'visit', cur_user)
 	return render_template('profile.html', cur_user=cur_user, user=user)
 
 
-@app.route('/chat/<user_id>')
+@app.route('/chat/<int:user_id>')
 @csrf_update
 @login_required
 def chat_page(user_id):
@@ -76,17 +81,17 @@ def chat_page(user_id):
 	if not recipient:
 		flash('No user with that id!', 'danger')
 		return redirect(url_for('index'))
-	if not recipient:
-		flash("Wrong user id", 'danger')
-		return redirect(url_for('index'))
-	user = account.get_user_info(session["user"])
-	if not account.check_user_info(user):
+
+	cur_user = account.get_user_info(session["user"])
+	if not account.check_user_info(cur_user):
 		flash('Please, fill in information about yourself', 'info')
 		return redirect(url_for('settings'))
-	if recipient['id'] not in user['liked_users'] or user['id'] not in recipient['liked_users']:
+	if user_id not in cur_user['liked_users'] or cur_user['id'] not in recipient['liked_users']:
 		flash("You should like each other before chatting", 'danger')
 		return redirect(url_for('profile', user_id=recipient['id']))
-	return render_template('chat.html', cur_user=user, user=recipient)
+
+	chat = Chat(cur_user['id'], recipient['id'])
+	return render_template('chat.html', cur_user=cur_user, user=recipient, chat=chat)
 
 
 @app.route('/chat-list')
@@ -171,7 +176,8 @@ def filter_users():
 	try:
 		cur_user = account.get_user_info(session['user']) if 'user' in session else None
 		if len(request.form) > 0:
-			users = account.get_all_users(cur_user, filters=request.form, sort_by=request.form.get('sort_by'))
+			users = account.get_all_users(cur_user, filters=request.form,
+										  sort_by=request.form.get('sort_by'))
 			if request.form.get('reversed') == 'on':
 				users = reversed(users)
 		else:
@@ -188,8 +194,8 @@ def like_user_ajax():
 		like_owner = account.get_user_info(session['user'], extended=False)
 		recipient = account.get_user_info(req['liked_user'])
 		unlike = int(req['unlike'])
-		action = account.like_user(like_owner[id], recipient['id'], unlike)
-		notification.send(recipient, action, )
+		action = account.like_user(like_owner['id'], recipient['id'], unlike)
+		notification.send(recipient, action, like_owner)
 	except KeyError:
 		return jsonify({'success': False, 'error': 'KeyError'})
 	except Exception as e:
@@ -235,18 +241,6 @@ def report_user():
 	except Exception as e:
 		return jsonify({'success': False, 'error': str(e)})
 	return jsonify({'success': True, 'unreport': req['unreport']})
-
-
-@app.route('/ajax/get_messages', methods=["POST"])
-def get_messages():
-	req = request.get_json()
-	try:
-		messages = chat.get_messages(req['sender_id'], req['recipient_id'])
-		return jsonify({'success': True, 'messages': messages})
-	except KeyError:
-		return jsonify({'success': False, 'error': 'KeyError'})
-	except Exception as e:
-		return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/ajax/get_tag_list', methods=["GET"])

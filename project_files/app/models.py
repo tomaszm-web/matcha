@@ -3,12 +3,14 @@ import json
 import secrets
 import itertools
 from datetime import datetime
+
 import MySQLdb.cursors
 from flask import render_template, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+
+from app import app, db
 from app.mail import send_email
-from app import app
 
 
 class Account:
@@ -17,12 +19,12 @@ class Account:
 
 	def check_login_existent(self, login):
 		sql = "SELECT COUNT(login) as row_num FROM `users` WHERE login = %s"
-		row_num = self.db.get_row(sql, (login,))['row_num']
+		row_num, = self.db.get_row(sql, (login,))
 		return row_num > 0
 
 	def check_email_existent(self, email):
 		sql = "SELECT COUNT(email) as row_num FROM `users` WHERE email = %s"
-		row_num = self.db.get_row(sql, (email,))['row_num']
+		row_num, = self.db.get_row(sql, (email,))
 		return row_num > 0
 
 	def check_img_extension(self, filename):
@@ -30,7 +32,7 @@ class Account:
 
 	def get_fame_rating(self, user_id=None):
 		sql = "SELECT liked_user AS user, COUNT(liked_user) AS like_num FROM `likes` GROUP BY user"
-		search_in = self.db.get_all_rows(sql, cursorclass=MySQLdb.cursors.Cursor)
+		search_in = self.db.get_all_rows(sql)
 		if not search_in:
 			return 0
 		max_likes = max(like_num for _, like_num in search_in)
@@ -45,13 +47,14 @@ class Account:
 		if user_id:
 			sql = ("SELECT tags.name FROM `tags` INNER JOIN `users_tags` "
 				   "ON tags.id = users_tags.tag_id WHERE users_tags.user_id = %s")
-			tags = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
+			tags = self.db.get_all_rows(sql, (user_id,))
 			if not tags:
 				return None
 			return [tag_name for tag_name, in tags]
 		else:
-			sql = "SELECT users_tags.user_id, tags.name FROM tags INNER JOIN users_tags ON tags.id = users_tags.tag_id"
-			tags_groups = self.db.get_all_rows(sql, cursorclass=MySQLdb.cursors.Cursor)
+			sql = ("SELECT users_tags.user_id, tags.name FROM tags "
+				   "INNER JOIN users_tags ON tags.id = users_tags.tag_id")
+			tags_groups = self.db.get_all_rows(sql)
 			if not tags_groups:
 				return None
 			tags_groups = itertools.groupby(tags_groups, lambda pair: pair[0])
@@ -63,10 +66,11 @@ class Account:
 			user.get('gender') and user.get('preferences') and user.get('age')
 		)
 
-	def get_user_info(self, user_id, extended=True):
-		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences,"
-			   "biography, avatar, photos, age, online, last_login, city, token FROM `users`  WHERE id = %s")
-		user = self.db.get_row(sql, (user_id,))
+	def get_user_info(self, user_id, *, extended=True):
+		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences, "
+			   "biography, avatar, photos, age, online, last_login, city, token "
+			   "FROM `users` WHERE id = %s")
+		user = self.db.get_row(sql, (user_id,), cursorclass=MySQLdb.cursors.DictCursor)
 		if not user:
 			return None
 		user['blocked_users'] = self.get_blocked_users(user['id'])
@@ -113,7 +117,8 @@ class Account:
 				matches['female'] = 'homosexual'
 		sql_part = "gender=%s AND (preferences=%s OR preferences='bisexual')"
 		sql += ' AND ({})'.format(' OR '.join(sql_part for _ in range(len(matches))))
-		values = itertools.chain.from_iterable((gender, preferences) for gender, preferences in matches.items())
+		values = itertools.chain.from_iterable(
+			(gender, preferences) for gender, preferences in matches.items())
 		return sql, values
 
 	def filter_by_criterias(self, users, filters):
@@ -134,12 +139,13 @@ class Account:
 
 	def get_all_users(self, user_match, filters=None, sort_by=None):
 		sql = ("SELECT id, login, age, biography, avatar, city, gender, preferences FROM `users` "
-			   "WHERE NOT (biography is NULL OR age IS NULL OR city IS NULL OR gender IS NULL OR preferences IS NULL)")
+			   "WHERE NOT (biography is NULL OR age IS NULL OR city IS NULL "
+			   "OR gender IS NULL OR preferences IS NULL)")
 		if user_match:
 			sql, values = self.filter_by_preferences(sql, user_match)
-			users = self.db.get_all_rows(sql, values)
+			users = self.db.get_all_rows(sql, values, cursorclass=MySQLdb.cursors.DictCursor)
 		else:
-			users = self.db.get_all_rows(sql)
+			users = self.db.get_all_rows(sql, cursorclass=MySQLdb.cursors.DictCursor)
 		fame_rates = self.get_fame_rating()
 		tags_groups = self.get_tags()
 		for user in users:
@@ -160,7 +166,7 @@ class Account:
 	def update_user_tags(self, user, new_tags):
 		if not new_tags or user['tags'] == new_tags:
 			return None
-		all_tags = self.db.get_all_rows("SELECT * FROM `tags`", cursorclass=MySQLdb.cursors.Cursor)
+		all_tags = self.db.get_all_rows("SELECT * FROM `tags`")
 		all_tags = {tag_name for _, tag_name in all_tags}
 		sql = ', '.join('%s' for tag_name in new_tags if tag_name not in all_tags)
 		new_tags_set = set(new_tags)
@@ -172,7 +178,7 @@ class Account:
 		sql = "DELETE FROM `users_tags` WHERE user_id=%s"
 		self.db.query(sql, (user['id'],))
 
-		all_tags = self.db.get_all_rows("SELECT * FROM `tags`", cursorclass=MySQLdb.cursors.Cursor)
+		all_tags = self.db.get_all_rows("SELECT * FROM `tags`")
 		sql = ', '.join("(%s, %s)" for _ in range(len(new_tags)))
 		user_tag_ids = itertools.chain.from_iterable(
 			(user['id'], tag_id) for tag_id, tag_name in all_tags if tag_name in new_tags_set
@@ -186,7 +192,8 @@ class Account:
 			raise Exception("User with this login already exists")
 		if self.check_email_existent(form["email"]):
 			raise Exception("User with this E-mail already exists")
-		sql = "INSERT INTO `users`(login, name, surname, email, password, token) VALUES(%s, %s, %s, %s, %s, %s)"
+		sql = ("INSERT INTO `users`(login, name, surname, email, password, token)"
+			   "VALUES(%s, %s, %s, %s, %s, %s)")
 		user_token = secrets.token_hex(10)
 		self.db.query(sql, (
 			form["login"], form["name"],
@@ -197,7 +204,7 @@ class Account:
 
 	def login(self, form):
 		sql = "SELECT id, password, confirmed FROM `users` WHERE login=%s"
-		user = self.db.get_row(sql, [form['login']])
+		user = self.db.get_row(sql, [form['login']], cursorclass=MySQLdb.cursors.DictCursor)
 		if not user:
 			raise ValueError("Wrong login!")
 		if not check_password_hash(user["password"], form["pass"]):
@@ -212,15 +219,18 @@ class Account:
 	def confirmation(self, login, token):
 		sql = "SELECT token FROM `users` WHERE login = %s"
 		user = self.db.get_row(sql, (login,))
-		if user and user["token"] == token:
+		if not user:
+			return False
+		user_token, = user
+		if user_token == token:
 			sql = "UPDATE `users` SET confirmed = 1 WHERE login = %s"
 			self.db.query(sql, (login,))
 			return True
 		return False
 
 	def reset(self, form, action):
-		sql = "SELECT * FROM `users` WHERE email=%s"
-		user = self.db.get_row(sql, [form["email"]])
+		sql = "SELECT * FROM `users` WHERE email = %s"
+		user = self.db.get_row(sql, [form["email"]], cursorclass=MySQLdb.cursors.DictCursor)
 		if action == "check":
 			if not user:
 				raise ValueError("No user with such E-mail")
@@ -270,13 +280,15 @@ class Account:
 				relative_path = os.path.join('/', relative_dir, photo_filename)
 				photo_filenames[i] = relative_path
 		if photo_filenames != user['photos']:
-			self.db.query('UPDATE users SET photos = %s WHERE id = %s', (json.dumps(photo_filenames), user['id']))
+			columns = json.dumps(photo_filenames), user['id']
+			self.db.query('UPDATE users SET photos = %s WHERE id = %s', columns)
 
 	@classmethod
 	def get_changed_values(cls, prev_val, new_val):
 		"""Checks which values were updated"""
 		ignored = ('tags', 'csrf_token')
-		values = [val for key, val in new_val.items() if key not in ignored and str(prev_val[key]) != val]
+		values = [val for key, val in new_val.items()
+				  if key not in ignored and str(prev_val[key]) != val]
 		sql = ', '.join(f"{key} = %s" for key, val in new_val.items()
 						if key not in ignored and str(prev_val[key]) != val)
 		need_confirmation = prev_val['email'] != new_val['email']
@@ -301,22 +313,22 @@ class Account:
 
 	def get_liked_users(self, user_id):
 		sql = "SELECT liked_user FROM `likes` WHERE like_owner=%s"
-		response = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
+		response = self.db.get_all_rows(sql, (user_id,))
 		return [liked_user for liked_user, in response]
 
 	def get_blocked_users(self, user_id):
 		sql = "SELECT blocked_id FROM `blocked` WHERE user_id=%s"
-		response = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
+		response = self.db.get_all_rows(sql, (user_id,))
 		return [blocked_user for blocked_user, in response]
 
 	def get_reported_users(self, user_id):
 		sql = "SELECT reported_id FROM `reports` WHERE user_id = %s"
-		response = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
+		response = self.db.get_all_rows(sql, (user_id,))
 		return [reported_user for reported_user, in response]
 
 	def get_visited_users(self, user_id):
 		sql = "SELECT visited FROM `visits` WHERE visitor = %s"
-		response = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.Cursor)
+		response = self.db.get_all_rows(sql, (user_id,))
 		return [visited for visited, in response]
 
 	def like_user(self, like_owner, like_to, unlike):
@@ -325,10 +337,8 @@ class Account:
 			action = 'unlike'
 		else:
 			sql = "SELECT COUNT(id) as row_num FROM `likes` WHERE like_owner = %s AND liked_user = %s"
-			if self.db.get_row(sql, (like_to, like_owner))['row_num'] > 0:
-				action = 'like_back'
-			else:
-				action = 'like'
+			row_num, = self.db.get_row(sql, (like_to, like_owner))
+			action = 'like_back' if row_num > 0 else 'like'
 			sql = "INSERT INTO `likes` SET like_owner = %s, liked_user = %s"
 		self.db.query(sql, (like_owner, like_to))
 		return action
@@ -336,7 +346,8 @@ class Account:
 	def block_user(self, user_id, blocked_id):
 		sql = "INSERT INTO `blocked` SET user_id = %s, blocked_id = %s"
 		self.db.query(sql, (user_id, blocked_id))
-		sql = "DELETE FROM `likes` WHERE (like_owner = %s AND liked_user = %s) OR (like_owner = %s AND liked_user = %s)"
+		sql = ("DELETE FROM `likes` WHERE (like_owner = %s AND liked_user = %s) "
+			   "OR (like_owner = %s AND liked_user = %s)")
 		self.db.query(sql, (user_id, blocked_id, blocked_id, user_id))
 
 	def report_user(self, user_id, reported_id, unreport):
@@ -352,22 +363,33 @@ class Account:
 
 
 class Chat:
-	def __init__(self, db):
-		self.db = db
-		self.timestamp_format = "%c"
+	timestamp_format = "%s"
 
-	def send_message(self, sender_id, recipient_id, message_text):
-		"""Problem key error!"""
-		sql = "INSERT INTO `messages` (sender_id, recipient_id, body) VALUES (%s, %s, %s)"
-		self.db.query(sql, (sender_id, recipient_id, message_text))
+	def __init__(self, user1_id, user2_id):
+		self.user1_id = user1_id
+		self.user2_id = user2_id
 
-	def get_messages(self, user_id, recipient_id):
-		sql = ("SELECT * FROM `messages` WHERE (sender_id=%s AND recipient_id=%s)"
-			   "OR (sender_id=%s AND recipient_id=%s) ORDER BY timestamp")
-		messages = self.db.get_all_rows(sql, (user_id, recipient_id, recipient_id, user_id))
+		sql = "SELECT id FROM chats WHERE user1_id = %s AND user2_id = %s"
+		user_pair = (user1_id, user2_id)
+		response = db.get_row(sql, user_pair) \
+				   or db.get_row(sql, reversed(user_pair))
+		if response is None:
+			sql = "INSERT INTO chats (user1_id, user2_id) VALUE (%s, %s)"
+			db.query(sql, user_pair)
+			response = db.get_row(sql, user_pair)
+		self.id, = response
+
+	def get_messages(self):
+		sql = "SELECT * FROM `messages` WHERE chat_id = %s"
+		messages = db.get_all_rows(sql, (self.id,), cursorclass=MySQLdb.cursors.DictCursor)
 		for message in messages:
 			message['timestamp'] = datetime.strftime(message['timestamp'], self.timestamp_format)
 		return messages
+
+	@classmethod
+	def send_message(cls, chat_id, sender_id, recipient_id, message_text):
+		sql = "INSERT INTO `messages` (chat_id, sender_id, recipient_id, text) VALUES (%s, %s, %s, %s)"
+		db.query(sql, (chat_id, sender_id, recipient_id, message_text))
 
 
 class Notification:
@@ -395,7 +417,7 @@ class Notification:
 
 	def get(self, user_id):
 		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created DESC"
-		notifications = self.db.get_all_rows(sql, [user_id])
+		notifications = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.DictCursor)
 		for notif in notifications:
 			notif['date_created'] = datetime.strftime(notif['date_created'], self.timestamp_format)
 		return notifications
