@@ -14,6 +14,10 @@ let registrationVue;
 let loginVue;
 let chatVue;
 
+elem = document.querySelector("meta[data-cur-user]");
+let currentUser = elem ? parseInt(elem.getAttribute('data-cur-user')) : null;
+let	socket = currentUser ? io.connect(window.origin)  : null;
+
 /*===================Notifications===================*/
 notificationsVue = new Vue({
 	el: '#notifications',
@@ -22,11 +26,10 @@ notificationsVue = new Vue({
 		csrf_token: document.querySelector('meta[data-csrf-token]').getAttribute('data-csrf-token')
 	},
 	created() {
-		elem = document.querySelector("meta[data-cur-user]");
-		if (!elem || elem.getAttribute('data-cur-user') == -1)
-			return;
-		this.getNotifications();
-		setInterval(this.getNotifications, 10000);
+		if (currentUser) {
+			this.getNotifications();
+			setInterval(this.getNotifications, 10000);
+		}
 	},
 	methods: {
 		delNotification(notif_id) {
@@ -308,7 +311,8 @@ $(document).ready(function() {
 				this.recipient_id = parseInt(sendMessageForm.recipient_id.value);
 				this.csrf_token = sendMessageForm.csrf_token.value;
 				this.socket = io.connect(`${window.origin}/private_chat`, {
-					query: `recipient_id=${this.recipient_id}`
+					query: `recipient_id=${this.recipient_id}`,
+					'force new connection': true
 				});
 				this.socket.on('connect response', messages => {
 					this.messages = messages.messages;
@@ -316,6 +320,12 @@ $(document).ready(function() {
 				this.socket.on('send_message response', msg => {
 					this.messages.push(msg)
 				});
+				window.onunload = () => {
+					this.socket.emit('disconnect_from_chat', {
+						chat_id: this.chat_id,
+						user_id: this.sender_id
+					});
+				}
 			},
 			updated() {
 				let chatPage = document.querySelector('#chat .chat');

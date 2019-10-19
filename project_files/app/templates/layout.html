@@ -4,7 +4,9 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta data-cur-user="%% cur_user.id if cur_user else '-1' %%">
+	{% if cur_user.id %}
+		<meta data-cur-user="%% cur_user.id %%">
+	{% endif %}
 	<meta data-csrf-token="%% csrf_token %%">
 	<title>Matcha</title>
 	<link rel='shortcut icon' href="%% url_for('static', filename='img/favicon.png') %%" type='image/x-icon'>
