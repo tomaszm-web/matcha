@@ -28,10 +28,10 @@ connected = set()
 # 	try:
 # 		chat_id = int(data['chat_id'])
 # 		data['timestamp'] = datetime.now().strftime(Chat.timestamp_format)
-# 		sender = account.get_user_info(data['sender_id'], extended=False)
+# 		sender = Account(data['sender_id'], extended=False)
 # 		emit('send_message response', data, room=chats[chat_id][sender['id']])
 #
-# 		recipient = account.get_user_info(data['recipient_id'], extended=False)
+# 		recipient = Account(data['recipient_id'], extended=False)
 # 		Chat.send_message(chat_id, sender['id'], recipient['id'], data['text'])
 #
 # 		if recipient['id'] in chats[chat_id]:

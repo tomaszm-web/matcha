@@ -27,7 +27,7 @@ def upload_photo(relative_dir, photo):
 	if not photo or not allowed_img_extension(photo.filename):
 		return None
 	photo_filename = secure_filename(photo.filename)
-	absolute_dir = os.path.join(app.config['UPLOAD_PATH'], relative_dir)
+	absolute_dir = os.path.join(app.config['ROOT_PATH'], relative_dir)
 	if not os.path.exists(absolute_dir):
 		os.makedirs(absolute_dir)
 	absolute_path = os.path.join(absolute_dir, photo_filename)
@@ -37,19 +37,23 @@ def upload_photo(relative_dir, photo):
 
 
 class Account:
-
 	fields = ('id', 'login', 'name', 'surname', 'email', 'password', 'token', 'confirmed',
 			  'gender', 'preferences', 'biography', 'avatar', 'photos',
 			  'age', 'online', 'last_login', 'city')
 
-	def __init__(self, user_id):
-		user = self.get_user_info(user_id)
+	def __init__(self, user_id=None, *, extended=True):
+		if user_id is None:
+			return
+		sql = "SELECT * FROM `users` WHERE id = %s"
+		user = db.get_row(sql, (user_id,))
 		assert user is not None, "No user with this id"
 		(self.id, self.login, self.name, self.surname, self.email,
 		 self._password, self.token, self._confirmed,
 		 self.gender, self.preferences, self.biography,
 		 self._avatar, self._photos, self.age, self._online,
 		 self.last_login, self.city) = user
+		self.fame = self.get_fame_rating(self.id) if extended else None
+		self.tags = self.get_tags(self.id) if extended else None
 
 	@classmethod
 	def from_email(cls, email):
@@ -58,6 +62,12 @@ class Account:
 			return None
 		user_id, = user
 		return cls(user_id)
+
+	@classmethod
+	def from_tuple(cls, src):
+		user = cls()
+		(user.id, user.login, user.email, user.gender, user.preferences,
+		 user.biography, user.age, user.city) = src
 
 	@property
 	def confirmed(self):
@@ -139,13 +149,29 @@ class Account:
 		return (self.avatar is not None and self.city is not None and self.biography is not None
 				and self.gender is not None and self.preferences is not None and self.age is not None)
 
-	@staticmethod
-	def get_user_info(user_id):
-		sql = "SELECT * FROM `users` WHERE id = %s"
-		user = db.get_row(sql, (user_id,))
-		if user is None:
-			return None
-		return user
+	@classmethod
+	def get_all_users(cls, user_match, filters=None, sort_by=None):
+		sql = ("SELECT id FROM `users` "
+			   "WHERE NOT (biography is NULL OR age IS NULL OR city IS NULL OR gender IS NULL "
+			   "OR preferences IS NULL)")
+		if user_match:
+			sql, values = cls.filter_by_preferences(sql, user_match)
+			users = db.get_all_rows(sql, values)
+		else:
+			users = db.get_all_rows(sql)
+
+		users = [Account(user, extended=False) for user in users]
+		fame_rates = cls.get_fame_rating()
+		tags_groups = cls.get_tags()
+		for user in users:
+			user.fame = fame_rates.get(user.id, 0) if fame_rates else 0
+			user.tags = tags_groups.get(user.id) if tags_groups else None
+		if filters is not None:
+			users = (user for user in users if user.filter_fit(filters))
+		# sort_lambda = cls.sort_func(user_match, sort_by)
+		# if sort_lambda is not None:
+		# 	users = sorted(users, key=sort_lambda)
+		return users
 
 	@classmethod
 	def register(cls, data):
@@ -229,48 +255,24 @@ class Account:
 				return lambda e: e['city'] != user_match['city']
 		elif user_match is not None:
 			return lambda e: (
-				e['city'] != user_match['city'],
-				abs(user_match['age'] - e['age']),
-				-e['fame'],
-				-len(set(user_match['tags']).intersection(e['tags']))
+				e.city != user_match.city,
+				abs(user_match.age - e.age),
+				-e.fame,
+				-len(set(user_match.tags).intersection(e.tags))
 			)
 		return None
 
-	def filter_by_criterias(self, users, filters):
+	def filter_fit(self, filters):
 		if not filters:
-			return users
-		filtered_users = []
+			return True
 		tags = filters.getlist('tags')
-		for user in users:
-			filter1 = not filters['age_from'] or user['age'] >= int(filters['age_from'])
-			filter2 = not filters['age_to'] or user['age'] <= int(filters['age_to'])
-			filter3 = not filters['fame_from'] or user['fame'] >= int(filters['fame_from'])
-			filter4 = not filters['fame_to'] or user['fame'] <= int(filters['fame_to'])
-			filter5 = not len(tags) or len(tags) == len(set(user['tags']).intersection(set(tags)))
-			filter6 = not filters['city'] or filters['city'] == user['city']
-			if filter1 and filter2 and filter3 and filter4 and filter5 and filter6:
-				filtered_users.append(user)
-		return filtered_users
-
-	def get_all_users(self, user_match, filters=None, sort_by=None):
-		sql = ("SELECT id, login, age, biography, avatar, city, gender, preferences FROM `users` "
-			   "WHERE NOT (biography is NULL OR age IS NULL OR city IS NULL "
-			   "OR gender IS NULL OR preferences IS NULL)")
-		if user_match:
-			sql, values = self.filter_by_preferences(sql, user_match)
-			users = db.get_all_rows(sql, values, cursorclass=MySQLdb.cursors.DictCursor)
-		else:
-			users = db.get_all_rows(sql, cursorclass=MySQLdb.cursors.DictCursor)
-		fame_rates = self.get_fame_rating()
-		tags_groups = self.get_tags()
-		for user in users:
-			user['fame'] = fame_rates.get(user['id'], 0) if fame_rates else 0
-			user['tags'] = tags_groups.get(user['id']) if tags_groups else None
-		users = self.filter_by_criterias(users, filters)
-		sort_lambda = self.sort_func(user_match, sort_by)
-		if sort_lambda is not None:
-			users = sorted(users, key=sort_lambda)
-		return users
+		filter1 = not filters['age_from'] or self.age >= int(filters['age_from'])
+		filter2 = not filters['age_to'] or self.age <= int(filters['age_to'])
+		filter3 = not filters['fame_from'] or self.fame >= int(filters['fame_from'])
+		filter4 = not filters['fame_to'] or self.fame <= int(filters['fame_to'])
+		filter5 = not len(tags) or len(tags) == len(set(self.tags).intersection(set(tags)))
+		filter6 = not filters['city'] or filters['city'] == self.city
+		return filter1 and filter2 and filter3 and filter4 and filter5 and filter6
 
 	def update_user_tags(self, new_tags):
 		if not new_tags or self.tags == new_tags:
@@ -283,18 +285,19 @@ class Account:
 		if nonexistent_tags:
 			sql = f"INSERT INTO `tags` (name) VALUES ({sql})"
 			db.query(sql, nonexistent_tags)
-		# todo user.tags
-		# sql = "DELETE FROM `users_tags` WHERE user_id=%s"
-		# db.query(sql, (user['id'],))
-		#
-		# all_tags = db.get_all_rows("SELECT * FROM `tags`")
-		# sql = ', '.join("(%s, %s)" for _ in range(len(new_tags)))
-		# user_tag_ids = itertools.chain.from_iterable(
-		# 	(user['id'], tag_id) for tag_id, tag_name in all_tags if tag_name in new_tags_set
-		# )
-		# if len(sql):
-		# 	sql = f"INSERT INTO `users_tags` (user_id, tag_id) VALUES {sql}"
-		# 	db.query(sql, user_tag_ids)
+
+	# todo user.tags
+	# sql = "DELETE FROM `user_tag` WHERE user_id=%s"
+	# db.query(sql, (user['id'],))
+	#
+	# all_tags = db.get_all_rows("SELECT * FROM `tags`")
+	# sql = ', '.join("(%s, %s)" for _ in range(len(new_tags)))
+	# user_tag_ids = itertools.chain.from_iterable(
+	# 	(user['id'], tag_id) for tag_id, tag_name in all_tags if tag_name in new_tags_set
+	# )
+	# if len(sql):
+	# 	sql = f"INSERT INTO `user_tag` (user_id, tag_id) VALUES {sql}"
+	# 	db.query(sql, user_tag_ids)
 
 	def update_user_files(self, files):
 		"""
@@ -350,20 +353,20 @@ class Account:
 	@staticmethod
 	def filter_by_preferences(sql, user):
 		matches = {}
-		if user['preferences'] == 'heterosexual':
-			gender = 'female' if user['gender'] == 'male' else 'male'
+		if user.preferences == 'heterosexual':
+			gender = 'female' if user.gender == 'male' else 'male'
 			matches[gender] = 'heterosexual'
-		elif user['preferences'] == 'homosexual':
-			matches[user['gender']] = 'homosexual'
+		elif user.preferences == 'homosexual':
+			matches[user.gender] = 'homosexual'
 		else:
-			if user['gender'] == 'male':
+			if user.gender == 'male':
 				matches['male'] = 'homosexual'
 				matches['female'] = 'heterosexual'
 			else:
 				matches['male'] = 'heterosexual'
 				matches['female'] = 'homosexual'
 		sql_part = "gender=%s AND (preferences=%s OR preferences='bisexual')"
-		sql += ' AND ({})'.format(' OR '.join(sql_part for _ in range(len(matches))))
+		sql += " AND ({})".format(' OR '.join(sql_part for _ in range(len(matches))))
 		values = itertools.chain.from_iterable(
 			(gender, preferences) for gender, preferences in matches.items())
 		return sql, values
@@ -397,15 +400,15 @@ class Account:
 	@staticmethod
 	def get_tags(user_id=None):
 		if user_id:
-			sql = ("SELECT tags.name FROM `tags` INNER JOIN `users_tags` "
-				   "ON tags.id = users_tags.tag_id WHERE users_tags.user_id = %s")
+			sql = ("SELECT tags.name FROM `tags` INNER JOIN `user_tag` "
+				   "ON tags.id = user_tag.tag_id WHERE user_tag.user_id = %s")
 			tags = db.get_all_rows(sql, (user_id,))
 			if not tags:
-				return None
+				return ()
 			return [tag_name for tag_name, in tags]
 		else:
-			sql = ("SELECT users_tags.user_id, tags.name FROM tags "
-				   "INNER JOIN users_tags ON tags.id = users_tags.tag_id")
+			sql = ("SELECT user_tag.user_id, tags.name FROM tags "
+				   "INNER JOIN user_tag ON tags.id = user_tag.tag_id")
 			tags_groups = db.get_all_rows(sql)
 			if not tags_groups:
 				return None
@@ -471,7 +474,7 @@ class Chat:
 #
 # 	def send(self, recipient, notif_type, executive_user):
 # 		links = {
-# 			'user_action': url_for('profile', user_id=executive_user['id']),
+# 			'user_action': url_for('profile', user_id=executive_user.id),
 # 			'message': url_for('chat_page', user_id=executive_user['id'])
 # 		}
 # 		if executive_user['id'] not in recipient['blocked_users']:

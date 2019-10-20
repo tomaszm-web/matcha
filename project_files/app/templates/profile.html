@@ -60,17 +60,19 @@
 					<h4 class="profile__title">Preferences:</h4>
 					<div class="profile__preferences">%% user.preferences %%</div>
 
-					{% if user['biography'] %}
+					{% if user.biography %}
 						<h4 class="profile__title">Biography:</h4>
 						<div class="profile__bio">%% user.biography %%</div>
 					{% endif %}
 
-					<h4 class="profile__title">Interest Tags:</h4>
-					<div class="d-flex flex-wrap mb-3">
-						{% for tag in user.tags %}
-							<span class="badge badge-info m-1">#%% tag %%</span>
-						{% endfor %}
-					</div>
+					{% if user.tags %}
+						<h4 class="profile__title">Interest Tags:</h4>
+						<div class="d-flex flex-wrap mb-3">
+							{% for tag in user.tags %}
+								<span class="badge badge-info m-1">#%% tag %%</span>
+							{% endfor %}
+						</div>
+					 {% endif %}
 					{% if cur_user and user.id != cur_user.id %}
 						{% if user.id in cur_user.liked_users and cur_user.id in user.liked_users %}
 							<h4 class="profile__title text-secondary">Great!!! You are connected and can chat with each other.</h4>

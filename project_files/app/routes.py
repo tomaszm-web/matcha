@@ -55,18 +55,18 @@ def profile(user_id):
 	if 'user' not in session:
 		return render_template('profile.html', cur_user=None, user=user)
 
-	cur_user = Account.get_user_info(session['user'])
-	if not Account.check_user_info(cur_user):
+	cur_user = Account(session['user'])
+	if not Account.info_filled(cur_user):
 		flash('Please, fill in information about yourself', 'info')
 		return redirect(url_for('settings'))
-	if user['id'] == cur_user['id']:
+	if user.id == cur_user.id:
 		return render_template('profile.html', cur_user=user, user=user)
 
-	if user_id in cur_user['blocked_users']:
+	if user_id in cur_user.blocked_users:
 		flash("This user was blocked by yourself. If you want to delete him from black list,"
 			  "donate me 10$ for future development of this feature!", 'info')
 		return redirect(url_for('index'))
-	if user['id'] not in cur_user['visited']:
+	if user.id not in cur_user.visited:
 		Account.visit_user(cur_user['id'], user['id'])
 		# notification.send(user, 'visit', cur_user)
 	return render_template('profile.html', cur_user=cur_user, user=user)
@@ -76,13 +76,13 @@ def profile(user_id):
 @csrf_update
 @login_required
 def chat_page(user_id):
-	recipient = Account.get_user_info(user_id)
+	recipient = Account(user_id)
 	if not recipient:
 		flash('No user with that id!', 'danger')
 		return redirect(url_for('index'))
 
-	cur_user = Account.get_user_info(session["user"])
-	if not Account.check_user_info(cur_user):
+	cur_user = Account(session["user"])
+	if not Account(cur_user):
 		flash('Please, fill in information about yourself', 'info')
 		return redirect(url_for('settings'))
 	if user_id not in cur_user['liked_users'] or cur_user['id'] not in recipient['liked_users']:
@@ -97,8 +97,8 @@ def chat_page(user_id):
 @csrf_update
 @login_required
 def chat_list():
-	cur_user = Account.get_user_info(session['user'])
-	if not Account.check_user_info(cur_user):
+	cur_user = Account(session['user'])
+	if not Account(cur_user):
 		flash('Please, fill in information about yourself', 'info')
 		return redirect(url_for('settings'))
 
@@ -144,7 +144,7 @@ def logout():
 
 
 @app.route('/confirm_email', methods=["GET"])
-def confirmation():
+def confirm_email():
 	try:
 		Account.confirm_email(request.args)
 	except AssertionError as e:
@@ -181,17 +181,17 @@ def get_user_location_by_ip():
 @app.route('/filter_users', methods=["GET", "POST"])
 def filter_users():
 	try:
-		cur_user = Account.get_user_info(session['user']) if 'user' in session else None
+		cur_user = Account(session['user']) if 'user' in session else None
 		if len(request.form) > 0:
 			users = Account.get_all_users(cur_user, filters=request.form,
-										  sort_by=request.form.get('sort_by'))
+										  sort_by=request.form.pop('sort_by'))
 			if request.form.get('reversed') == 'on':
 				users = reversed(users)
 		else:
 			users = Account.get_all_users(cur_user)
 		return render_template('user_list.html', cur_user=cur_user, users=users)
-	except Exception:
-		return "Something went wrong!"
+	except Exception as e:
+		return "Something went wrong!" + str(e)
 
 
 @app.route('/ajax/like_user', methods=["POST"])
@@ -286,5 +286,5 @@ def before_request():
 
 @app.route('/uploads/<path:path>')
 def uploaded_file(path):
-	dirpath = os.path.join(app.config['UPLOAD_PATH'], app.config['UPLOAD_FOLDER'])
+	dirpath = os.path.join(app.config['ROOT_PATH'], app.config['UPLOAD_FOLDER'])
 	return send_from_directory(dirpath, path)

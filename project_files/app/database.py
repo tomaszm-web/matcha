@@ -1,3 +1,5 @@
+from contextlib import closing
+
 import MySQLdb
 import MySQLdb.cursors
 
@@ -10,16 +12,21 @@ class Database:
 		self.connect()
 
 	def connect(self):
-		host = self.app.config['MYSQL_HOST']
-		db = self.app.config['MYSQL_DB']
-		user = self.app.config['MYSQL_USER']
-		password = self.app.config['MYSQL_PASSWORD']
+		host = self.app.config.get('MYSQL_HOST')
+		db = self.app.config.get('MYSQL_DB')
+		user = self.app.config.get('MYSQL_USER')
+		password = self.app.config.get('MYSQL_PASSWORD')
 		try:
-			self.con = MySQLdb.connect(host=host, db=db, user=user, password=password)
-		except MySQLdb.OperationalError as e:
-			exit(f"MySql Connection Error. Cannot run app.\n{str(e)}")
-		except TypeError:
-			exit(f"MySQL Connection Error. Some environment variables are wrong!")
+			self.con = MySQLdb.connect(host=host, user=user, password=password)
+		except (MySQLdb.OperationalError, TypeError) as e:
+			print('MySql Connection Error. Cannot run app.')
+			print('You should ensure that all environment variables are set and correct')
+			exit(e)
+		try:
+			self.con.select_db(db)
+		except MySQLdb.OperationalError:
+			self.install_schema()
+			self.con.select_db(db)
 
 	def query(self, sql, values=None, to_close=True, cursorclass=None):
 		cursor = cursorclass if cursorclass is not None else self.default_cursor
@@ -60,3 +67,11 @@ class Database:
 		res = cur.rowcount
 		cur.close()
 		return res
+
+	def install_schema(self):
+		with closing(self.con.cursor()) as cur:
+			with open(self.app.config['MYSQL_SCHEMA'], encoding='utf-8') as fd:
+				commands = (line.strip() for line in fd.read().splitlines()
+							if line and not line.strip().startswith('#') and not line.strip().startswith('--'))
+				cur.execute(''.join(commands))
+		# self.con.commit()
