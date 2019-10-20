@@ -13,7 +13,7 @@
 			Thank you for signing up to Matcha. Registration is almost done!<br> To confirm your E-mail, go via this link:
 		</td></tr>
 		<tr><td align=center>
-			<a href="%% url_for('confirmation', login=login, token=token, _external=True) %%" style="padding: 15px; display: block; background-color: #f05151; color: #ffffff; text-decoration: none; font-size: 18px; font-weight: 600; border-radius: 4px; margin: 7px 0">
+			<a href="%% url_for('confirm_email', email=login, token=token, _external=True) %%" style="padding: 15px; display: block; background-color: #f05151; color: #ffffff; text-decoration: none; font-size: 18px; font-weight: 600; border-radius: 4px; margin: 7px 0">
 				Confirm your email
 			</a>
 		</td></tr>

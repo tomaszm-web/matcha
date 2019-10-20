@@ -29,9 +29,7 @@
 					{% if cur_user and cur_user.avatar %}
 						<form action="#" class="like-user-ajax">
 							<input type="hidden" name="csrf_token" value="%% csrf_token %%">
-							<input type="hidden" name="like_owner" value="%% cur_user.id %%">
 							<input type="hidden" name="liked_user" value="%% user.id %%">
-							<input type="hidden" name="unlike" value="%% liked_user | int %%">
 							{% if liked_user %}
 								<button type="submit" name="send_button" class="btn btn-danger like-user">
 									<i class='fas fa-thumbs-down'></i>Unlike

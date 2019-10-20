@@ -73,7 +73,6 @@ $(document).ready(function() {
 			form.onsubmit = async (e) => {
 				e.preventDefault();
 				let data = new FormData(form);
-				form.unlike.value = data.get('unlike') == "0" ? "1" : "0";
 				axios.post(`${window.origin}/ajax/like_user`, data)
 					.then(response => {
 						if (response.data.success) {
@@ -83,7 +82,6 @@ $(document).ready(function() {
 								form.send_button.innerHTML = "<i class='fas fa-thumbs-down'></i>Unlike";
 							else
 								form.send_button.innerHTML = "<i class='fas fa-thumbs-up'></i>Like";
-							form.unlike = !form.unlike;
 						} else if (response.data.error === 'KeyError') {
 							$('#logIn').modal();
 						}
@@ -95,14 +93,14 @@ $(document).ready(function() {
 	let user_list = document.querySelector(".users_list");
 	if (user_list !== null) {
 		let user_list_created = new Promise(resolve => {
-			axios.get(`${window.origin}/filter_users`).then(response => {
-				user_list.innerHTML = response.data;
-				let user_cards = document.querySelectorAll('.user-list__card');
-				for (let i = 0; i < user_cards.length; i++) {
-					user_cards[i].style.animationDuration = `${.5 + (.2 * i)}s`;
-				}
+			// axios.get(`${window.origin}/filter_users`).then(response => {
+			// 	user_list.innerHTML = response.data;
+			// 	let user_cards = document.querySelectorAll('.user-list__card');
+			// 	for (let i = 0; i < user_cards.length; i++) {
+			// 		user_cards[i].style.animationDuration = `${.5 + (.2 * i)}s`;
+			// 	}
 				resolve(true);
-			});
+			// });
 		});
 		user_list_created.then(hook_like_buttons);
 	}
@@ -189,7 +187,7 @@ $(document).ready(function() {
 					}
 					axios({
 						method: 'post',
-						url: `${window.origin}/reset`,
+						url: `${window.origin}/reset_password`,
 						data: data
 					}).then(response => {
 						e.target.reset();
@@ -230,7 +228,7 @@ $(document).ready(function() {
 					if (!this.checkForm()) return;
 					axios({
 						method: 'post',
-						url: `${window.origin}/registration`,
+						url: `${window.origin}/register`,
 						data: new FormData(e.target)
 					}).then(response => {
 						if (!response.data.success)

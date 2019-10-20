@@ -11,80 +11,214 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
 from app import app, db
-from app.mail import send_email
+from app.mail import confirm_email_mail, reset_password_mail
+
+
+def allowed_img_extension(filename):
+	filename, file_extension = os.path.splitext(filename)
+	return file_extension in ('.png', '.jpg', '.jpeg')
+
+
+def upload_photo(relative_dir, photo):
+	"""
+	Save photo in folder from app config.
+	:return:filename of new photo
+	"""
+	if not photo or not allowed_img_extension(photo.filename):
+		return None
+	photo_filename = secure_filename(photo.filename)
+	absolute_dir = os.path.join(app.config['UPLOAD_PATH'], relative_dir)
+	if not os.path.exists(absolute_dir):
+		os.makedirs(absolute_dir)
+	absolute_path = os.path.join(absolute_dir, photo_filename)
+	if not os.path.exists(absolute_path):
+		photo.save(absolute_path)
+	return photo_filename
 
 
 class Account:
-	def __init__(self, db):
-		self.db = db
 
-	def check_login_existent(self, login):
-		sql = "SELECT COUNT(login) as row_num FROM `users` WHERE login = %s"
-		row_num, = self.db.get_row(sql, (login,))
-		return row_num > 0
+	fields = ('id', 'login', 'name', 'surname', 'email', 'password', 'token', 'confirmed',
+			  'gender', 'preferences', 'biography', 'avatar', 'photos',
+			  'age', 'online', 'last_login', 'city')
 
-	def check_email_existent(self, email):
-		sql = "SELECT COUNT(email) as row_num FROM `users` WHERE email = %s"
-		row_num, = self.db.get_row(sql, (email,))
-		return row_num > 0
+	def __init__(self, user_id):
+		user = self.get_user_info(user_id)
+		assert user is not None, "No user with this id"
+		(self.id, self.login, self.name, self.surname, self.email,
+		 self._password, self.token, self._confirmed,
+		 self.gender, self.preferences, self.biography,
+		 self._avatar, self._photos, self.age, self._online,
+		 self.last_login, self.city) = user
 
-	def check_img_extension(self, filename):
-		return '.' in filename and filename.rsplit('.', 1)[1] in ["png", "jpg", "jpeg"]
-
-	def get_fame_rating(self, user_id=None):
-		sql = "SELECT liked_user AS user, COUNT(liked_user) AS like_num FROM `likes` GROUP BY user"
-		search_in = self.db.get_all_rows(sql)
-		if not search_in:
-			return 0
-		max_likes = max(like_num for _, like_num in search_in)
-		if user_id:
-			user_likes = [like_num for user, like_num in search_in if user == user_id]
-			if not user_likes:
-				return 0
-			return round(user_likes[0] / max_likes * 100)
-		return {user_id: round(like_num / max_likes * 100) for user_id, like_num in search_in}
-
-	def get_tags(self, user_id=None):
-		if user_id:
-			sql = ("SELECT tags.name FROM `tags` INNER JOIN `users_tags` "
-				   "ON tags.id = users_tags.tag_id WHERE users_tags.user_id = %s")
-			tags = self.db.get_all_rows(sql, (user_id,))
-			if not tags:
-				return None
-			return [tag_name for tag_name, in tags]
-		else:
-			sql = ("SELECT users_tags.user_id, tags.name FROM tags "
-				   "INNER JOIN users_tags ON tags.id = users_tags.tag_id")
-			tags_groups = self.db.get_all_rows(sql)
-			if not tags_groups:
-				return None
-			tags_groups = itertools.groupby(tags_groups, lambda pair: pair[0])
-			return {user: list(tag for _, tag in group) for user, group in tags_groups}
-
-	def check_user_info(self, user):
-		return (
-			user.get('avatar') and user.get('city') and user.get('biography') and
-			user.get('gender') and user.get('preferences') and user.get('age')
-		)
-
-	def get_user_info(self, user_id, *, extended=True):
-		sql = ("SELECT id, login, email, confirmed, name, surname, gender, preferences, "
-			   "biography, avatar, photos, age, online, last_login, city, token "
-			   "FROM `users` WHERE id = %s")
-		user = self.db.get_row(sql, (user_id,), cursorclass=MySQLdb.cursors.DictCursor)
-		if not user:
+	@classmethod
+	def from_email(cls, email):
+		user = db.get_row("SELECT id FROM users WHERE email = %s", (email,))
+		if user is None:
 			return None
-		user['blocked_users'] = self.get_blocked_users(user['id'])
-		if extended:
-			user['tags'] = self.get_tags(user["id"])
-			user['liked_users'] = self.get_liked_users(user['id'])
-			user['reported_users'] = self.get_reported_users(user['id'])
-			user['visited'] = self.get_visited_users(user['id'])
-			user['photos'] = json.loads(user['photos'])
-			user['fame'] = self.get_fame_rating(user['id'])
+		user_id, = user
+		return cls(user_id)
+
+	@property
+	def confirmed(self):
+		return self._confirmed
+
+	@confirmed.setter
+	def confirmed(self, value):
+		db.query("UPDATE users SET confirmed = %s WHERE id = %s", (value, self.id))
+		self._confirmed = value
+
+	@property
+	def password(self):
+		return self._password
+
+	@password.setter
+	def password(self, value):
+		db.query("UPDATE users SET password = %s WHERE id = %s", (value, self.id))
+		self._password = value
+
+	@property
+	def avatar(self):
+		return self._avatar
+
+	@avatar.setter
+	def avatar(self, value):
+		db.query("UPDATE users SET avatar = %s WHERE id = %s", (value, self.id))
+		self._avatar = value
+
+	@property
+	def photos(self):
+		return json.loads(self._photos)
+
+	@photos.setter
+	def photos(self, value):
+		db.query("UPDATE users SET photos = %s WHERE id = %s", (value, self.id))
+		self._photos = value
+
+	@property
+	def online(self):
+		return self._online
+
+	@online.setter
+	def online(self, value):
+		if value == 0:
+			last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+			sql = "UPDATE users SET online = 0, last_login = %s WHERE id = %s"
+			db.query(sql, (last_login_date, self.id))
+		elif value == 1:
+			db.query("UPDATE users SET online = 1 WHERE id = %s", (self.id,))
+		else:
+			raise ValueError("Online must be equal to 0 or 1")
+		self._online = value
+
+	@property
+	def liked_users(self):
+		sql = "SELECT liked_user FROM `likes` WHERE like_owner=%s"
+		response = db.get_all_rows(sql, (self.id,))
+		return [liked_user for liked_user, in response]
+
+	@property
+	def blocked_users(self):
+		sql = "SELECT blocked_id FROM `blocked` WHERE user_id=%s"
+		response = db.get_all_rows(sql, (self.id,))
+		return [blocked_user for blocked_user, in response]
+
+	@property
+	def reported_users(self):
+		sql = "SELECT reported_id FROM `reports` WHERE user_id = %s"
+		response = db.get_all_rows(sql, (self.id,))
+		return [reported_user for reported_user, in response]
+
+	@property
+	def visited_users(self):
+		sql = "SELECT visited FROM `visits` WHERE visitor = %s"
+		response = db.get_all_rows(sql, (self.id,))
+		return [visited for visited, in response]
+
+	def info_filled(self):
+		return (self.avatar is not None and self.city is not None and self.biography is not None
+				and self.gender is not None and self.preferences is not None and self.age is not None)
+
+	@staticmethod
+	def get_user_info(user_id):
+		sql = "SELECT * FROM `users` WHERE id = %s"
+		user = db.get_row(sql, (user_id,))
+		if user is None:
+			return None
 		return user
 
-	def sort_func(self, user_match, sort_by=None):
+	@classmethod
+	def register(cls, data):
+		login = data['login']
+		email = data['email']
+		assert not cls.login_exist(login), "User with this login already exists"
+		assert not cls.email_exist(email), "User with this E-mail already exists"
+		sql = ("INSERT INTO `users` (login, name, surname, email, token, password)"
+			   "VALUES (%s, %s, %s, %s, %s, %s)")
+		user_token = secrets.token_hex(10)
+		db.query(sql, (
+			login, data['name'], data['surname'], email, user_token,
+			generate_password_hash(data['pass'])))
+		confirm_email_mail(email, login, user_token)
+
+	@classmethod
+	def login(cls, data):
+		sql = "SELECT id, password, confirmed FROM `users` WHERE login = %s"
+		response = db.get_row(sql, (data['login'],))
+		assert response is not None, "Cannot find user with this login"
+		user_id, password, confirmed = response
+		assert check_password_hash(password, data['pass']), "Wrong password"
+		assert confirmed, "You should confirm your E-mail first!"
+		user = cls(user_id)
+		user.online = 1
+		return user
+
+	@classmethod
+	def confirm_email(cls, data):
+		email = data['email']
+		token = data['token']
+		user = cls.from_email(email)
+		assert user is not None, "No user with this E-mail"
+		assert token == user.token, "Wrong token"
+		user.confirmed = 1
+
+	@classmethod
+	def reset_password(cls, data):
+		action = data['action']
+		email = data['email']
+		user = cls.from_email(email)
+		assert user is not None, "No user with this E-mail"
+		if action == "check":
+			reset_password_mail(user)
+		elif action == "reset":
+			assert data['token'] == user.token, "Wrong token!"
+			user.password = generate_password_hash(data['pass'])
+
+	def get_changed_values(self, new_val):
+		ignored = ('tags', 'csrf_token')
+		updated = [(key, val) for key, val in new_val.items()
+				   if key not in ignored and str(self.__getattribute__(key)) != val]
+		values = [val for _, val in updated]
+		sql = ', '.join(f"{key} = %s" for key, _ in updated)
+		need_confirmation = self.email != new_val['email']
+		return sql, values, need_confirmation
+
+	def change(self, data, files=None):
+		sql, values, need_confirmation = self.get_changed_values(data)
+		if need_confirmation and self.email_exist(data["email"]):
+			raise ValueError("User with his E-mail already exists")
+		if len(values) > 0:
+			values.append(self.id)
+			db.query(f"UPDATE `users` SET {sql} WHERE id = %s", values)
+		self.update_user_tags(data.getlist('tags'))
+		self.update_user_files(files)
+		if need_confirmation:
+			self.confirmed = 0
+			confirm_email_mail(data['email'], self.login, self.token)
+			flash("You will have to confirm your new E-mail!", 'success')
+
+	@staticmethod
+	def sort_func(user_match, sort_by=None):
 		# todo location should be refactored. For example make 2 selects for city and country.
 		if sort_by:
 			if sort_by == 'age' or sort_by == 'fame':
@@ -101,26 +235,6 @@ class Account:
 				-len(set(user_match['tags']).intersection(e['tags']))
 			)
 		return None
-
-	def filter_by_preferences(self, sql, user):
-		matches = {}
-		if user['preferences'] == 'heterosexual':
-			gender = 'female' if user['gender'] == 'male' else 'male'
-			matches[gender] = 'heterosexual'
-		elif user['preferences'] == 'homosexual':
-			matches[user['gender']] = 'homosexual'
-		else:
-			if user['gender'] == 'male':
-				matches['male'] = 'homosexual'
-				matches['female'] = 'heterosexual'
-			else:
-				matches['male'] = 'heterosexual'
-				matches['female'] = 'homosexual'
-		sql_part = "gender=%s AND (preferences=%s OR preferences='bisexual')"
-		sql += ' AND ({})'.format(' OR '.join(sql_part for _ in range(len(matches))))
-		values = itertools.chain.from_iterable(
-			(gender, preferences) for gender, preferences in matches.items())
-		return sql, values
 
 	def filter_by_criterias(self, users, filters):
 		if not filters:
@@ -144,9 +258,9 @@ class Account:
 			   "OR gender IS NULL OR preferences IS NULL)")
 		if user_match:
 			sql, values = self.filter_by_preferences(sql, user_match)
-			users = self.db.get_all_rows(sql, values, cursorclass=MySQLdb.cursors.DictCursor)
+			users = db.get_all_rows(sql, values, cursorclass=MySQLdb.cursors.DictCursor)
 		else:
-			users = self.db.get_all_rows(sql, cursorclass=MySQLdb.cursors.DictCursor)
+			users = db.get_all_rows(sql, cursorclass=MySQLdb.cursors.DictCursor)
 		fame_rates = self.get_fame_rating()
 		tags_groups = self.get_tags()
 		for user in users:
@@ -158,209 +272,145 @@ class Account:
 			users = sorted(users, key=sort_lambda)
 		return users
 
-	def email_confirmation(self, email, login, token):
-		send_email("Thank's for the signing-up to Matcha",
-				   app.config["ADMINS"][0], [email],
-				   "You should confirm your E-mail!",
-				   render_template('signup_email.html', login=login, token=token))
-
-	def update_user_tags(self, user, new_tags):
-		if not new_tags or user['tags'] == new_tags:
+	def update_user_tags(self, new_tags):
+		if not new_tags or self.tags == new_tags:
 			return None
-		all_tags = self.db.get_all_rows("SELECT * FROM `tags`")
+		all_tags = db.get_all_rows("SELECT * FROM `tags`")
 		all_tags = {tag_name for _, tag_name in all_tags}
 		sql = ', '.join('%s' for tag_name in new_tags if tag_name not in all_tags)
-		new_tags_set = set(new_tags)
-		nonexistent_tags = new_tags_set - all_tags
+		new_tags = {new_tags}
+		nonexistent_tags = new_tags - all_tags
 		if nonexistent_tags:
 			sql = f"INSERT INTO `tags` (name) VALUES ({sql})"
-			self.db.query(sql, nonexistent_tags)
+			db.query(sql, nonexistent_tags)
+		# todo user.tags
+		# sql = "DELETE FROM `users_tags` WHERE user_id=%s"
+		# db.query(sql, (user['id'],))
+		#
+		# all_tags = db.get_all_rows("SELECT * FROM `tags`")
+		# sql = ', '.join("(%s, %s)" for _ in range(len(new_tags)))
+		# user_tag_ids = itertools.chain.from_iterable(
+		# 	(user['id'], tag_id) for tag_id, tag_name in all_tags if tag_name in new_tags_set
+		# )
+		# if len(sql):
+		# 	sql = f"INSERT INTO `users_tags` (user_id, tag_id) VALUES {sql}"
+		# 	db.query(sql, user_tag_ids)
 
-		sql = "DELETE FROM `users_tags` WHERE user_id=%s"
-		self.db.query(sql, (user['id'],))
-
-		all_tags = self.db.get_all_rows("SELECT * FROM `tags`")
-		sql = ', '.join("(%s, %s)" for _ in range(len(new_tags)))
-		user_tag_ids = itertools.chain.from_iterable(
-			(user['id'], tag_id) for tag_id, tag_name in all_tags if tag_name in new_tags_set
-		)
-		if len(sql):
-			sql = f"INSERT INTO `users_tags` (user_id, tag_id) VALUES {sql}"
-			self.db.query(sql, user_tag_ids)
-
-	def registration(self, form):
-		if self.check_login_existent(form["login"]):
-			raise Exception("User with this login already exists")
-		if self.check_email_existent(form["email"]):
-			raise Exception("User with this E-mail already exists")
-		sql = ("INSERT INTO `users`(login, name, surname, email, password, token)"
-			   "VALUES(%s, %s, %s, %s, %s, %s)")
-		user_token = secrets.token_hex(10)
-		self.db.query(sql, (
-			form["login"], form["name"],
-			form["surname"], form["email"],
-			generate_password_hash(form["pass"]), user_token
-		))
-		self.email_confirmation(form["email"], form["login"], user_token)
-
-	def login(self, form):
-		sql = "SELECT id, password, confirmed FROM `users` WHERE login=%s"
-		user = self.db.get_row(sql, [form['login']], cursorclass=MySQLdb.cursors.DictCursor)
-		if not user:
-			raise ValueError("Wrong login!")
-		if not check_password_hash(user["password"], form["pass"]):
-			raise ValueError("Wrong password!")
-		if not user["confirmed"]:
-			raise ValueError("You should confirm your E-mail first!")
-		session['user'] = user['id']
-		last_login_date = datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S')
-		sql = "UPDATE `users` SET online = 1, last_login = %s WHERE id = %s"
-		self.db.query(sql, (last_login_date, user['id']))
-
-	def confirmation(self, login, token):
-		sql = "SELECT token FROM `users` WHERE login = %s"
-		user = self.db.get_row(sql, (login,))
-		if not user:
-			return False
-		user_token, = user
-		if user_token == token:
-			sql = "UPDATE `users` SET confirmed = 1 WHERE login = %s"
-			self.db.query(sql, (login,))
-			return True
-		return False
-
-	def reset(self, form, action):
-		sql = "SELECT * FROM `users` WHERE email = %s"
-		user = self.db.get_row(sql, [form["email"]], cursorclass=MySQLdb.cursors.DictCursor)
-		if action == "check":
-			if not user:
-				raise ValueError("No user with such E-mail")
-			send_email("Matcha: Reset password", app.config["ADMINS"][0],
-					   [form["email"]], "It seems you want to change your password?",
-					   render_template('reset_password.html', user=user))
-		elif action == "reset":
-			if form["token"] != user["token"]:
-				raise ValueError("Wrong token!")
-			sql = "UPDATE `users` SET password=%s WHERE email=%s"
-			self.db.query(sql, (generate_password_hash(form["pass"]), form["email"]))
-			flash("You successfully updated your password!", 'success')
-
-	def upload_photo(self, relative_dir, photo):
-		"""
-		Save photo in folder from app config.
-		:return:filename of new photo
-		"""
-		if not photo or not self.check_img_extension(photo.filename):
-			return None
-		photo_filename = secure_filename(photo.filename)
-		absolute_dir = os.path.join(app.config['UPLOAD_PATH'], relative_dir)
-		if not os.path.exists(absolute_dir):
-			os.makedirs(absolute_dir)
-		absolute_path = os.path.join(absolute_dir, photo_filename)
-		if not os.path.exists(absolute_path):
-			photo.save(absolute_path)
-		return photo_filename
-
-	def update_user_files(self, user, files):
+	def update_user_files(self, files):
 		"""
 		Uploads user avatar and 4 photos.
-		In database relative path is stored.
+		In database relative paths are stored.
 		"""
 		if not files:
 			return None
-		relative_dir = os.path.join(app.config['UPLOAD_FOLDER'], user['login'])
-		avatar_filename = self.upload_photo(relative_dir, files['avatar'])
+		relative_dir = os.path.join(app.config['UPLOAD_FOLDER'], self.login)
+		avatar_filename = upload_photo(relative_dir, files['avatar'])
 		if avatar_filename is not None:
 			relative_path = os.path.join('/', relative_dir, avatar_filename)
-			self.db.query('UPDATE users SET avatar = %s WHERE id = %s', (relative_path, user['id']))
-		photos = files.getlist('photos[]')
-		photo_filenames = [photo for photo in user['photos']]
-		for i, photo in enumerate(photos):
-			if photo:
-				photo_filename = self.upload_photo(relative_dir, photo)
-				relative_path = os.path.join('/', relative_dir, photo_filename)
-				photo_filenames[i] = relative_path
-		if photo_filenames != user['photos']:
-			columns = json.dumps(photo_filenames), user['id']
-			self.db.query('UPDATE users SET photos = %s WHERE id = %s', columns)
+			self.avatar = relative_path
+		user_photos = [photo for photo in self.photos]
+		uploaded_photos = files.getlist('photos[]')
+		for i, photo in enumerate(uploaded_photos):
+			if not photo:
+				continue
+			photo_filename = upload_photo(relative_dir, photo)
+			relative_path = os.path.join('/', relative_dir, photo_filename)
+			user_photos[i] = relative_path
+		if user_photos != self.photos:
+			self.photos = json.dumps(user_photos)
 
-	@classmethod
-	def get_changed_values(cls, prev_val, new_val):
-		"""Checks which values were updated"""
-		ignored = ('tags', 'csrf_token')
-		values = [val for key, val in new_val.items()
-				  if key not in ignored and str(prev_val[key]) != val]
-		sql = ', '.join(f"{key} = %s" for key, val in new_val.items()
-						if key not in ignored and str(prev_val[key]) != val)
-		need_confirmation = prev_val['email'] != new_val['email']
-		if need_confirmation:
-			sql += ", confirmed='0'"
-		return sql, values, need_confirmation
-
-	def change(self, form, files=None):
-		user = self.get_user_info(session['user'])
-		sql, values, need_confirmation = self.get_changed_values(user, form)
-		if need_confirmation and self.check_email_existent(form["email"]):
-			raise ValueError("User with his E-mail already exists")
-		if len(values) > 0:
-			sql = f"UPDATE `users` SET {sql} WHERE id=%s"
-			values.append(user['id'])
-			self.db.query(sql, values)
-		self.update_user_tags(user, form.getlist('tags'))
-		self.update_user_files(user, files)
-		if need_confirmation:
-			self.email_confirmation(form["email"], user['login'], user["token"])
-			flash("You will have to confirm your new E-mail!", 'success')
-
-	def get_liked_users(self, user_id):
-		sql = "SELECT liked_user FROM `likes` WHERE like_owner=%s"
-		response = self.db.get_all_rows(sql, (user_id,))
-		return [liked_user for liked_user, in response]
-
-	def get_blocked_users(self, user_id):
-		sql = "SELECT blocked_id FROM `blocked` WHERE user_id=%s"
-		response = self.db.get_all_rows(sql, (user_id,))
-		return [blocked_user for blocked_user, in response]
-
-	def get_reported_users(self, user_id):
-		sql = "SELECT reported_id FROM `reports` WHERE user_id = %s"
-		response = self.db.get_all_rows(sql, (user_id,))
-		return [reported_user for reported_user, in response]
-
-	def get_visited_users(self, user_id):
-		sql = "SELECT visited FROM `visits` WHERE visitor = %s"
-		response = self.db.get_all_rows(sql, (user_id,))
-		return [visited for visited, in response]
-
-	def like_user(self, like_owner, like_to, unlike):
-		if unlike:
-			sql = "DELETE FROM `likes` WHERE like_owner = %s AND liked_user = %s"
+	def like_user(self, liked_user):
+		if liked_user.id in self.liked_users:
 			action = 'unlike'
+			sql = "DELETE FROM `likes` WHERE like_owner = %s AND liked_user = %s"
 		else:
-			sql = "SELECT COUNT(id) as row_num FROM `likes` WHERE like_owner = %s AND liked_user = %s"
-			row_num, = self.db.get_row(sql, (like_to, like_owner))
-			action = 'like_back' if row_num > 0 else 'like'
+			action = 'like_back' if self.id in liked_user.liked_users else 'like'
 			sql = "INSERT INTO `likes` SET like_owner = %s, liked_user = %s"
-		self.db.query(sql, (like_owner, like_to))
+		db.query(sql, (self.id, liked_user.id))
 		return action
 
 	def block_user(self, user_id, blocked_id):
 		sql = "INSERT INTO `blocked` SET user_id = %s, blocked_id = %s"
-		self.db.query(sql, (user_id, blocked_id))
+		db.query(sql, (user_id, blocked_id))
 		sql = ("DELETE FROM `likes` WHERE (like_owner = %s AND liked_user = %s) "
 			   "OR (like_owner = %s AND liked_user = %s)")
-		self.db.query(sql, (user_id, blocked_id, blocked_id, user_id))
+		db.query(sql, (user_id, blocked_id, blocked_id, user_id))
 
 	def report_user(self, user_id, reported_id, unreport):
 		if unreport == 'true':
 			sql = "DELETE FROM `reports` WHERE user_id=%s AND reported_id=%s"
 		else:
 			sql = "INSERT INTO `reports` SET user_id=%s, reported_id=%s"
-		self.db.query(sql, (user_id, reported_id))
+		db.query(sql, (user_id, reported_id))
 
 	def visit_user(self, visitor, visited):
 		sql = "INSERT INTO `visits` SET visitor = %s, visited = %s"
-		self.db.query(sql, (visitor, visited))
+		db.query(sql, (visitor, visited))
+
+	@staticmethod
+	def filter_by_preferences(sql, user):
+		matches = {}
+		if user['preferences'] == 'heterosexual':
+			gender = 'female' if user['gender'] == 'male' else 'male'
+			matches[gender] = 'heterosexual'
+		elif user['preferences'] == 'homosexual':
+			matches[user['gender']] = 'homosexual'
+		else:
+			if user['gender'] == 'male':
+				matches['male'] = 'homosexual'
+				matches['female'] = 'heterosexual'
+			else:
+				matches['male'] = 'heterosexual'
+				matches['female'] = 'homosexual'
+		sql_part = "gender=%s AND (preferences=%s OR preferences='bisexual')"
+		sql += ' AND ({})'.format(' OR '.join(sql_part for _ in range(len(matches))))
+		values = itertools.chain.from_iterable(
+			(gender, preferences) for gender, preferences in matches.items())
+		return sql, values
+
+	@staticmethod
+	def login_exist(login):
+		sql = "SELECT COUNT(login) as row_num FROM `users` WHERE login = %s"
+		row_num, = db.get_row(sql, (login,))
+		return row_num > 0
+
+	@staticmethod
+	def email_exist(email):
+		sql = "SELECT COUNT(email) as row_num FROM `users` WHERE email = %s"
+		row_num, = db.get_row(sql, (email,))
+		return row_num > 0
+
+	@staticmethod
+	def get_fame_rating(user_id=None):
+		sql = "SELECT liked_user AS user, COUNT(liked_user) AS like_num FROM `likes` GROUP BY user"
+		search_in = db.get_all_rows(sql)
+		if not search_in:
+			return 0
+		max_likes = max(like_num for _, like_num in search_in)
+		if user_id:
+			user_likes = [like_num for user, like_num in search_in if user == user_id]
+			if not user_likes:
+				return 0
+			return round(user_likes[0] / max_likes * 100)
+		return {user_id: round(like_num / max_likes * 100) for user_id, like_num in search_in}
+
+	@staticmethod
+	def get_tags(user_id=None):
+		if user_id:
+			sql = ("SELECT tags.name FROM `tags` INNER JOIN `users_tags` "
+				   "ON tags.id = users_tags.tag_id WHERE users_tags.user_id = %s")
+			tags = db.get_all_rows(sql, (user_id,))
+			if not tags:
+				return None
+			return [tag_name for tag_name, in tags]
+		else:
+			sql = ("SELECT users_tags.user_id, tags.name FROM tags "
+				   "INNER JOIN users_tags ON tags.id = users_tags.tag_id")
+			tags_groups = db.get_all_rows(sql)
+			if not tags_groups:
+				return None
+			tags_groups = itertools.groupby(tags_groups, lambda pair: pair[0])
+			return {user: list(tag for _, tag in group) for user, group in tags_groups}
 
 
 class Chat:
@@ -407,37 +457,36 @@ class Chat:
 		chats = (dict(zip(columns, message)) for _, (message, *_) in chats)
 		return chats
 
-
-class Notification:
-	def __init__(self, db):
-		self.db = db
-		self.timestamp_format = "%c"
-		self.notifications = {
-			'like': "You have been liked by {}",
-			'unlike': "You have been unliked by {}",
-			'visit': "Your profile was visited by {}",
-			'message': "You received a message from {}",
-			'like_back': "You have been liked back by {}"
-		}
-
-	def send(self, recipient, notif_type, executive_user):
-		links = {
-			'user_action': url_for('profile', user_id=executive_user['id']),
-			'message': url_for('chat_page', user_id=executive_user['id'])
-		}
-		if executive_user['id'] not in recipient['blocked_users']:
-			sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"
-			link = 'message' if notif_type == 'message' else 'user_action'
-			message = self.notifications[notif_type].format(executive_user['login'])
-			self.db.query(sql, (recipient['id'], message, links[link]))
-
-	def get(self, user_id):
-		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created DESC"
-		notifications = self.db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.DictCursor)
-		for notif in notifications:
-			notif['date_created'] = datetime.strftime(notif['date_created'], self.timestamp_format)
-		return notifications
-
-	def delete(self, notification_id):
-		sql = "DELETE FROM `notifications` WHERE id = %s"
-		self.db.query(sql, (notification_id,))
+# class Notification:
+# 	def __init__(self, db):
+# 		db = db
+# 		self.timestamp_format = "%c"
+# 		self.notifications = {
+# 			'like': "You have been liked by {}",
+# 			'unlike': "You have been unliked by {}",
+# 			'visit': "Your profile was visited by {}",
+# 			'message': "You received a message from {}",
+# 			'like_back': "You have been liked back by {}"
+# 		}
+#
+# 	def send(self, recipient, notif_type, executive_user):
+# 		links = {
+# 			'user_action': url_for('profile', user_id=executive_user['id']),
+# 			'message': url_for('chat_page', user_id=executive_user['id'])
+# 		}
+# 		if executive_user['id'] not in recipient['blocked_users']:
+# 			sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"
+# 			link = 'message' if notif_type == 'message' else 'user_action'
+# 			message = self.notifications[notif_type].format(executive_user['login'])
+# 			db.query(sql, (recipient['id'], message, links[link]))
+#
+# 	def get(self, user_id):
+# 		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created DESC"
+# 		notifications = db.get_all_rows(sql, (user_id,), cursorclass=MySQLdb.cursors.DictCursor)
+# 		for notif in notifications:
+# 			notif['date_created'] = datetime.strftime(notif['date_created'], self.timestamp_format)
+# 		return notifications
+#
+# 	def delete(self, notification_id):
+# 		sql = "DELETE FROM `notifications` WHERE id = %s"
+# 		db.query(sql, (notification_id,))

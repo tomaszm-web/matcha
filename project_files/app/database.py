@@ -34,8 +34,8 @@ class Database:
 			self.connect()
 			self.query(sql, values, to_close, cursorclass)
 		except Exception as e:
-			print(str(e))
 			self.con.rollback()
+			raise Exception(e)
 
 	def get_row(self, sql, values=None, cursorclass=None):
 		cur = self.query(sql, values, to_close=False, cursorclass=cursorclass)
