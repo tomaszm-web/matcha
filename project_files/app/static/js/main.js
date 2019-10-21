@@ -130,7 +130,7 @@ $(document).ready(function() {
 	elem = document.querySelector('.reset_filters');
 	if (elem) elem.onclick = e => {
 		e.target.form.reset();
-		filter_tags.val("");
+		filter_tags.val();
 		filter_tags.trigger("change");
 	};
 
@@ -280,8 +280,6 @@ $(document).ready(function() {
 	$('.reportUser').click(function() {
 		axios.post(`${window.origin}/report_user`, {
 			csrf_token: $("meta[data-csrf-token]").attr('data-csrf-token'),
-			unreport: $(this).hasClass('done'),
-			user_id: $(this).attr('data-user-id'),
 			reported_id: $(this).attr('data-reported-user-id')
 		}).then(response => {
 			if (response.data.success)

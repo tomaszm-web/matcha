@@ -1,6 +1,7 @@
 import os
 import requests
 
+import MySQLdb
 from flask import (
 	render_template, request, url_for, session,
 	flash, redirect, send_from_directory,
@@ -184,21 +185,21 @@ def filter_users():
 		cur_user = Account(session['user']) if 'user' in session else None
 		if len(request.form) > 0:
 			users = Account.get_all_users(cur_user, filters=request.form,
-										  sort_by=request.form.pop('sort_by'))
+										  sort_by=request.form.get('sort_by'))
 			if request.form.get('reversed') == 'on':
 				users = reversed(users)
 		else:
 			users = Account.get_all_users(cur_user)
 		return render_template('user_list.html', cur_user=cur_user, users=users)
 	except Exception as e:
-		return "Something went wrong!" + str(e)
+		return "Something went wrong! " + str(e)
 
 
 @app.route('/ajax/like_user', methods=["POST"])
 def like_user_ajax():
 	req = request.get_json() if request.is_json else request.form
 	try:
-		user = session['user']
+		user = Account(session['user'])
 		recipient = Account(req['liked_user'])
 		action = user.like_user(recipient)
 		# notification.send(recipient, action, like_owner)
@@ -212,8 +213,8 @@ def like_user_ajax():
 @app.route('/like_user/<int:user_id>/', methods=["POST"])
 def like_user(user_id):
 	try:
-		user = session['user']
-		recipient = Account(request.form['liked_user'])
+		user = Account(session['user'])
+		recipient = Account(user_id)
 		action = user.like_user(recipient)
 		if action == 'like':
 			msg = "Your liked was received. If you get liked back, you'll be able to chat"
@@ -223,8 +224,8 @@ def like_user(user_id):
 			msg = "You successfully disconnected from that user."
 		flash(msg, 'success')
 		# notification.send(recipient, action, like_owner)
-	except Exception:
-		flash("Something went wrong. Try again a bit later!", 'danger')
+	except Exception as e:
+		flash(str(e), 'danger')
 	return redirect(url_for('profile', user_id=user_id))
 
 
@@ -243,15 +244,16 @@ def block_user(user_id):
 def report_user():
 	req = request.get_json() if request.is_json else request.form
 	try:
-		Account.report_user(req['user_id'], req['reported_id'], req['unreport'])
+		user = Account(session['user'])
+		user.report_user(req['reported_id'])
 	except Exception as e:
 		return jsonify({'success': False, 'error': str(e)})
-	return jsonify({'success': True, 'unreport': req['unreport']})
+	return jsonify({'success': True})
 
 
 @app.route('/ajax/get_tag_list', methods=["GET"])
 def get_tag_list():
-	res = db.get_all_rows("SELECT name as id, name AS text FROM tags")
+	res = db.get_all_rows("SELECT name as id, name AS text FROM tags", cursorclass=MySQLdb.cursors.DictCursor)
 	return jsonify({'success': True, 'tags': res})
 
 

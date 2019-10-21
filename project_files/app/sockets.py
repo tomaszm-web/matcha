@@ -56,25 +56,25 @@ connected = set()
 # 		connected.add(session['user'])
 
 
-@socketio.on('disconnect')
-def disconnect_user():
-	if 'user' in session and session['user'] in connected:
-		sql = "UPDATE `users` SET online = 0 WHERE id = %s"
-		db.query(sql, [session['user']])
-		session.pop("user", None)
-		connected.remove(session['user'])
-
-
-@socketio.on('my event')
-def evvvent():
-	print("Disconnected!")
-
-
-@socketio.on_error()
-def error_handler(e):
-	pass
-
-
-@socketio.on_error('/private_chat')
-def error_handler(e):
-	pass
+# @socketio.on('disconnect')
+# def disconnect_user():
+# 	if 'user' in session and session['user'] in connected:
+# 		sql = "UPDATE `users` SET online = 0 WHERE id = %s"
+# 		db.query(sql, [session['user']])
+# 		session.pop("user", None)
+# 		connected.remove(session['user'])
+#
+#
+# @socketio.on('my event')
+# def evvvent():
+# 	print("Disconnected!")
+#
+#
+# @socketio.on_error()
+# def error_handler(e):
+# 	pass
+#
+#
+# @socketio.on_error('/private_chat')
+# def error_handler(e):
+# 	pass

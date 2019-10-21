@@ -4,7 +4,6 @@ import secrets
 import itertools
 from datetime import datetime
 
-from pytz import timezone
 import MySQLdb.cursors
 from flask import render_template, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -140,7 +139,7 @@ class Account:
 		return [reported_user for reported_user, in response]
 
 	@property
-	def visited_users(self):
+	def visited(self):
 		sql = "SELECT visited FROM `visits` WHERE visitor = %s"
 		response = db.get_all_rows(sql, (self.id,))
 		return [visited for visited, in response]
@@ -159,18 +158,17 @@ class Account:
 			users = db.get_all_rows(sql, values)
 		else:
 			users = db.get_all_rows(sql)
-
 		users = [Account(user, extended=False) for user in users]
 		fame_rates = cls.get_fame_rating()
 		tags_groups = cls.get_tags()
 		for user in users:
 			user.fame = fame_rates.get(user.id, 0) if fame_rates else 0
-			user.tags = tags_groups.get(user.id) if tags_groups else None
+			user.tags = tags_groups.get(user.id, ()) if tags_groups else ()
 		if filters is not None:
 			users = (user for user in users if user.filter_fit(filters))
-		# sort_lambda = cls.sort_func(user_match, sort_by)
-		# if sort_lambda is not None:
-		# 	users = sorted(users, key=sort_lambda)
+		sort_by = cls.sort_func(user_match, sort_by)
+		if sort_by is not None:
+			users = sorted(users, key=sort_by)
 		return users
 
 	@classmethod
@@ -243,24 +241,34 @@ class Account:
 			confirm_email_mail(data['email'], self.login, self.token)
 			flash("You will have to confirm your new E-mail!", 'success')
 
+	def like_user(self, liked_user):
+		if liked_user.id in self.liked_users:
+			action = 'unlike'
+			sql = "DELETE FROM `likes` WHERE like_owner = %s AND liked_user = %s"
+		else:
+			action = 'like_back' if self.id in liked_user.liked_users else 'like'
+			sql = "INSERT INTO `likes` SET like_owner = %s, liked_user = %s"
+		db.query(sql, (self.id, liked_user.id))
+		return action
+
 	@staticmethod
 	def sort_func(user_match, sort_by=None):
 		# todo location should be refactored. For example make 2 selects for city and country.
-		if sort_by:
-			if sort_by == 'age' or sort_by == 'fame':
-				return lambda e: -e[sort_by]
-			elif user_match is not None and sort_by == 'common_tags':
-				return lambda e: -len(set(user_match['tags']).intersection(e['tags']))
-			elif user_match is not None and sort_by == 'city':
-				return lambda e: e['city'] != user_match['city']
-		elif user_match is not None:
-			return lambda e: (
-				e.city != user_match.city,
-				abs(user_match.age - e.age),
-				-e.fame,
-				-len(set(user_match.tags).intersection(e.tags))
-			)
-		return None
+		def sort(e):
+			if sort_by:
+				if sort_by == 'age' or sort_by == 'fame':
+					return -getattr(e, sort_by)
+				elif user_match is not None and sort_by == 'common_tags':
+					return -len(set(user_match.tags).intersection(e.tags))
+				elif user_match is not None and sort_by == 'city':
+					return e.city != user_match.city
+				return (e.city != user_match.city, abs(user_match.age - e.age), -e.fame,
+					   -len(set(user_match.tags).intersection(e.tags)))
+			elif user_match is not None:
+				return e.city != user_match.city, abs(user_match.age - e.age), \
+					   -e.fame, -len(set(user_match.tags).intersection(e.tags))
+			return None
+		return sort
 
 	def filter_fit(self, filters):
 		if not filters:
@@ -322,16 +330,6 @@ class Account:
 		if user_photos != self.photos:
 			self.photos = json.dumps(user_photos)
 
-	def like_user(self, liked_user):
-		if liked_user.id in self.liked_users:
-			action = 'unlike'
-			sql = "DELETE FROM `likes` WHERE like_owner = %s AND liked_user = %s"
-		else:
-			action = 'like_back' if self.id in liked_user.liked_users else 'like'
-			sql = "INSERT INTO `likes` SET like_owner = %s, liked_user = %s"
-		db.query(sql, (self.id, liked_user.id))
-		return action
-
 	def block_user(self, user_id, blocked_id):
 		sql = "INSERT INTO `blocked` SET user_id = %s, blocked_id = %s"
 		db.query(sql, (user_id, blocked_id))
@@ -339,12 +337,12 @@ class Account:
 			   "OR (like_owner = %s AND liked_user = %s)")
 		db.query(sql, (user_id, blocked_id, blocked_id, user_id))
 
-	def report_user(self, user_id, reported_id, unreport):
-		if unreport == 'true':
-			sql = "DELETE FROM `reports` WHERE user_id=%s AND reported_id=%s"
+	def report_user(self, reported_id):
+		if reported_id in self.reported_users:
+			sql = "DELETE FROM `reports` WHERE user_id = %s AND reported_id = %s"
 		else:
-			sql = "INSERT INTO `reports` SET user_id=%s, reported_id=%s"
-		db.query(sql, (user_id, reported_id))
+			sql = "INSERT INTO `reports` SET user_id = %s, reported_id = %s"
+		db.query(sql, (self.id, reported_id))
 
 	def visit_user(self, visitor, visited):
 		sql = "INSERT INTO `visits` SET visitor = %s, visited = %s"
@@ -407,8 +405,7 @@ class Account:
 				return ()
 			return [tag_name for tag_name, in tags]
 		else:
-			sql = ("SELECT user_tag.user_id, tags.name FROM tags "
-				   "INNER JOIN user_tag ON tags.id = user_tag.tag_id")
+			sql = "SELECT user_tag.user_id, tags.name FROM tags INNER JOIN user_tag ON tags.id = user_tag.tag_id"
 			tags_groups = db.get_all_rows(sql)
 			if not tags_groups:
 				return None
@@ -418,7 +415,6 @@ class Account:
 
 class Chat:
 	timestamp_format = "%H:%M %d %b %Y"
-	tz = timezone('Europe/Amsterdam')
 
 	def __init__(self, user1_id, user2_id):
 		self.user1_id = user1_id
