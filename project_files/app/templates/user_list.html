@@ -1,5 +1,5 @@
 {% for user in users %}
-	{% if not cur_user or (user.id != cur_user.id and user.id not in cur_user.blocked_users) %}
+	{% if not cur_user or (user.id != cur_user.id and user.id not in cur_user.blocked) %}
 		{% set liked_user = cur_user and user.id in cur_user.liked_users %}
 		<div class="col-12 col-sm-6 col-lg-4">
 			<a href="%% url_for('profile', user_id=user.id) %%" class="card user-list__card">

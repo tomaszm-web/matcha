@@ -11,8 +11,6 @@ from flask import (
 from app.models import Account, Chat
 from app import app, db, csrf_update, login_required
 
-# notification = Notification(db)
-
 
 @app.route('/')
 @app.route('/index')
@@ -51,7 +49,7 @@ def settings():
 def profile(user_id):
 	user = Account(user_id)
 	if not user:
-		flash('No user with that id!', 'danger')
+		flash('No user with this id!', 'danger')
 		return redirect(url_for('index'))
 	if 'user' not in session:
 		return render_template('profile.html', cur_user=None, user=user)
@@ -63,13 +61,13 @@ def profile(user_id):
 	if user.id == cur_user.id:
 		return render_template('profile.html', cur_user=user, user=user)
 
-	if user_id in cur_user.blocked_users:
+	if user_id in cur_user.blocked:
 		flash("This user was blocked by yourself. If you want to delete him from black list,"
 			  "donate me 10$ for future development of this feature!", 'info')
 		return redirect(url_for('index'))
 	if user.id not in cur_user.visited:
-		Account.visit_user(cur_user['id'], user['id'])
-		# notification.send(user, 'visit', cur_user)
+		cur_user.visited = user.id
+	# notification.send(user, 'visit', cur_user)
 	return render_template('profile.html', cur_user=cur_user, user=user)
 
 
@@ -79,7 +77,7 @@ def profile(user_id):
 def chat_page(user_id):
 	recipient = Account(user_id)
 	if not recipient:
-		flash('No user with that id!', 'danger')
+		flash('No user with this id!', 'danger')
 		return redirect(url_for('index'))
 
 	cur_user = Account(session["user"])
@@ -202,7 +200,7 @@ def like_user_ajax():
 		user = Account(session['user'])
 		recipient = Account(req['liked_user'])
 		action = user.like_user(recipient)
-		# notification.send(recipient, action, like_owner)
+	# notification.send(recipient, action, like_owner)
 	except KeyError:
 		return jsonify({'success': False, 'error': 'KeyError'})
 	except Exception as e:
@@ -223,7 +221,7 @@ def like_user(user_id):
 		else:
 			msg = "You successfully disconnected from that user."
 		flash(msg, 'success')
-		# notification.send(recipient, action, like_owner)
+	# notification.send(recipient, action, like_owner)
 	except Exception as e:
 		flash(str(e), 'danger')
 	return redirect(url_for('profile', user_id=user_id))
@@ -232,7 +230,10 @@ def like_user(user_id):
 @app.route('/block_user/<int:user_id>', methods=["POST"])
 def block_user(user_id):
 	try:
-		Account.block_user(session['user'], user_id)
+		user = Account(session['user'])
+		user.blocked = user_id
+	except AssertionError as e:
+		flash(str(e))
 	except Exception as e:
 		flash("Error" + str(e), 'danger')
 	else:
@@ -245,7 +246,7 @@ def report_user():
 	req = request.get_json() if request.is_json else request.form
 	try:
 		user = Account(session['user'])
-		user.report_user(req['reported_id'])
+		user.reported = req['reported_id']
 	except Exception as e:
 		return jsonify({'success': False, 'error': str(e)})
 	return jsonify({'success': True})
@@ -253,7 +254,8 @@ def report_user():
 
 @app.route('/ajax/get_tag_list', methods=["GET"])
 def get_tag_list():
-	res = db.get_all_rows("SELECT name as id, name AS text FROM tags", cursorclass=MySQLdb.cursors.DictCursor)
+	res = db.get_all_rows("SELECT name as id, name AS text FROM tags",
+						  cur_class=MySQLdb.cursors.DictCursor)
 	return jsonify({'success': True, 'tags': res})
 
 

@@ -28,50 +28,59 @@ class Database:
 			self.install_schema()
 			self.con.select_db(db)
 
-	def query(self, sql, values=None, to_close=True, cursorclass=None):
-		cursor = cursorclass if cursorclass is not None else self.default_cursor
+	def query(self, sql, **kwargs):
+		"""
+		:param sql: sql string
+		:param kwargs: cur (if is not None, used and doesn't close after query),
+					   values (to use with placeholders),
+					   commit (if True, commits changes),
+					   cur_class (DictCursor, etc)
+		"""
+		cur = kwargs.get('cur')
+		values = kwargs.get('values')
+		cur_class = kwargs.get('cur_class') or self.default_cursor
 		try:
-			cur = self.con.cursor(cursor)
-			cur.execute(sql, values)
-			self.con.commit()
-			if cur and to_close:
-				cur.close()
-			return cur
+			if cur is None:
+				with closing(self.con.cursor(cursorclass=cur_class)) as cur:
+					cur.execute(sql, values)
+			else:
+				cur.execute(sql, values)
+			if kwargs.get('commit'):
+				self.con.commit()
 		except MySQLdb.OperationalError:
 			self.connect()
-			self.query(sql, values, to_close, cursorclass)
+			self.query(sql, cur=cur, **kwargs)
 		except Exception as e:
 			self.con.rollback()
 			raise Exception(e)
 
-	def get_row(self, sql, values=None, cursorclass=None):
-		cur = self.query(sql, values, to_close=False, cursorclass=cursorclass)
-		if not cur:
-			return None
-		res = cur.fetchone()
-		cur.close()
-		return res
+	def get_row(self, sql, **kwargs):
+		cur_class = kwargs.get('cur_class') or self.default_cursor
+		with closing(self.con.cursor(cursorclass=cur_class)) as cur:
+			self.query(sql, cur=cur, **kwargs)
+			return cur.fetchone()
 
-	def get_all_rows(self, sql, values=None, cursorclass=None):
-		cur = self.query(sql, values, to_close=False, cursorclass=cursorclass)
-		if not cur:
-			return None
-		res = cur.fetchall()
-		cur.close()
-		return res
+	def get_all_rows(self, sql, **kwargs):
+		cur_class = kwargs.get('cur_class') or self.default_cursor
+		with closing(self.con.cursor(cursorclass=cur_class)) as cur:
+			self.query(sql, cur=cur, **kwargs)
+			return cur.fetchall()
 
-	def get_row_num(self, sql, values=None, cursorclass=None):
-		cur = self.query(sql, values, to_close=False, cursorclass=cursorclass)
-		if not cur:
-			return None
-		res = cur.rowcount
-		cur.close()
-		return res
+	def get_row_num(self, sql, **kwargs):
+		cur_class = kwargs.get('cur_class') or self.default_cursor
+		with closing(self.con.cursor(cursorclass=cur_class)) as cur:
+			self.query(sql, cur=cur, **kwargs)
+			return cur.rowcount
 
 	def install_schema(self):
-		with closing(self.con.cursor()) as cur:
-			with open(self.app.config['MYSQL_SCHEMA'], encoding='utf-8') as fd:
-				commands = (line.strip() for line in fd.read().splitlines()
-							if line and not line.strip().startswith('#') and not line.strip().startswith('--'))
-				cur.execute(''.join(commands))
-		# self.con.commit()
+		try:
+			with closing(self.con.cursor()) as cur:
+				with open(self.app.config['MYSQL_SCHEMA'], encoding='utf-8') as fd:
+					commands = (line.strip() for line in fd.read().splitlines()
+								if line and not line.strip().startswith('#')
+								and not line.strip().startswith('--'))
+					cur.execute(''.join(commands))
+		except MySQLdb.ProgrammingError:
+			self.con.rollback()
+		finally:
+			self.con.commit()

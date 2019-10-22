@@ -90,7 +90,8 @@
 									<button class="btn btn-success"><i class="fas fa-thumbs-up"></i>Like</button>
 								{% endif %}
 							</form>
-							<button class="btn btn-warning reportUser {% print('done') if user.id in cur_user.reported_users %}"
+							<button class="btn btn-warning reportUser {% print('done') if user.id
+							 in cur_user.reported %}"
 									data-reported-user-id="%% user.id %%"
 									data-user-id="%% cur_user.id %%">
 								<i class="fas fa-ban"></i>Report as fake
