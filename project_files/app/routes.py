@@ -83,11 +83,11 @@ def chat_page(user_id):
 	if not Account(cur_user):
 		flash('Please, fill in information about yourself', 'info')
 		return redirect(url_for('settings'))
-	if user_id not in cur_user['liked_users'] or cur_user['id'] not in recipient['liked_users']:
+	if user_id not in cur_user.liked or cur_user.id not in recipient.liked:
 		flash("You should like each other before chatting", 'danger')
-		return redirect(url_for('profile', user_id=recipient['id']))
+		return redirect(url_for('profile', user_id=recipient.id))
 
-	chat = Chat(cur_user['id'], recipient['id'])
+	chat = Chat(cur_user.id, recipient.id)
 	return render_template('chat.html', cur_user=cur_user, user=recipient, chat=chat)
 
 
@@ -178,18 +178,18 @@ def get_user_location_by_ip():
 
 @app.route('/filter_users', methods=["GET", "POST"])
 def filter_users():
-	try:
-		cur_user = Account(session['user']) if 'user' in session else None
-		if len(request.form) > 0:
-			users = Account.get_all_users(cur_user, filters=request.form,
-										  sort_by=request.form.get('sort_by'))
-			if request.form.get('reversed') == 'on':
-				users = reversed(users)
-		else:
-			users = Account.get_all_users(cur_user)
-		return render_template('user_list.html', cur_user=cur_user, users=users)
-	except Exception as e:
-		return "Something went wrong! " + str(e)
+	# try:
+	cur_user = Account(session['user']) if 'user' in session else None
+	if len(request.form) > 0:
+		users = Account.get_all_users(cur_user, filters=request.form,
+									  sort_by=request.form.get('sort_by'))
+		if request.form.get('reversed') == 'on':
+			users = reversed(users)
+	else:
+		users = Account.get_all_users(cur_user)
+	return render_template('user_list.html', cur_user=cur_user, users=users)
+	# except Exception as e:
+	# 	return "Something went wrong! " + str(e)
 
 
 @app.route('/ajax/like_user', methods=["POST"])

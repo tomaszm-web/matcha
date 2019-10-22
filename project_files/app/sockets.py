@@ -1,14 +1,14 @@
-from flask import (
-	request,
-	session, jsonify)
 from datetime import datetime
-from .models import Account, Chat
-from flask_socketio import emit
-from app import db, socketio
 from collections import defaultdict
 
+from flask import session, request
+from flask_socketio import emit
+
+from .models import Account, Chat
+from app import db, socketio
+
 chats = defaultdict(dict)
-connected = set()
+connected = {}
 
 
 # @socketio.on('connect', namespace='/private_chat')
@@ -45,36 +45,37 @@ connected = set()
 # @socketio.on('disconnect_from_chat', namespace='/private_chat')
 # def disconnect_from_chat(data):
 # 	chats[data['chat_id']].pop(data['user_id'])
-#
-#
-# @socketio.on('connect')
-# def connect_user():
-# 	if 'user' in session and session['user'] not in connected:
-# 		last_login_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-# 		sql = "UPDATE `users` SET online = 1, last_login = %s WHERE id = %s"
-# 		db.query(sql, (last_login_date, session['user']))
-# 		connected.add(session['user'])
 
 
-# @socketio.on('disconnect')
-# def disconnect_user():
-# 	if 'user' in session and session['user'] in connected:
-# 		sql = "UPDATE `users` SET online = 0 WHERE id = %s"
-# 		db.query(sql, [session['user']])
-# 		session.pop("user", None)
-# 		connected.remove(session['user'])
-#
-#
-# @socketio.on('my event')
-# def evvvent():
-# 	print("Disconnected!")
-#
-#
-# @socketio.on_error()
-# def error_handler(e):
-# 	pass
-#
-#
-# @socketio.on_error('/private_chat')
-# def error_handler(e):
-# 	pass
+@socketio.on('connect')
+def connect_user():
+	if 'user' in session and session['user'] not in connected:
+		user = Account(session['user'], extended=False)
+		if not user.online:
+			user.online = 1
+		connected[user.id] = request.sid
+
+
+@socketio.on('notification send')
+def notification_send(data):
+	if 'user' in session and session['user'] in connected:
+		emit('notification received', data, room=connected[session['user']])
+
+
+@socketio.on('disconnect')
+def disconnect_user():
+	if 'user' in session and session['user'] in connected:
+		user = Account(session['user'], extended=False)
+		if user.online:
+			user.online = 0
+		connected.pop(user.id)
+
+
+@socketio.on_error()
+def error_handler(e):
+	pass
+
+
+@socketio.on_error('/private_chat')
+def error_handler(e):
+	pass

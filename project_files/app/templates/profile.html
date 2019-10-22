@@ -74,7 +74,7 @@
 						</div>
 					 {% endif %}
 					{% if cur_user and user.id != cur_user.id %}
-						{% if user.id in cur_user.liked_users and cur_user.id in user.liked_users %}
+						{% if user.id in cur_user.liked and cur_user.id in user.liked %}
 							<h4 class="profile__title text-secondary">Great!!! You are connected and can chat with each other.</h4>
 							<a href="%% url_for('chat_page', user_id=user.id) %%"
 							   class="btn btn-primary chat-link btn-lg btn-block">
@@ -84,7 +84,7 @@
 						<div class="d-flex justify-content-between">
 							<form action="%% url_for('like_user', user_id=user.id) %%" method="POST">
 								<input type="hidden" name="csrf_token" value="%% csrf_token %%">
-								{% if user.id in cur_user.liked_users %}
+								{% if user.id in cur_user.liked %}
 									<button class="btn btn-danger"><i class="fas fa-thumbs-down"></i>Unlike</button>
 								{% else %}
 									<button class="btn btn-success"><i class="fas fa-thumbs-up"></i>Like</button>

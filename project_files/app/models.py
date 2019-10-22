@@ -9,7 +9,7 @@ from flask import flash, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
-from app import app, db
+from app import app, db, socketio
 from app.mail import confirm_email_mail, reset_password_mail
 
 
@@ -125,7 +125,7 @@ class Account:
 		self._online = value
 
 	@property
-	def liked_users(self):
+	def liked(self):
 		sql = "SELECT liked_id FROM `likes` WHERE user_id = %s"
 		response = db.get_all_rows(sql, values=(self.id,))
 		return [liked_id for liked_id, in response]
@@ -192,9 +192,9 @@ class Account:
 			user.tags = tags_groups.get(user.id, ()) if tags_groups else ()
 		if filters is not None:
 			users = (user for user in users if user.filter_fit(filters))
-		sort_by = cls.sort_func(user_match, sort_by)
-		if sort_by is not None:
-			users = sorted(users, key=sort_by)
+		sort_func = cls.create_sort_func(user_match, sort_by)
+		if sort_by is not None or user_match is not None:
+			users = sorted(users, key=sort_func)
 		return users
 
 	@classmethod
@@ -268,17 +268,17 @@ class Account:
 			flash("You will have to confirm your new E-mail!", 'success')
 
 	def like_user(self, liked_user):
-		if liked_user.id in self.liked_users:
+		if liked_user.id in self.liked:
 			action = 'unlike'
 			sql = "DELETE FROM `likes` WHERE user_id = %s AND liked_id = %s"
 		else:
-			action = 'like_back' if self.id in liked_user.liked_users else 'like'
+			action = 'like_back' if self.id in liked_user.liked else 'like'
 			sql = "INSERT INTO `likes` SET user_id = %s, liked_id = %s"
 		db.query(sql, values=(self.id, liked_user.id), commit=True)
 		return action
 
 	@staticmethod
-	def sort_func(user_match, sort_by=None):
+	def create_sort_func(user_match, sort_by=None):
 		# todo location should be refactored. For example make 2 selects for city and country.
 		def sort(e):
 			if sort_by:
@@ -293,7 +293,6 @@ class Account:
 			elif user_match is not None:
 				return e.city != user_match.city, abs(user_match.age - e.age), \
 					   -e.fame, -len(set(user_match.tags).intersection(e.tags))
-			return None
 
 		return sort
 
@@ -315,24 +314,22 @@ class Account:
 		all_tags = db.get_all_rows("SELECT * FROM `tags`")
 		all_tags = {tag_name for _, tag_name in all_tags}
 		sql = ', '.join('%s' for tag_name in new_tags if tag_name not in all_tags)
-		new_tags = {new_tags}
+		new_tags = {*new_tags}
 		nonexistent_tags = new_tags - all_tags
 		if nonexistent_tags:
 			sql = f"INSERT INTO `tags` (name) VALUES ({sql})"
 			db.query(sql, values=nonexistent_tags, commit=True)
 
-	# todo user.tags
-	# sql = "DELETE FROM `user_tag` WHERE user_id=%s"
-	# db.query(sql, (user['id'],))
-	#
-	# all_tags = db.get_all_rows("SELECT * FROM `tags`")
-	# sql = ', '.join("(%s, %s)" for _ in range(len(new_tags)))
-	# user_tag_ids = itertools.chain.from_iterable(
-	# 	(user['id'], tag_id) for tag_id, tag_name in all_tags if tag_name in new_tags_set
-	# )
-	# if len(sql):
-	# 	sql = f"INSERT INTO `user_tag` (user_id, tag_id) VALUES {sql}"
-	# 	db.query(sql, user_tag_ids)
+		sql = "DELETE FROM `user_tag` WHERE user_id=%s"
+		db.query(sql, values=(self.id,))
+		all_tags = db.get_all_rows("SELECT * FROM `tags`")
+		sql = ', '.join("(%s, %s)" for _ in range(len(new_tags)))
+		user_tag_ids = itertools.chain.from_iterable(
+			(self.id, tag_id) for tag_id, tag_name in all_tags if tag_name in new_tags
+		)
+		if len(sql):
+			sql = f"INSERT INTO `user_tag` (user_id, tag_id) VALUES {sql}"
+			db.query(sql, values=user_tag_ids, commit=True)
 
 	def update_user_files(self, files):
 		"""
@@ -494,16 +491,22 @@ class Notification:
 	def send(cls, sender, recipient, notification_type):
 		if sender.id in recipient.blocked:
 			return
-		if notification_type == 'message':
-			link = url_for('chat_page', user_id=sender.id)
-		else:
-			link = url_for('profile', user_id=sender.id)
+		link = url_for('chat_page' if notification_type == 'message' else 'profile',
+					   user_id=sender.id)
+		notification_message = cls.notifications[notification_type].format(sender.login)
+
 		sql = "INSERT INTO notifications (user_id, message, link) VALUES (%s, %s, %s)"
-		notification = cls.notifications[notification_type].format(sender.login)
-		db.query(sql, values=(recipient.id, notification, link), commit=True)
+		db.query(sql, values=(recipient.id, notification_message, link), commit=True)
+		sql = "SELECT id FROM notifications WHERE user_id = %s ORDER BY date_created DESC"
+		notification_id = db.get_row(sql, values=(recipient.id,))
+		notification = cls(notification_id)
+		from .sockets import connected
+		if recipient.id in connected:
+			data = {'notification': notification.to_json()}
+			socketio.emit('notification received', data, room=connected[recipient.id])
 
 	@classmethod
 	def get_notifications(cls, user_id):
 		sql = "SELECT id FROM notifications WHERE user_id = %s ORDER BY date_created DESC"
-		notifications = db.get_all_rows(sql, values=(user_id, ))
+		notifications = db.get_all_rows(sql, values=(user_id,))
 		return [cls(notification_id).to_json() for notification_id in notifications]

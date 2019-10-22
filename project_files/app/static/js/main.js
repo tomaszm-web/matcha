@@ -16,40 +16,42 @@ let chatVue;
 
 elem = document.querySelector("meta[data-cur-user]");
 let currentUser = elem ? parseInt(elem.getAttribute('data-cur-user')) : null;
-// let	socket = currentUser ? io.connect(window.origin)  : null;
-
-/*===================Notifications===================*/
-notificationsVue = new Vue({
-	el: '#notifications',
-	data: {
-		notifications: [],
-		csrf_token: document.querySelector('meta[data-csrf-token]').getAttribute('data-csrf-token')
-	},
-	created() {
-		if (currentUser) {
-			this.getNotifications();
-		}
-	},
-	methods: {
-		delNotification(notif_id) {
-			let url = `${window.origin}/del_notification/${notif_id}`;
-			axios.delete(url, {data: {csrf_token: this.csrf_token}})
-				.then(() => {
-					for (let i = this.notifications.length - 1; i >= 0; i--)
-						if (this.notifications[i].id === notif_id)
-							this.notifications.splice(i, 1);
-				});
-		},
-		getNotifications() {
-			axios.get(`${window.origin}/get_notifications`)
-				.then(response => {
-					this.notifications = response.data;
-				})
-		}
-	}
-});
 
 $(document).ready(function() {
+
+	/*===================Notifications===================*/
+	if (currentUser) {
+		notificationsVue = new Vue({
+			el: '#notifications',
+			data: {
+				socket: io.connect(window.origin),
+				notifications: [],
+				csrf_token: document.querySelector('meta[data-csrf-token]').getAttribute('data-csrf-token')
+			},
+			created() {
+				if (!currentUser)
+					return;
+				axios.get(`${window.origin}/get_notifications`).then(response => {
+					this.notifications = response.data;
+				});
+				this.socket.on('notification received', response => {
+					this.notifications.unshift(response.notification)
+				});
+			},
+			methods: {
+				delNotification(notif_id) {
+					let url = `${window.origin}/del_notification/${notif_id}`;
+					axios.delete(url, {data: {csrf_token: this.csrf_token}})
+						.then(() => {
+							for (let i = this.notifications.length - 1; i >= 0; i--)
+								if (this.notifications[i].id === notif_id)
+									this.notifications.splice(i, 1);
+						});
+				}
+			}
+		});
+	}
+
 	$(document).on('click.bs.dropdown.data-api', '.notifications', function(e) {
 		e.stopPropagation();
 	});
@@ -69,7 +71,7 @@ $(document).ready(function() {
 	function hook_like_buttons() {
 		let like_user_forms = document.querySelectorAll('.like-user-ajax');
 		like_user_forms.forEach(form => {
-			form.onsubmit = async (e) => {
+			form.onsubmit = async(e) => {
 				e.preventDefault();
 				let data = new FormData(form);
 				axios.post(`${window.origin}/ajax/like_user`, data)
