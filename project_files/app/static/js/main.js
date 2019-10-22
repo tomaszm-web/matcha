@@ -16,7 +16,7 @@ let chatVue;
 
 elem = document.querySelector("meta[data-cur-user]");
 let currentUser = elem ? parseInt(elem.getAttribute('data-cur-user')) : null;
-let	socket = currentUser ? io.connect(window.origin)  : null;
+// let	socket = currentUser ? io.connect(window.origin)  : null;
 
 /*===================Notifications===================*/
 notificationsVue = new Vue({
@@ -28,7 +28,6 @@ notificationsVue = new Vue({
 	created() {
 		if (currentUser) {
 			this.getNotifications();
-			setInterval(this.getNotifications, 10000);
 		}
 	},
 	methods: {

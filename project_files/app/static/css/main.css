@@ -234,29 +234,29 @@ header {
 }
 
 #notifications {
-	animation: .6s ease-out fade_animation;
+	animation: .4s ease-out fade_animation;
 }
 
 .notifications {
 	width: 30vw;
 	max-height: 60vh;
 	overflow-y: scroll;
-	animation: .5s ease-out fade_animation;
+	animation: .2s ease-out fade_animation;
 }
 
 .notifications .message, .notifications .message-empty {
 	font-weight: 300;
 	color: white;
 	font-size: 14px;
-	padding: 20px 1.5rem 10px;
+	padding: 25px 1.5rem 15px;
 	border-bottom: 1px solid white;
 	display: block;
 	position: relative;
 }
 
 .notifications .close {
-	font-size: 20px;
-	color: #17a2b8
+	font-size: 22px;
+	cursor: pointer;
 }
 
 .notifications .message:last-child, .notifications .message-empty {

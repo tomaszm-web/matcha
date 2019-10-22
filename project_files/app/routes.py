@@ -8,7 +8,7 @@ from flask import (
 	jsonify, abort, make_response
 )
 
-from app.models import Account, Chat
+from app.models import Account, Chat, Notification
 from app import app, db, csrf_update, login_required
 
 
@@ -66,8 +66,7 @@ def profile(user_id):
 			  "donate me 10$ for future development of this feature!", 'info')
 		return redirect(url_for('index'))
 	if user.id not in cur_user.visited:
-		cur_user.visited = user.id
-	# notification.send(user, 'visit', cur_user)
+		cur_user.visited = user
 	return render_template('profile.html', cur_user=cur_user, user=user)
 
 
@@ -200,7 +199,7 @@ def like_user_ajax():
 		user = Account(session['user'])
 		recipient = Account(req['liked_user'])
 		action = user.like_user(recipient)
-	# notification.send(recipient, action, like_owner)
+		Notification.send(user, recipient, action)
 	except KeyError:
 		return jsonify({'success': False, 'error': 'KeyError'})
 	except Exception as e:
@@ -221,7 +220,7 @@ def like_user(user_id):
 		else:
 			msg = "You successfully disconnected from that user."
 		flash(msg, 'success')
-	# notification.send(recipient, action, like_owner)
+		Notification.send(user, recipient, action)
 	except Exception as e:
 		flash(str(e), 'danger')
 	return redirect(url_for('profile', user_id=user_id))
@@ -262,9 +261,8 @@ def get_tag_list():
 @app.route('/get_notifications', methods=["GET"])
 def get_notifications():
 	try:
-		# notifications = notification.get(session['user'])
-		# res = make_response(jsonify(notifications), 200)
-		res = jsonify({})
+		notifications = Notification.get_notifications(session['user'])
+		res = make_response(jsonify(notifications), 200)
 	except Exception as e:
 		res = make_response(jsonify({'error': str(e)}), 404)
 	return res
@@ -273,7 +271,8 @@ def get_notifications():
 @app.route('/del_notification/<int:notification_id>', methods=["DELETE"])
 def del_notification(notification_id):
 	try:
-		# notification.delete(notification_id)
+		notification = Notification(notification_id)
+		notification.delete()
 		res = make_response('', 204)
 	except Exception as e:
 		res = make_response(jsonify({'error': str(e)}), 401)

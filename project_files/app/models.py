@@ -5,7 +5,7 @@ import itertools
 from datetime import datetime
 
 from MySQLdb.cursors import DictCursor
-from flask import flash
+from flask import flash, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
@@ -86,7 +86,8 @@ class Account:
 
 	@password.setter
 	def password(self, value):
-		db.query("UPDATE users SET password = %s WHERE id = %s", values=(value, self.id), commit=True)
+		db.query("UPDATE users SET password = %s WHERE id = %s", values=(value, self.id),
+				 commit=True)
 		self._password = value
 
 	@property
@@ -125,13 +126,13 @@ class Account:
 
 	@property
 	def liked_users(self):
-		sql = "SELECT liked_id FROM `likes` WHERE user_id=%s"
+		sql = "SELECT liked_id FROM `likes` WHERE user_id = %s"
 		response = db.get_all_rows(sql, values=(self.id,))
 		return [liked_id for liked_id, in response]
 
 	@property
 	def blocked(self):
-		sql = "SELECT blocked_id FROM `blocked` WHERE user_id=%s"
+		sql = "SELECT blocked_id FROM `blocked` WHERE user_id = %s"
 		response = db.get_all_rows(sql, values=(self.id,))
 		return [blocked_user for blocked_user, in response]
 
@@ -166,7 +167,8 @@ class Account:
 	@visited.setter
 	def visited(self, value):
 		sql = "INSERT INTO `visits` SET user_id = %s, visited_id = %s"
-		db.query(sql, values=(self.id, value), commit=True)
+		db.query(sql, values=(self.id, value.id), commit=True)
+		Notification.send(self, value, 'visit')
 
 	def info_filled(self):
 		return (self.avatar is not None and self.city is not None and self.biography is not None
@@ -245,7 +247,7 @@ class Account:
 	def get_changed_values(self, new_val):
 		ignored = ('tags', 'csrf_token')
 		updated = [(key, val) for key, val in new_val.items()
-				   if key not in ignored and str(self.__getattribute__(key)) != val]
+				   if key not in ignored and str(getattr(self, key)) != val]
 		values = [val for _, val in updated]
 		sql = ', '.join(f"{key} = %s" for key, _ in updated)
 		need_confirmation = self.email != new_val['email']
@@ -257,7 +259,7 @@ class Account:
 			raise ValueError("User with his E-mail already exists")
 		if len(values) > 0:
 			values.append(self.id)
-			db.query(f"UPDATE `users` SET {sql} WHERE id = %s", values)
+			db.query(f"UPDATE `users` SET {sql} WHERE id = %s", values=values, commit=True)
 		self.update_user_tags(data.getlist('tags'))
 		self.update_user_files(files)
 		if need_confirmation:
@@ -287,11 +289,12 @@ class Account:
 				elif user_match is not None and sort_by == 'city':
 					return e.city != user_match.city
 				return (e.city != user_match.city, abs(user_match.age - e.age), -e.fame,
-					   -len(set(user_match.tags).intersection(e.tags)))
+						-len(set(user_match.tags).intersection(e.tags)))
 			elif user_match is not None:
 				return e.city != user_match.city, abs(user_match.age - e.age), \
 					   -e.fame, -len(set(user_match.tags).intersection(e.tags))
 			return None
+
 		return sort
 
 	def filter_fit(self, filters):
@@ -462,37 +465,45 @@ class Chat:
 		chats = (dict(zip(columns, message)) for _, (message, *_) in chats)
 		return chats
 
-# class Notification:
-# 	def __init__(self, db):
-# 		db = db
-# 		self.timestamp_format = "%c"
-# 		self.notifications = {
-# 			'like': "You have been liked by {}",
-# 			'unlike': "You have been unliked by {}",
-# 			'visit': "Your profile was visited by {}",
-# 			'message': "You received a message from {}",
-# 			'like_back': "You have been liked back by {}"
-# 		}
-#
-# 	def send(self, recipient, notif_type, executive_user):
-# 		links = {
-# 			'user_action': url_for('profile', user_id=executive_user.id),
-# 			'message': url_for('chat_page', user_id=executive_user['id'])
-# 		}
-# 		if executive_user['id'] not in recipient['blocked']:
-# 			sql = "INSERT INTO `notifications` (user_id, message, link) VALUES (%s, %s, %s)"
-# 			link = 'message' if notif_type == 'message' else 'user_action'
-# 			message = self.notifications[notif_type].format(executive_user['login'])
-# 			db.query(sql, (recipient['id'], message, links[link]))
-#
-# 	def get(self, user_id):
-# 		sql = "SELECT * FROM `notifications` WHERE user_id=%s AND viewed=0 ORDER BY date_created DESC"
-# 		notifications = db.get_all_rows(sql, values(user_id,),
-# 		cursorclass=DictCursor)
-# 		for notif in notifications:
-# 			notif['date_created'] = datetime.strftime(notif['date_created'], self.timestamp_format)
-# 		return notifications
-#
-# 	def delete(self, notification_id):
-# 		sql = "DELETE FROM `notifications` WHERE id = %s"
-# 		db.query(sql, (notification_id,))
+
+class Notification:
+	timestamp_format = "%c"
+	notifications = {
+		'like': "You have been liked by {}",
+		'unlike': "You have been unliked by {}",
+		'visit': "Your profile was visited by {}",
+		'message': "You received a message from {}",
+		'like_back': "You have been liked back by {}"
+	}
+
+	def __init__(self, notification_id):
+		sql = "SELECT * FROM notifications WHERE id = %s"
+		notification = db.get_row(sql, values=(notification_id,))
+		assert notification is not None, "No notifications with this id"
+		self.id, self.user_id, self.message, self.link, self.date_created = notification
+		self.date_created = datetime.strftime(self.date_created, self.timestamp_format)
+
+	def delete(self):
+		sql = "DELETE FROM `notifications` WHERE id = %s"
+		db.query(sql, values=(self.id,), commit=True)
+
+	def to_json(self):
+		return self.__dict__
+
+	@classmethod
+	def send(cls, sender, recipient, notification_type):
+		if sender.id in recipient.blocked:
+			return
+		if notification_type == 'message':
+			link = url_for('chat_page', user_id=sender.id)
+		else:
+			link = url_for('profile', user_id=sender.id)
+		sql = "INSERT INTO notifications (user_id, message, link) VALUES (%s, %s, %s)"
+		notification = cls.notifications[notification_type].format(sender.login)
+		db.query(sql, values=(recipient.id, notification, link), commit=True)
+
+	@classmethod
+	def get_notifications(cls, user_id):
+		sql = "SELECT id FROM notifications WHERE user_id = %s ORDER BY date_created DESC"
+		notifications = db.get_all_rows(sql, values=(user_id, ))
+		return [cls(notification_id).to_json() for notification_id in notifications]
