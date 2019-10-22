@@ -170,7 +170,7 @@ class Account:
 		db.query(sql, values=(self.id, value.id), commit=True)
 		Notification.send(self, value, 'visit')
 
-	def info_filled(self):
+	def __bool__(self):
 		return (self.avatar is not None and self.city is not None and self.biography is not None
 				and self.gender is not None and self.preferences is not None and self.age is not None)
 
@@ -423,8 +423,8 @@ class Chat:
 	timestamp_format = "%H:%M %d %b %Y"
 
 	def __init__(self, user1_id, user2_id):
-		self.user1_id = user1_id
-		self.user2_id = user2_id
+		self.sender_id = user1_id
+		self.recipient_id = user2_id
 
 		select_sql = "SELECT id FROM chats WHERE user1_id = %s AND user2_id = %s"
 		user_pair = (user1_id, user2_id)
@@ -464,7 +464,7 @@ class Chat:
 
 
 class Notification:
-	timestamp_format = "%c"
+	timestamp_format = "%H:%M %d %b %Y"
 	notifications = {
 		'like': "You have been liked by {}",
 		'unlike': "You have been unliked by {}",

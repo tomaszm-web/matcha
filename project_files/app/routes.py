@@ -18,7 +18,7 @@ from app import app, db, csrf_update, login_required
 def index():
 	if 'user' in session:
 		user = Account(session['user'])
-		if not user.info_filled():
+		if not user:
 			flash('Please, fill in information about yourself', 'info')
 			return redirect(url_for('settings'))
 	else:
@@ -55,7 +55,7 @@ def profile(user_id):
 		return render_template('profile.html', cur_user=None, user=user)
 
 	cur_user = Account(session['user'])
-	if not Account.info_filled(cur_user):
+	if not cur_user:
 		flash('Please, fill in information about yourself', 'info')
 		return redirect(url_for('settings'))
 	if user.id == cur_user.id:
@@ -80,7 +80,7 @@ def chat_page(user_id):
 		return redirect(url_for('index'))
 
 	cur_user = Account(session["user"])
-	if not Account(cur_user):
+	if not cur_user:
 		flash('Please, fill in information about yourself', 'info')
 		return redirect(url_for('settings'))
 	if user_id not in cur_user.liked or cur_user.id not in recipient.liked:
@@ -95,11 +95,10 @@ def chat_page(user_id):
 @csrf_update
 @login_required
 def chat_list():
-	cur_user = Account(session['user'])
-	if not Account(cur_user):
+	user = Account(session['user'])
+	if not user:
 		flash('Please, fill in information about yourself', 'info')
 		return redirect(url_for('settings'))
-
 	chats = Chat.get_chats(session['user'])
 	print(chats)
 	return render_template('chat-list.html', cur_user=cur_user, chats=chats)

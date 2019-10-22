@@ -122,11 +122,13 @@ CREATE TABLE IF NOT EXISTS `blocked`
 -- Структура таблицы `chats`
 --
 
-CREATE TABLE IF NOT EXISTS `chats`
+CREATE TABLE `chats`
 (
-    `id`       int(11) NOT NULL,
+    `id`       int(11) NOT NULL PRIMARY KEY AUTO_INCREMENT,
     `user1_id` int(11) NOT NULL,
-    `user2_id` int(11) NOT NULL
+    `user2_id` int(11) NOT NULL,
+    CONSTRAINT fk_chats_user_ref1 FOREIGN KEY (user1_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_chats_user_ref2 FOREIGN KEY (user2_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;
 
 --
@@ -158,14 +160,17 @@ CREATE TABLE IF NOT EXISTS `likes`
 -- Структура таблицы `messages`
 --
 
-CREATE TABLE IF NOT EXISTS `messages`
+CREATE TABLE `messages`
 (
-    `id`           int(11)                                         NOT NULL,
+    `id`           int(11)                                         NOT NULL PRIMARY KEY AUTO_INCREMENT,
     `chat_id`      int(11)                                         NOT NULL,
     `sender_id`    int(11)                                         NOT NULL,
     `recipient_id` int(11)                                         NOT NULL,
     `text`         text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
-    `timestamp`    datetime                                        NOT NULL DEFAULT CURRENT_TIMESTAMP
+    `timestamp`    datetime                                        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_messages_user_ref1 FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_messages_user_ref2 FOREIGN KEY (recipient_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT ft_messages_chat_ref FOREIGN KEY (chat_id) REFERENCES chats (id) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;
 
 --
@@ -291,41 +296,6 @@ CREATE TABLE IF NOT EXISTS `visits`
     CONSTRAINT fk_visits_user_ref1 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     CONSTRAINT fk_visits_user_ref2 FOREIGN KEY (visited_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;
-
---
--- Индексы сохранённых таблиц
---
-
---
--- Индексы таблицы `chats`
---
-ALTER TABLE `chats`
-    ADD PRIMARY KEY (`id`);
-
---
--- Индексы таблицы `messages`
---
-ALTER TABLE `messages`
-    ADD PRIMARY KEY (`id`);
-
---
--- AUTO_INCREMENT для сохранённых таблиц
---
-
---
--- AUTO_INCREMENT для таблицы `chats`
---
-ALTER TABLE `chats`
-    MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,
-    AUTO_INCREMENT = 8;
-
---
--- AUTO_INCREMENT для таблицы `messages`
---
-ALTER TABLE `messages`
-    MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,
-    AUTO_INCREMENT = 176;
-
 
 /*!40101 SET CHARACTER_SET_CLIENT = @OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS = @OLD_CHARACTER_SET_RESULTS */;

@@ -11,18 +11,18 @@ chats = defaultdict(dict)
 connected = {}
 
 
-# @socketio.on('connect', namespace='/private_chat')
-# def connect_user_to_chat():
-# 	user_id = session['user']
-# 	recipient_id = int(request.args['recipient_id'])
-# 	chat = Chat(user_id, recipient_id)
-#
-# 	chats[chat.id][user_id] = request.sid
-# 	messages = chat.get_messages()
-# 	emit('connect response', {'messages': messages}, room=chats[chat.id][user_id])
-# 	print(chats)
-#
-#
+@socketio.on('connect', namespace='/private_chat')
+def connect_user_to_chat():
+	user_id = session['user']
+	recipient_id = int(request.args['recipient_id'])
+	chat = Chat(user_id, recipient_id)
+
+	chats[chat.id][user_id] = request.sid
+	messages = chat.get_messages()
+	emit('connect response', {'messages': messages}, room=chats[chat.id][user_id])
+	print(chats)
+
+
 # @socketio.on('send_message event', namespace='/private_chat')
 # def send_message(data):
 # 	try:
@@ -42,9 +42,9 @@ connected = {}
 # 		print(e)
 #
 #
-# @socketio.on('disconnect_from_chat', namespace='/private_chat')
-# def disconnect_from_chat(data):
-# 	chats[data['chat_id']].pop(data['user_id'])
+@socketio.on('disconnect_from_chat', namespace='/private_chat')
+def disconnect_from_chat(data):
+	chats[data['chat_id']].pop(data['user_id'])
 
 
 @socketio.on('connect')

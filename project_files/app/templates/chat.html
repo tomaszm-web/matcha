@@ -19,7 +19,7 @@
 				<div class="col-12 col-md-10">
 					<div class="chat">
 						<div class="chat__message" v-for="message in messages"
-							 v-bind:class="{ 'right-align': message.sender_id == sender_id }">
+							 :class="{ 'right-align': message.sender_id == sender_id }">
 							<img :src="message.sender_id == sender_id ? '%% cur_user.avatar %%' : '%% user.avatar %%'"
 								 alt="Matcha" class="chat__img rounded">
 							<div class="d-flex flex-column">

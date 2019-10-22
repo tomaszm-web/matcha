@@ -314,7 +314,7 @@ $(document).ready(function() {
 				this.socket.on('connect response', messages => {
 					this.messages = messages.messages;
 				});
-				this.socket.on('send_message response', msg => {
+				this.socket.on('message received', msg => {
 					this.messages.push(msg)
 				});
 				window.onunload = () => {
