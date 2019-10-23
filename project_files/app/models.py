@@ -57,7 +57,8 @@ class Account:
 		self._photos = user['photos']
 		self.age = user['age']
 		self._online = user['online']
-		self.last_login = user['last_login']
+		if user['last_login']:
+			self.last_login = datetime.strftime(user['last_login'], "%H:%M %d.%m.%Y")
 		self.city = user['city']
 		self.fame = self.get_fame_rating(self.id) if extended else None
 		self.tags = self.get_tags(self.id) if extended else None
@@ -423,12 +424,9 @@ class Account:
 
 
 class Chat:
-	timestamp_format = "%H:%M %d %b %Y"
+	timestamp_format = "%H:%M %d.%m.%Y"
 
 	def __init__(self, user1_id, user2_id):
-		self.sender_id = user1_id
-		self.recipient_id = user2_id
-
 		select_sql = "SELECT id FROM chats WHERE user1_id = %s AND user2_id = %s"
 		user_pair = (user1_id, user2_id)
 		response = db.get_row(select_sql, values=user_pair) or \
@@ -438,6 +436,8 @@ class Chat:
 			db.query(insert_sql, values=user_pair, commit=True)
 			response = db.get_row(select_sql, values=user_pair)
 		self.id, = response
+		self.sender_id = user1_id
+		self.recipient_id = user2_id
 
 	def get_messages(self):
 		sql = "SELECT * FROM `messages` WHERE chat_id = %s ORDER BY timestamp"
@@ -447,10 +447,9 @@ class Chat:
 			message['timestamp'] = datetime.strftime(message['timestamp'], self.timestamp_format)
 		return messages
 
-	@classmethod
-	def send_message(cls, chat_id, sender_id, recipient_id, message_text):
+	def send_message(self, message_text):
 		sql = "INSERT INTO `messages` (chat_id, sender_id, recipient_id, text) VALUES (%s, %s, %s, %s)"
-		db.query(sql, values=(chat_id, sender_id, recipient_id, message_text), commit=True)
+		db.query(sql, values=(self.id, self.sender_id, self.recipient_id, message_text), commit=True)
 
 	@classmethod
 	def get_chats(cls, user_id):

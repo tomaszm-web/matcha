@@ -6,7 +6,7 @@
 				<div class="col-12 bg-dark border-bottom border-secondary d-flex align-items-center">
 					<a href="%% url_for('profile', user_id=user.id) %%" class="text-info mr-3">
 						<img src="%% user.avatar %%" alt="Matcha"
-							 class="img-fluid rounded chat__img">
+							 class="img-fluid rounded chat__img chat__img_lg">
 						%% user.login %%
 					</a>
 					<div class="chat__status text-secondary">
@@ -22,17 +22,15 @@
 			</div>
 			<div class="row justify-content-center">
 				<div class="col-12 p-0">
-					<div class="chat bg-dark">
+					<div class="chat">
 						<div class="chat__message" v-for="message in messages"
 							 :class="{ 'right-align': message.sender_id == sender_id }">
 							<img :src="message.sender_id == sender_id ? '%% cur_user.avatar %%' : '%% user.avatar %%'"
 								 alt="Matcha" class="chat__img rounded">
 							<div class="d-flex flex-column">
-								<div class="d-flex align-items-center">
-									<div class="chat__login text-info">
-										{{ message.sender_id == sender_id ? '%% cur_user.login %%' : '%% user.login %%' }}
-									</div>
-									<div class="chat__timestamp text-info">{{ message.timestamp }}</div>
+								<div class="chat__timestamp text-secondary"
+									 :class="{ 'text-right': message.sender_id == sender_id }">
+									{{ message.timestamp	}}
 								</div>
 								<div class="chat__text card-body bg-light">{{ message.text }}</div>
 							</div>
@@ -51,9 +49,9 @@
 						<div class="d-flex">
 							<textarea required name="text"
 									  placeholder="Type your text to %% user.login %% here"
-									  class="form-control chat__textarea bg-dark border-secondary"
+									  class="form-control chat__textarea"
 									  maxlength="256"></textarea>
-							<button class="btn bg-dark chat__button border-secondary"><i
+							<button class="btn chat__button"><i
 									class="fas
 							fa-fighter-jet text-info"></i></button>
 						</div>

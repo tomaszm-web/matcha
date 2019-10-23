@@ -500,21 +500,22 @@ header {
 
 /*==============CHAT==============*/
 
-#chat {
-}
-
 .chat {
-	padding: 50px 40px;
+	padding: 10px 20px;
 	overflow-y: auto;
 	display: flex;
-	height: calc(100vh - 264px);
+	height: calc(100vh - 258px);
 	flex-direction: column;
 }
 
 .chat__img {
-	max-height: 70px;
+	max-height: 50px;
 	width: auto;
 	margin: 0 10px;
+}
+
+.chat__img_lg {
+	max-height: 65px;
 }
 
 .chat__message {
@@ -522,6 +523,13 @@ header {
 	align-items: flex-start;
 	margin: 20px 0;
 	position: relative;
+}
+
+.chat__text {
+	padding: 10px 15px;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
 }
 
 .chat__message.right-align {
@@ -542,7 +550,7 @@ header {
 }
 
 .chat__timestamp {
-	font-size: 13px;
+	font-size: 11px;
 }
 
 .chat__text {
@@ -558,13 +566,10 @@ header {
 	-moz-border-radius: 0;
 	border-radius: 0;
 	border: 0;
-	border-top-width: 1px;
-	border-top-style: solid;
 	color: white;
 }
 
 .chat__textarea:focus {
-	color: white;
 	-webkit-box-shadow: none;
 	-moz-box-shadow: none;
 	box-shadow: none;
@@ -575,8 +580,7 @@ header {
 	-moz-border-radius: 0;
 	border-radius: 0;
 	border: 0;
-	border-top-width: 1px;
-	border-top-style: solid;
+	background-color: white;
 	margin: 0 0 0 -1px;
 	padding: 0 10px 0 15px
 }

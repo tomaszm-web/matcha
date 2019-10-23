@@ -4,8 +4,8 @@ from collections import defaultdict
 from flask import session, request
 from flask_socketio import emit
 
-from .models import Account, Chat
-from app import db, socketio
+from app import socketio
+from .models import Account, Chat, Notification
 
 chats = defaultdict(dict)
 connected = {}
@@ -22,25 +22,25 @@ def connect_user_to_chat():
 	emit('connect response', {'messages': messages}, room=chats[chat.id][user_id])
 
 
-# @socketio.on('send_message event', namespace='/private_chat')
-# def send_message(data):
-# 	try:
-# 		chat_id = int(data['chat_id'])
-# 		data['timestamp'] = datetime.now().strftime(Chat.timestamp_format)
-# 		sender = Account(data['sender_id'], extended=False)
-# 		emit('send_message response', data, room=chats[chat_id][sender['id']])
-#
-# 		recipient = Account(data['recipient_id'], extended=False)
-# 		Chat.send_message(chat_id, sender['id'], recipient['id'], data['text'])
-#
-# 		if recipient['id'] in chats[chat_id]:
-# 			emit('send_message response', data, room=chats[chat_id][recipient['id']])
-# 		else:
-# 			notification.send(recipient, 'message', sender)
-# 	except KeyError as e:
-# 		print(e)
-#
-#
+@socketio.on('send_message event', namespace='/private_chat')
+def send_message(data):
+	try:
+		data['timestamp'] = datetime.now().strftime(Chat.timestamp_format)
+		user_id = session['user']
+		sender = Account(user_id, extended=False)
+		recipient = Account(data['recipient_id'], extended=False)
+		chat = Chat(sender.id, recipient.id)
+
+		emit('message received', data, room=chats[chat.id][sender.id])
+		chat.send_message(data['text'])
+		if recipient.id in chats[chat.id]:
+			emit('message received', data, room=chats[chat.id][recipient.id])
+		else:
+			Notification.send(sender, recipient, 'message')
+	except KeyError as e:
+		print(e)
+
+
 @socketio.on('disconnect_from_chat', namespace='/private_chat')
 def disconnect_from_chat(data):
 	chats[data['chat_id']].pop(data['user_id'])

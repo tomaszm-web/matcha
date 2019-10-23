@@ -47,8 +47,9 @@ def settings():
 @app.route('/profile/<int:user_id>')
 @csrf_update
 def profile(user_id):
-	user = Account(user_id)
-	if not user:
+	try:
+		user = Account(user_id)
+	except AssertionError:
 		flash('No user with this id!', 'danger')
 		return redirect(url_for('index'))
 	if 'user' not in session:
@@ -74,8 +75,9 @@ def profile(user_id):
 @csrf_update
 @login_required
 def chat_page(user_id):
-	recipient = Account(user_id)
-	if not recipient:
+	try:
+		recipient = Account(user_id)
+	except AssertionError:
 		flash('No user with this id!', 'danger')
 		return redirect(url_for('index'))
 
@@ -177,18 +179,18 @@ def get_user_location_by_ip():
 
 @app.route('/filter_users', methods=["GET", "POST"])
 def filter_users():
-	# try:
-	cur_user = Account(session['user']) if 'user' in session else None
-	if len(request.form) > 0:
-		users = Account.get_all_users(cur_user, filters=request.form,
-									  sort_by=request.form.get('sort_by'))
-		if request.form.get('reversed') == 'on':
-			users = reversed(users)
-	else:
-		users = Account.get_all_users(cur_user)
-	return render_template('user_list.html', cur_user=cur_user, users=users)
-	# except Exception as e:
-	# 	return "Something went wrong! " + str(e)
+	try:
+		cur_user = Account(session['user']) if 'user' in session else None
+		if len(request.form) > 0:
+			users = Account.get_all_users(cur_user, filters=request.form,
+										  sort_by=request.form.get('sort_by'))
+			if request.form.get('reversed') == 'on':
+				users = reversed(users)
+		else:
+			users = Account.get_all_users(cur_user)
+		return render_template('user_list.html', cur_user=cur_user, users=users)
+	except Exception as e:
+		return "Something went wrong! " + str(e)
 
 
 @app.route('/ajax/like_user', methods=["POST"])
