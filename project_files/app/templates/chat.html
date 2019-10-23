@@ -30,7 +30,7 @@
 							<div class="d-flex flex-column">
 								<div class="chat__timestamp text-secondary"
 									 :class="{ 'text-right': message.sender_id == sender_id }">
-									{{ message.timestamp	}}
+									{{ message.timestamp }}
 								</div>
 								<div class="chat__text card-body bg-light">{{ message.text }}</div>
 							</div>
@@ -47,13 +47,12 @@
 						<input type="hidden" name="recipient_id" value="%% user.id %%">
 						<input type="hidden" name="chat_id" value="%% chat.id %%">
 						<div class="d-flex">
-							<textarea required name="text"
+							<textarea required name="text" class="form-control chat__textarea"
 									  placeholder="Type your text to %% user.login %% here"
-									  class="form-control chat__textarea"
 									  maxlength="256"></textarea>
-							<button class="btn chat__button"><i
-									class="fas
-							fa-fighter-jet text-info"></i></button>
+							<button class="btn chat__button">
+								<i class="fas fa-fighter-jet text-info"></i>
+							</button>
 						</div>
 					</form>
 				</div>

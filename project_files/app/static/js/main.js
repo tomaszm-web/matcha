@@ -330,7 +330,8 @@ $(document).ready(function() {
 			},
 			methods: {
 				sendMessage(e) {
-					let textInput = e.target.form.text;
+					let sendMessageForm = this.$el.querySelector('form');
+					let textInput = sendMessageForm.text;
 					this.socket.emit('send_message event', {
 						chat_id: this.chat_id,
 						sender_id: this.sender_id,

@@ -4,6 +4,7 @@ import secrets
 import itertools
 from datetime import datetime
 
+import pytz
 from MySQLdb.cursors import DictCursor
 from flask import flash, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -438,13 +439,15 @@ class Chat:
 		self.id, = response
 		self.sender_id = user1_id
 		self.recipient_id = user2_id
+		self.tz = pytz.timezone("Europe/Kiev")
 
 	def get_messages(self):
 		sql = "SELECT * FROM `messages` WHERE chat_id = %s ORDER BY timestamp"
 		messages = db.get_all_rows(sql, values=(self.id,), cur_class=DictCursor)
 		for message in messages:
-			# message['timestamp'] = self.tz.localize(message['timestamp'])
-			message['timestamp'] = datetime.strftime(message['timestamp'], self.timestamp_format)
+			local_dt = message['timestamp'].replace(tzinfo=pytz.utc).astimezone(self.tz)
+			self.tz.normalize(local_dt)
+			message['timestamp'] = local_dt.strftime(self.timestamp_format)
 		return messages
 
 	def send_message(self, message_text):
@@ -474,13 +477,17 @@ class Notification:
 		'message': "You received a message from {}",
 		'like_back': "You have been liked back by {}"
 	}
+	tz = pytz.timezone('Europe/Kiev')
 
 	def __init__(self, notification_id):
 		sql = "SELECT * FROM notifications WHERE id = %s"
 		notification = db.get_row(sql, values=(notification_id,))
 		assert notification is not None, "No notifications with this id"
 		self.id, self.user_id, self.message, self.link, self.date_created = notification
-		self.date_created = datetime.strftime(self.date_created, self.timestamp_format)
+
+		local_dt = self.date_created.replace(tzinfo=pytz.utc).astimezone(self.tz)
+		self.tz.normalize(local_dt)
+		self.date_created = local_dt.strftime(self.timestamp_format)
 
 	def delete(self):
 		sql = "DELETE FROM `notifications` WHERE id = %s"
