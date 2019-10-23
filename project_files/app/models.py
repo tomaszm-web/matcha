@@ -174,6 +174,9 @@ class Account:
 		return (self.avatar is not None and self.city is not None and self.biography is not None
 				and self.gender is not None and self.preferences is not None and self.age is not None)
 
+	def __eq__(self, other):
+		return self.id == other.id
+
 	@classmethod
 	def get_all_users(cls, user_match, filters=None, sort_by=None):
 		sql = ("SELECT id FROM `users` "

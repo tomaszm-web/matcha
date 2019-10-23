@@ -58,7 +58,7 @@ def profile(user_id):
 	if not cur_user:
 		flash('Please, fill in information about yourself', 'info')
 		return redirect(url_for('settings'))
-	if user.id == cur_user.id:
+	if user == cur_user:
 		return render_template('profile.html', cur_user=user, user=user)
 
 	if user_id in cur_user.blocked:
