@@ -20,7 +20,6 @@ def connect_user_to_chat():
 	chats[chat.id][user_id] = request.sid
 	messages = chat.get_messages()
 	emit('connect response', {'messages': messages}, room=chats[chat.id][user_id])
-	print(chats)
 
 
 # @socketio.on('send_message event', namespace='/private_chat')

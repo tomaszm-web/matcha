@@ -1,23 +1,28 @@
 {% extends "layout.html" %}
 {% block content %}
 	<section id="chat">
-		<div class="container">
-			<div class="row">
-				<div class="col">
-					<h2>Chat</h2>
-				</div>
-			</div>
-			<div class="row justify-content-center mb-3">
-				<div class="col-12 col-md-10">
-					<a href="%% url_for('profile', user_id=user.id) %%" class="text-info">
-						<img src="%% user.avatar %%" alt="Matcha" class="img-fluid rounded chat__img">
-						@%% user.login %%
+		<div class="container-fluid">
+			<div class="row justify-content-center">
+				<div class="col-12 bg-dark border-bottom border-secondary d-flex align-items-center">
+					<a href="%% url_for('profile', user_id=user.id) %%" class="text-info mr-3">
+						<img src="%% user.avatar %%" alt="Matcha"
+							 class="img-fluid rounded chat__img">
+						%% user.login %%
 					</a>
+					<div class="chat__status text-secondary">
+						{% if user.online %}
+							<i class="fas fa-circle text-success"></i>
+							online
+						{% else %}
+							<i class="fas fa-circle text-danger"></i>
+							%% user.last_login if user.last_login else 'offline' %%
+						{% endif %}
+					</div>
 				</div>
 			</div>
 			<div class="row justify-content-center">
-				<div class="col-12 col-md-10">
-					<div class="chat">
+				<div class="col-12 p-0">
+					<div class="chat bg-dark">
 						<div class="chat__message" v-for="message in messages"
 							 :class="{ 'right-align': message.sender_id == sender_id }">
 							<img :src="message.sender_id == sender_id ? '%% cur_user.avatar %%' : '%% user.avatar %%'"
@@ -25,25 +30,33 @@
 							<div class="d-flex flex-column">
 								<div class="d-flex align-items-center">
 									<div class="chat__login text-info">
-										@{{ message.sender_id == sender_id ? '%% cur_user.login %%' : '%% user.login %%' }}
+										{{ message.sender_id == sender_id ? '%% cur_user.login %%' : '%% user.login %%' }}
 									</div>
 									<div class="chat__timestamp text-info">{{ message.timestamp }}</div>
 								</div>
 								<div class="chat__text card-body bg-light">{{ message.text }}</div>
 							</div>
 						</div>
-						<div class="chat__message_empty text-secondary text-center" v-if="!messages.length">
+						<div class="chat__message_empty text-secondary text-center"
+							 v-if="!messages.length">
 							No messages...
 						</div>
 					</div>
-					<form class="sendMessageForm" @submit.prevent="sendMessage" @keyup.ctrl.enter="sendMessage">
+					<form class="sendMessageForm" @submit.prevent="sendMessage"
+						  @keyup.ctrl.enter="sendMessage">
 						<input type="hidden" name="csrf_token" value="%% csrf_token %%">
 						<input type="hidden" name="sender_id" value="%% cur_user.id %%">
 						<input type="hidden" name="recipient_id" value="%% user.id %%">
 						<input type="hidden" name="chat_id" value="%% chat.id %%">
-						<textarea required name="text" placeholder="Type your text to %% user.login %% here"
-								  class="form-control chat__textarea" maxlength="256"></textarea>
-						<button class="btn btn-block btn-primary">Send message</button>
+						<div class="d-flex">
+							<textarea required name="text"
+									  placeholder="Type your text to %% user.login %% here"
+									  class="form-control chat__textarea bg-dark border-secondary"
+									  maxlength="256"></textarea>
+							<button class="btn bg-dark chat__button border-secondary"><i
+									class="fas
+							fa-fighter-jet text-info"></i></button>
+						</div>
 					</form>
 				</div>
 			</div>
