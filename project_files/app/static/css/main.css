@@ -483,6 +483,7 @@ header {
 	position: relative;
 	transition: .3s ease-in all;
 	text-align: center;
+	margin-bottom: 0;
 }
 
 .profile__photo_empty i {

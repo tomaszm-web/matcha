@@ -427,7 +427,9 @@ $(document).ready(function() {
 				id: container.getAttribute('data-photo-id')
 			}).then(response => {
 				if (response.data.success) {
+					container.classList.remove('profile__photo');
 					container.classList.add('profile__photo_empty');
+					container.classList.add('rounded');
 					container.classList.add('selected');
 					container.innerText = 'Deleted';
 				}
