@@ -1,5 +1,6 @@
 import os
 import requests
+import json
 
 import MySQLdb
 from flask import (
@@ -225,6 +226,20 @@ def like_user(user_id):
 	except Exception as e:
 		flash(str(e), 'danger')
 	return redirect(url_for('profile', user_id=user_id))
+
+
+@app.route('/delete_photo', methods=["POST"])
+def delete_photo():
+	try:
+		user = Account(session['user'])
+		photo_id = int(request.get_json()['id'])
+		original_photos = user.photos
+		original_photos[photo_id] = ""
+		user.photos = json.dumps(original_photos)
+	except (AssertionError, KeyError) as e:
+		return jsonify({'success': False, 'error': str(e)})
+	else:
+		return jsonify({'success': True})
 
 
 @app.route('/block_user/<int:user_id>', methods=["POST"])

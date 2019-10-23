@@ -349,7 +349,8 @@ class Account:
 			relative_path = os.path.join('/', relative_dir, avatar_filename)
 			self.avatar = relative_path
 		user_photos = [photo for photo in self.photos]
-		uploaded_photos = files.getlist('photos[]')
+		uploaded_photos = files.getlist('photos')
+		print(uploaded_photos)
 		for i, photo in enumerate(uploaded_photos):
 			if not photo:
 				continue

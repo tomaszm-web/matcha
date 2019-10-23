@@ -16,6 +16,7 @@ let chatVue;
 
 elem = document.querySelector("meta[data-cur-user]");
 let currentUser = elem ? parseInt(elem.getAttribute('data-cur-user')) : null;
+let csrf_token = document.querySelector('meta[data-csrf-token]').getAttribute('data-csrf-token');
 
 $(document).ready(function() {
 
@@ -26,7 +27,7 @@ $(document).ready(function() {
 			data: {
 				socket: io.connect(window.origin),
 				notifications: [],
-				csrf_token: document.querySelector('meta[data-csrf-token]').getAttribute('data-csrf-token')
+				csrf_token: csrf_token
 			},
 			created() {
 				if (!currentUser)
@@ -58,7 +59,7 @@ $(document).ready(function() {
 
 	/*===================Select2===================*/
 	$('.multiple-tags').select2({
-		placeholder: "Interest tags",
+		placeholder: "Type in some tags",
 		tags: true
 	});
 
@@ -280,7 +281,7 @@ $(document).ready(function() {
 
 	$('.reportUser').click(function() {
 		axios.post(`${window.origin}/report_user`, {
-			csrf_token: $("meta[data-csrf-token]").attr('data-csrf-token'),
+			csrf_token: csrf_token,
 			reported_id: $(this).attr('data-reported-user-id')
 		}).then(response => {
 			if (response.data.success)
@@ -386,12 +387,51 @@ $(document).ready(function() {
 		types: ['(cities)'],
 		language: 'en'
 	};
-	if ((elem = document.getElementById('city')))
+	if ((elem = document.getElementById('city'))) {
 		new google.maps.places.Autocomplete(elem, autocomplete_options);
-	if ((elem = document.getElementById('select-city')))
 		new google.maps.places.Autocomplete(elem, autocomplete_options);
+		google.maps.event.addListener(elem, 'place_changed', () => {
+			console.log(123);
+			let place = elem.getPlace();
+			if (place.address_components != null && place.address_components.length >= 1) {
+				console.log(place.address_components.length);
+				$('#output').append(place['name']);
+			}
+		});
+	}
+	if ((elem = document.getElementById('select-city'))) {
+		new google.maps.places.Autocomplete(elem, autocomplete_options);
+	}
 
 	setTimeout(function() {
 		$('.flashes').css('opacity', 0);
 	}, 4000);
+
+
+	/*====================Settings==================*/
+	let uploads = document.querySelectorAll('.profile__photo_empty');
+	uploads.forEach(upload => {
+		let input = upload.querySelector('input');
+		input.addEventListener('change', () => {
+			upload.classList.add('selected');
+			upload.querySelector('span').innerText = 'Selected';
+		});
+	});
+
+	let uploaded = document.querySelectorAll('.profile__photo');
+	uploaded.forEach(container => {
+		let closeBtn = container.querySelector('.close');
+		closeBtn.onclick = () => {
+			axios.post(`${window.origin}/delete_photo`, {
+				csrf_token: csrf_token,
+				id: container.getAttribute('data-photo-id')
+			}).then(response => {
+				if (response.data.success) {
+					container.classList.add('profile__photo_empty');
+					container.classList.add('selected');
+					container.innerText = 'Deleted';
+				}
+			});
+		}
+	});
 });

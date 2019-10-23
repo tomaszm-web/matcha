@@ -9,15 +9,14 @@
 				</div>
 				<input type="hidden" name="csrf_token" value="%% csrf_token %%">
 				<div class="col-12 d-flex align-items-center">
-					<label class="profile__avatar" style="background-image: url(%% avatar %%)"
-						   data-toggle="tooltip" data-placement="top" title="You should upload avatar to use this website">
+					<label class="profile__avatar" style="background-image: url(%% avatar %%)">
 						<i class="fa fa-upload"></i>
-						<input type="file" class="form-control" name="avatar" accept="image/*" {% if not cur_user.avatar %}required{% endif %}>
+						<input type="file" class="form-control" name="avatar" accept=".png, .jpg, .jpeg" {% if not cur_user.avatar %}required{% endif %}>
 					</label>
 					<div class="profile__info">
 						<code>%% cur_user.login %%</code>
 						<div class="progress">
-							<div class="progress-bar" style="width: %% cur_user.fame %%%">
+							<div class="progress-bar bg-info" style="width: %% cur_user.fame %%%">
 								Your Fame Rating:
 								%% cur_user.fame %%%
 							</div>
@@ -93,20 +92,25 @@
 				</div>
 				<div class="col-12 settings-animate-bottom">
 					Profile photos:
-					<label class="form-group d-sm-flex">
+					<div class="form-group d-sm-flex mt-3">
 						{% for photo in cur_user.photos %}
-							<div class="profile__photo">
-								{% if photo %}
-									<div class="uploaded_photo" style="background-image: url(%% photo %%);"></div>
-									<input type="file" name="photos[]" class="form-control form-control-sm"
-										   accept="image/*">
-								{% else %}
-									<input type="file" name="photos[]" class="form-control form-control-sm"
-										   accept="image/*">
-								{% endif %}
-							</div>
+							{% if photo %}
+								<div class="profile__photo mx-1" data-photo-id="%% loop.index - 1 %%">
+									<img src="%% photo %%" alt="Matcha" class="img-thumbnail">
+									<input type="file" name="photos" accept=".png, .jpg, .jpeg" class="invisible">
+									<button type="button" class="close text-danger">
+										<span aria-hidden="true">&times;</span>
+									</button>
+								</div>
+							{% else %}
+								<label class="profile__photo_empty rounded mx-1">
+									<i class="fa fa-upload mb-2"></i>
+									<span>Select or drop photo</span>
+									<input type="file" name="photos" accept=".png, .jpg, .jpeg">
+								</label>
+							{% endif %}
 						{% endfor %}
-					</label>
+					</div>
 				</div>
 				<div class="col align-self-center">
 					<button class="btn btn-success">Apply changes</button>
