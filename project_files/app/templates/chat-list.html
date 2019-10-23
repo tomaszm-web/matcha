@@ -9,13 +9,16 @@
 				<div class="col-12">
 					<div class="list-group">
 						{% for chat in chats %}
-							<a href="%% url_for('chat_page', user_id=chat.user_id) %%" class="list-group-item text-light">
+							<a href="%% url_for('chat_page', user_id=chat.recipient_id) %%"
+							   class="list-group-item text-light">
 								<div class="col-2">
 									<img src="/static/img/default_avatar.png" alt="Matcha"
 										 class="img-fluid img-round">
 								</div>
 								<p class="text-truncate mb-0 col-6">%% chat.message %%</p>
-								<span class="timestamp col-4 text-right">%% chat.timestamp %%</span>
+								<span class="timestamp col-4 text-right text-secondary">
+									%% chat.timestamp %%
+								</span>
 							</a>
 						{% endfor %}
 					</div>

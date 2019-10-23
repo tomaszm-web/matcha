@@ -103,7 +103,7 @@ def chat_list():
 		return redirect(url_for('settings'))
 	chats = Chat.get_chats(session['user'])
 	print(chats)
-	return render_template('chat-list.html', cur_user=cur_user, chats=chats)
+	return render_template('chat-list.html', cur_user=user, chats=chats)
 
 
 @app.route('/register', methods=["POST"])
