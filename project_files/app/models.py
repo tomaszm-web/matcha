@@ -106,9 +106,16 @@ class Account:
 		return json.loads(self._photos)
 
 	@photos.setter
-	def photos(self, value):
-		db.query("UPDATE users SET photos = %s WHERE id = %s", values=(value, self.id), commit=True)
-		self._photos = value
+	def photos(self, values):
+		user_dir = os.path.join(app.config['UPLOAD_FOLDER'], self.login)
+		absolute_dir = os.path.join(app.config['ROOT_PATH'], app.config['UPLOAD_FOLDER'], self.login)
+		for photo in os.listdir(absolute_dir):
+			if os.path.join('/', user_dir, photo) not in values:
+				print(f"{photo} was removed from {absolute_dir}")
+				os.remove(os.path.join(absolute_dir, photo))
+		values = json.dumps(values)
+		db.query("UPDATE users SET photos = %s WHERE id = %s", values=(values, self.id), commit=True)
+		self._photos = values
 
 	@property
 	def online(self):
@@ -327,8 +334,8 @@ class Account:
 			sql = f"INSERT INTO `tags` (name) VALUES ({sql})"
 			db.query(sql, values=nonexistent_tags, commit=True)
 
-		sql = "DELETE FROM `user_tag` WHERE user_id=%s"
-		db.query(sql, values=(self.id,))
+		sql = "DELETE FROM `user_tag` WHERE user_id = %s"
+		db.query(sql, values=(self.id,), commit=True)
 		all_tags = db.get_all_rows("SELECT * FROM `tags`")
 		sql = ', '.join("(%s, %s)" for _ in range(len(new_tags)))
 		user_tag_ids = itertools.chain.from_iterable(
@@ -352,7 +359,6 @@ class Account:
 			self.avatar = relative_path
 		user_photos = [photo for photo in self.photos]
 		uploaded_photos = files.getlist('photos')
-		print(uploaded_photos)
 		for i, photo in enumerate(uploaded_photos):
 			if not photo:
 				continue
@@ -360,7 +366,7 @@ class Account:
 			relative_path = os.path.join('/', relative_dir, photo_filename)
 			user_photos[i] = relative_path
 		if user_photos != self.photos:
-			self.photos = json.dumps(user_photos)
+			self.photos = user_photos
 
 	@staticmethod
 	def filter_by_preferences(sql, user):

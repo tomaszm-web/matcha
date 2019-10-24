@@ -1,6 +1,5 @@
 import os
 import requests
-import json
 
 import MySQLdb
 from flask import (
@@ -235,7 +234,7 @@ def delete_photo():
 		photo_id = int(request.get_json()['id'])
 		original_photos = user.photos
 		original_photos[photo_id] = ""
-		user.photos = json.dumps(original_photos)
+		user.photos = original_photos
 	except (AssertionError, KeyError) as e:
 		return jsonify({'success': False, 'error': str(e)})
 	else:
