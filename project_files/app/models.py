@@ -110,7 +110,8 @@ class Account:
 		user_dir = os.path.join(app.config['UPLOAD_FOLDER'], self.login)
 		absolute_dir = os.path.join(app.config['ROOT_PATH'], app.config['UPLOAD_FOLDER'], self.login)
 		for photo in os.listdir(absolute_dir):
-			if os.path.join('/', user_dir, photo) not in values:
+			photo_path = os.path.join('/', user_dir, photo)
+			if photo_path not in values and photo_path not in self.avatar:
 				print(f"{photo} was removed from {absolute_dir}")
 				os.remove(os.path.join(absolute_dir, photo))
 		values = json.dumps(values)
