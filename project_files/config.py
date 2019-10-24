@@ -26,14 +26,11 @@ class Config(object):
 	MAIL_USERNAME = os.environ.get('GMAIL_USERNAME')
 	MAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD')
 
-	# administrator list
-	ADMINS = ["evgeny.ocheredko@gmail.com"]
+	# administrator
+	ADMIN = os.environ.get('GMAIL_USERNAME')
 
 	# Upload folder
 	UPLOAD_FOLDER = "uploads"
-
-	# Google Maps Key
-	GOOGLEMAPS_KEY = "AIzaSyALTJ_4VStfdn39CkEBeyybal3FaxANm60"
 
 	# PERMANENT_SESSION_LIFETIME = timedelta(minutes=5)
 

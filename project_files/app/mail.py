@@ -5,7 +5,7 @@ from flask_mail import Message
 from flask import render_template
 from app import app, mail
 
-admin = app.config['ADMINS'][0]
+admin = app.config['ADMIN']
 
 
 def send_async_email(application, msg):

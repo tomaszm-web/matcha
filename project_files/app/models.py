@@ -196,9 +196,9 @@ class Account:
 			user.fame = fame_rates.get(user.id, 0) if fame_rates else 0
 			user.tags = tags_groups.get(user.id, ()) if tags_groups else ()
 		if filters is not None:
-			users = (user for user in users if user.filter_fit(filters))
+			users = [user for user in users if user.filter_fit(filters)]
 		sort_func = cls.create_sort_func(user_match, sort_by)
-		if sort_by is not None or user_match is not None:
+		if sort_func is not None:
 			users = sorted(users, key=sort_func)
 		return users
 
@@ -284,7 +284,9 @@ class Account:
 
 	@staticmethod
 	def create_sort_func(user_match, sort_by=None):
-		# todo location should be refactored. For example make 2 selects for city and country.
+		if user_match is None and sort_by is None:
+			return None
+
 		def sort(e):
 			if sort_by:
 				if sort_by == 'age' or sort_by == 'fame':
@@ -337,9 +339,9 @@ class Account:
 			db.query(sql, values=user_tag_ids, commit=True)
 
 	def update_user_files(self, files):
-		"""
-		Uploads user avatar and 4 photos.
+		"""Upload user avatar and 4 photos.
 		In database relative paths are stored.
+
 		"""
 		if not files:
 			return None
