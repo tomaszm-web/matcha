@@ -427,12 +427,14 @@ $(document).ready(function() {
 				id: container.getAttribute('data-photo-id')
 			}).then(response => {
 				if (response.data.success) {
+					container.tagName = 'label';
+					container.classList.remove('profile__photo');
+					container.classList.add('profile__photo_empty');
+					container.classList.add('rounded');
 					container.innerHTML =
-						"<label class=\"profile__photo_empty rounded mx-1\">" +
 						"<i class=\"fa fa-upload mb-2\"></i>" +
 						"<span>Select or drop photo</span>" +
-						"<input type=\"file\" name=\"photos\" accept=\".png, .jpg, .jpeg\">" +
-						"</label>";
+						"<input type=\"file\" name=\"photos\" accept=\".png, .jpg, .jpeg\">"
 				}
 			});
 		}

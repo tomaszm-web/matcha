@@ -98,6 +98,13 @@ class Account:
 
 	@avatar.setter
 	def avatar(self, value):
+		user_dir = os.path.join(app.config['UPLOAD_FOLDER'], self.login)
+		absolute_dir = os.path.join(app.config['ROOT_PATH'], user_dir)
+		for photo in os.listdir(absolute_dir):
+			photo_path = os.path.join('/', user_dir, photo)
+			if photo_path != value and photo_path not in self.photos:
+				print(f"{photo} was removed from {absolute_dir}")
+				os.remove(os.path.join(absolute_dir, photo))
 		db.query("UPDATE users SET avatar = %s WHERE id = %s", values=(value, self.id), commit=True)
 		self._avatar = value
 
@@ -108,10 +115,10 @@ class Account:
 	@photos.setter
 	def photos(self, values):
 		user_dir = os.path.join(app.config['UPLOAD_FOLDER'], self.login)
-		absolute_dir = os.path.join(app.config['ROOT_PATH'], app.config['UPLOAD_FOLDER'], self.login)
+		absolute_dir = os.path.join(app.config['ROOT_PATH'], user_dir)
 		for photo in os.listdir(absolute_dir):
 			photo_path = os.path.join('/', user_dir, photo)
-			if photo_path not in values and photo_path not in self.avatar:
+			if photo_path not in values and photo_path != self.avatar:
 				print(f"{photo} was removed from {absolute_dir}")
 				os.remove(os.path.join(absolute_dir, photo))
 		values = json.dumps(values)
@@ -324,7 +331,7 @@ class Account:
 		return filter1 and filter2 and filter3 and filter4 and filter5 and filter6
 
 	def update_user_tags(self, new_tags):
-		if not new_tags or self.tags == new_tags:
+		if self.tags == new_tags:
 			return None
 		all_tags = db.get_all_rows("SELECT * FROM `tags`")
 		all_tags = {tag_name for _, tag_name in all_tags}

@@ -8,6 +8,7 @@ class Config(object):
 	# - 500 ошибку без какой либо дополнительной информации.
 	DEBUG = False
 	# данных, например cookies.
+	print(os.getenv('MYSQL_HOST'))
 	SECRET_KEY = os.environ.get('SECRET_KEY') or 'ABSOLUTELY SECRET'
 	ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
