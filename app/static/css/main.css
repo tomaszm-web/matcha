@@ -57,6 +57,11 @@ a:hover {
 	font-size: 12px;
 }
 
+.btn img {
+	margin-right: 15px;
+	max-width: 30px;
+}
+
 .btn i {
 	margin-right: 5px;
 }

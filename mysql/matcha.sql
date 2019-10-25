@@ -8,6 +8,9 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS = @@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION = @@COLLATION_CONNECTION */;
 
+CREATE USER 'matcha'@'%' IDENTIFIED BY 'absolutelySecret';
+GRANT ALL ON *.* TO 'matcha'@'%';
+
 --
 -- База данных: `matcha`
 --

@@ -6,15 +6,17 @@ Create a "Dating" Web Application, which allows two potential lovers to meet.
 It's written in **Python Flask** framework for back-end and **Vue.js** with **Bootstrap 4** for front-end.
 The main constraints for this project is no ORM, validators and User Accounts Manager.
 
-### Prerequisites
-Docker installed.
-Set environment variables inside dockerfile
+### Prerequisites and running
+install Docker.
+Set environment variables inside .env file
+```
+cd matcha
 
-### Running the program
+Container for mysql
+1. docker build -t mysql:latest mysql/
+2. docker container run -d --rm -p 3306:3306 --name mysql mysql
+
+Container for server
+1. docker build -t matcha:latest matcha/
+2. docker container run -it -p 80:80 -v $(pwd):/matcha --name matcha matcha
 ```
-docker image build -t matcha:latest .
-docker container -p 8800:80 --name matcha -v src/:/matcha matcha
-```
-Usage:
-1. docker build -t matcha:latest .
-2. docker run -p 8080:80 matcha:latest
