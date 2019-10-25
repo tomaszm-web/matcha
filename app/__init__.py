@@ -1,3 +1,4 @@
+import os
 from secrets import token_hex
 from functools import wraps
 
@@ -41,8 +42,9 @@ def login_required(func):
 
 
 app = CustomFlask(__name__)
-env = DotEnv(app)
-app.config.from_object(DevelopmentConfig)
+config = DevelopmentConfig()
+config.init_app(app)
+app.config.from_object(config)
 socketio = SocketIO(app)
 mail = Mail(app)
 db = Database(app)
