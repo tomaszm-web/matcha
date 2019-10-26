@@ -10,7 +10,8 @@
 					<div class="list-group">
 						{% if chats %}
 							{% for chat in chats %}
-								<a href="%% url_for('chat_page', user_id=chat.recipient_id) %%"
+								{% set recipient_id = chat.recipient_id if chat.sender_id == cur_user.id else chat.sender_id %}
+								<a href="%% url_for('chat_page', user_id=recipient_id) %%"
 								   class="list-group-item text-light">
 									<div class="col-2">
 										<img src="/static/img/default_avatar.png" alt="Matcha"

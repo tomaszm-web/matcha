@@ -37,6 +37,8 @@ def upload_photo(relative_dir, photo):
 
 
 class Account:
+	tz = pytz.timezone("Europe/Kiev")
+
 	def __init__(self, user_id=None, *, extended=True):
 		if user_id is None:
 			raise ValueError("No user with this id")
@@ -59,7 +61,9 @@ class Account:
 		self.age = user['age']
 		self._online = user['online']
 		if user['last_login']:
-			self.last_login = datetime.strftime(user['last_login'], "%H:%M %d.%m.%Y")
+			local_dt = user['last_login'].replace(tzinfo=pytz.utc).astimezone(self.tz)
+			self.tz.normalize(local_dt)
+			self.last_login = local_dt.strftime("%H:%M %d.%m.%Y")
 		self.city = user['city']
 		self.fame = self.get_fame_rating(self.id) if extended else None
 		self.tags = self.get_tags(self.id) if extended else None
@@ -334,12 +338,12 @@ class Account:
 		if self.tags == new_tags:
 			return None
 		all_tags = db.get_all_rows("SELECT * FROM `tags`")
-		all_tags = {tag_name for _, tag_name in all_tags}
-		sql = ', '.join('%s' for tag_name in new_tags if tag_name not in all_tags)
-		new_tags = {*new_tags}
+		all_tags = set(tag_name for _, tag_name in all_tags)
+		sql = ', '.join('(%s)' for tag_name in new_tags if tag_name not in all_tags)
+		new_tags = set(new_tags)
 		nonexistent_tags = new_tags - all_tags
 		if nonexistent_tags:
-			sql = f"INSERT INTO `tags` (name) VALUES ({sql})"
+			sql = f"INSERT INTO `tags` (name) VALUES {sql}"
 			db.query(sql, values=nonexistent_tags, commit=True)
 
 		sql = "DELETE FROM `user_tag` WHERE user_id = %s"
@@ -443,6 +447,7 @@ class Account:
 
 class Chat:
 	timestamp_format = "%H:%M %d.%m.%Y"
+	tz = pytz.timezone("Europe/Kiev")
 
 	def __init__(self, user1_id, user2_id):
 		select_sql = "SELECT id FROM chats WHERE user1_id = %s AND user2_id = %s"
@@ -456,7 +461,6 @@ class Chat:
 		self.id, = response
 		self.sender_id = user1_id
 		self.recipient_id = user2_id
-		self.tz = pytz.timezone("Europe/Kiev")
 
 	def get_messages(self):
 		sql = "SELECT * FROM `messages` WHERE chat_id = %s ORDER BY timestamp"
@@ -473,15 +477,19 @@ class Chat:
 
 	@classmethod
 	def get_chats(cls, user_id):
-		sql = ("SELECT chat_id, recipient_id, text, timestamp FROM messages "
+		sql = ("SELECT chat_id, sender_id, recipient_id, text, timestamp FROM messages "
 			   "INNER JOIN chats ON messages.chat_id = chats.id "
 			   "WHERE sender_id = %s OR recipient_id = %s ORDER BY timestamp DESC")
-		columns = ('chat_id', 'recipient_id', 'message', 'timestamp')
+		columns = ('chat_id', 'sender_id', 'recipient_id', 'message', 'timestamp')
 		chats = db.get_all_rows(sql, values=(user_id, user_id))
 		if not chats:
 			return None
 		chats = itertools.groupby(chats, lambda row: row[0])
-		chats = (dict(zip(columns, message)) for _, (message, *_) in chats)
+		chats = list(dict(zip(columns, message)) for _, (message, *_) in chats)
+		for chat in chats:
+			local_dt = chat['timestamp'].replace(tzinfo=pytz.utc).astimezone(cls.tz)
+			cls.tz.normalize(local_dt)
+			chat['timestamp'] = local_dt.strftime(cls.timestamp_format)
 		return chats
 
 
