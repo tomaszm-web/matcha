@@ -107,7 +107,6 @@ class Account:
 		for photo in os.listdir(absolute_dir):
 			photo_path = os.path.join('/', user_dir, photo)
 			if photo_path != value and photo_path not in self.photos:
-				print(f"{photo} was removed from {absolute_dir}")
 				os.remove(os.path.join(absolute_dir, photo))
 		db.query("UPDATE users SET avatar = %s WHERE id = %s", values=(value, self.id), commit=True)
 		self._avatar = value
@@ -123,7 +122,6 @@ class Account:
 		for photo in os.listdir(absolute_dir):
 			photo_path = os.path.join('/', user_dir, photo)
 			if photo_path not in values and photo_path != self.avatar:
-				print(f"{photo} was removed from {absolute_dir}")
 				os.remove(os.path.join(absolute_dir, photo))
 		values = json.dumps(values)
 		db.query("UPDATE users SET photos = %s WHERE id = %s", values=(values, self.id), commit=True)
