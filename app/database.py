@@ -13,11 +13,12 @@ class Database:
 
 	def connect(self):
 		host = self.app.config.get('MYSQL_HOST')
+		port = int(self.app.config.get('MYSQL_PORT', 3306))
 		db = self.app.config.get('MYSQL_DB')
 		user = self.app.config.get('MYSQL_USER')
 		password = self.app.config.get('MYSQL_PASSWORD')
 		try:
-			self.con = MySQLdb.connect(host=host, user=user, password=password)
+			self.con = MySQLdb.connect(host=host, user=user, password=password, port=port)
 		except (MySQLdb.OperationalError, TypeError) as e:
 			print('MySql Connection Error. Cannot run app.')
 			print('You should ensure that all environment variables are set and correct')

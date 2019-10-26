@@ -1,10 +1,8 @@
-import os
 from secrets import token_hex
 from functools import wraps
 
 from flask import Flask, session, redirect, url_for, flash
 from flask_socketio import SocketIO
-from flask_dotenv import DotEnv
 
 from app.database import Database
 from flask_mail import Mail

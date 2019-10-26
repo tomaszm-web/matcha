@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.6
 WORKDIR /matcha
 COPY requirements.txt /matcha
 RUN apt-get update

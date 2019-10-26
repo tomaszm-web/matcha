@@ -8,7 +8,7 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS = @@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION = @@COLLATION_CONNECTION */;
 
-CREATE USER 'matcha'@'%' IDENTIFIED BY 'absolutelySecret';
+CREATE USER 'matcha'@'%' IDENTIFIED WITH mysql_native_password BY 'absolutelySecret';
 GRANT ALL ON *.* TO 'matcha'@'%';
 
 --
@@ -43,66 +43,6 @@ CREATE TABLE IF NOT EXISTS `users`
     `last_login`  datetime                                                                                 DEFAULT NULL,
     `city`        varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci                                  DEFAULT NULL
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;
-
---
--- Дамп данных таблицы `users`
---
-
-INSERT INTO `users` (`login`, `name`, `surname`, `email`, `password`, `token`, `confirmed`, `gender`,
-                     `preferences`, `biography`, `avatar`, `photos`, `age`, `online`, `last_login`, `city`)
-VALUES ('login', 'Mykola', 'Kostiantynovich', 'o4eredko.crypto@gmail.com',
-        'pbkdf2:sha256:150000$zXhR3POx$aac96921bede1fc55dd8c3e1680541695436b1243cc463054f2d36dbdf729cfc',
-        'c2dfc6a5e44f3c0c8518', 1, 'female', 'bisexual', 'Are you Okay?', '/uploads/avatar.png',
-        '[\"/uploads/afrodita/obama3.jpeg\", \"\", \"\", \"\"]', 18, 0, '2019-10-08 14:27:21', NULL),
-       ('afrodita', 'Afrodita', 'Kardashian', 'suyuvumiwu@quickemail.info',
-        'pbkdf2:sha256:150000$2XeI1DDS$2757329318b832f743ba7451860425f0428472515926b423dfd96cce97006fbf',
-        'cefab73d61bb09d9b032', 1, 'female', 'heterosexual', 'Afganistan one love', '/uploads/avatar.png',
-        '[\"/uploads/afrodita/obama3.jpeg\", \"\", \"uploads/afrodita/IMG_20170520_213128_785.jpg\", \"\"]', 21, 1,
-        '2019-10-18 17:13:49', 'Kyiv, Ukraine'),
-       ('azbek', 'Azbek', 'Farhad', 'getamazid@tempmailapp.com',
-        'pbkdf2:sha256:150000$9YkQ0zLb$f6662b9d4772c0150b87d1dfd5b322873b17f89ae70c59f2713676abe09dcff9',
-        '03ac105048c7a1d87b8f', 1, 'male', 'heterosexual', 'Allah nad nami, Zemlya pod nogami', '/uploads/avatar.png',
-        '[\"/uploads/afrodita/obama3.jpeg\", \"\", \"\", \"\"]', 35, 0, NULL, NULL),
-       ('okherson', 'Oleksii', 'Khersoniuk', 'wufigiluse@4easyemail.com',
-        'pbkdf2:sha256:150000$bFKBmSHI$2a57db4514c5bfdcc821a47081f8d9dbf86dd8e6eb656d1226b4533473d92e6e',
-        '7c4bb8564698e8bbed39', 1, 'male', 'heterosexual', NULL, '/uploads/avatar.png',
-        '[\"/uploads/afrodita/obama3.jpeg\", \"\", \"\", \"\"]', 28, 0, NULL, NULL),
-       ('lara', 'Larisa', 'Pindoska', 'vefatufapo@mail-point.net',
-        'pbkdf2:sha256:150000$wa1xr3EN$b45d57bb8983476a4a57e58db48c11a93bc686121c8213af45f23cbb753775ec',
-        '1517e11c2286661f52d7', 1, 'female', 'heterosexual', 'Drunk as fucked', '/uploads/avatar.png',
-        '[\"/uploads/afrodita/obama3.jpeg\", \"\", \"\", \"\"]', 18, 0, '2019-10-19 21:34:00', 'Kyiv, Ukraine'),
-       ('maximilian', 'Maximilian', 'Moskaloder', 'wilep@inappmail.com',
-        'pbkdf2:sha256:150000$HjJUYSbZ$b56c68724963989061260fcfe11a76da7be93d148901a4e63ff0d3a8bd3c9c36',
-        'e0545d6a928ee28dd151', 1, 'male', 'bisexual', 'Hello world', '/uploads/maximilian/large_yochered.jpg',
-        '[\"/uploads/maximilian/large_yochered.jpg\", \"\", \"uploads/maximilian/large_yochered.jpg\", \"\"]', 20, 0,
-        '2019-10-19 16:36:34', 'Kherson, Kherson Oblast, Ukraine'),
-       ('fdsafdas', 'Kostik', 'AAA', 'jecaxarih@my6mail.com',
-        'pbkdf2:sha256:150000$qptlztYP$c744f940f3f478a156b28ef559b646ced9dbd6715878b7fd89d6cef053426df8',
-        'd49e5fd8d4d9345ac029', 1, 'male', 'bisexual', 'AAAA', '/uploads/avatar.png', '[\"\", \"\", \"\", \"\"]', 21, 0,
-        '2019-10-06 10:28:30', NULL),
-       ('dzaporoz2', 'Dmytro', 'Zzzz', 'bixap@my6mail.com',
-        'pbkdf2:sha256:150000$Yj8mqV1b$c3b1c8a1cff69c2abb1be820a551c9b9a9ee08e8b6ff457236d46727d7493450',
-        '6dafb79f682347a15587', 1, 'male', 'bisexual', 'biography', '/uploads/avatar.png',
-        '[\"/uploads/dzaporoz2/1565540964.png\", \"/uploads/dzaporoz2/3.jpg\", \"\", \"\"]', 64, 0,
-        '2019-10-06 13:07:35', 'Kyiv, Ukraine'),
-       ('mykola', 'Mykolai', 'Saint', 'ripanoxey@app-mailer.com',
-        'pbkdf2:sha256:150000$VD3ld1zu$f06834980fe49046f5d5b591f384de3dc061a1f8a4bf87696e901116a7a9cffe',
-        '14c1fb0a66cb9f59a788', 1, NULL, 'bisexual', NULL, '/static/img/default_avatar.png', '[\"\", \"\", \"\", \"\"]',
-        18, 0, '2019-10-06 13:08:22', NULL),
-       ('o4eredko', 'Yevhenii', 'Ocheredko', 'evgeny.ocheredko@gmail.com',
-        'pbkdf2:sha256:150000$aPuxewzR$8402898026f683a27addc11db980db544c16161b188f59a739d26dbce1da6129',
-        'd19e412b481599d823fe', 1, 'male', 'heterosexual', 'Hello mates', '/uploads/o4eredko/large_yochered.jpg',
-        '[\"/uploads/o4eredko/photo.jpeg\", \"/uploads/o4eredko/photo.jpeg\", \"\", \"/uploads/o4eredko/photo.jpeg\"]',
-        18, 0, '2019-10-20 17:42:25', 'Kyiv, Ukraine'),
-       ('bts', 'Afrodita', 'Andriivna', 'boyetav@w6mail.com',
-        'pbkdf2:sha256:150000$sOqi4NdG$293a757baa5faa4511ff5113164b8dcac180d106174095e5c284a66079d035c5',
-        'af26a35b9447f0760539', 1, 'female', 'bisexual', 'Nu i sho?', '/uploads/bts/P90817-105948.jpg',
-        '[\"/uploads/bts/P90817-105948.jpg\", \"\", \"\", \"\"]', 28, 0, '2019-10-10 16:47:56', 'Kyiv, Ukraine'),
-       ('puten', 'Putin', 'Huilo', 'femapica@2mailcloud.com',
-        'pbkdf2:sha256:150000$XT1ScKrr$1ad07f23c5e5af9f9000eba031f7a7699b2af34d78ad1578c85bda4ca07178a2',
-        'fa9932a32594cd4aa55d', 1, 'male', 'bisexual', 'Occupant', '/uploads/puten/puten.jpg',
-        '[\"/uploads/puten/puten2.jpg\", \"\", \"\", \"\"]', 67, 1, NULL, 'Kyiv, Ukraine');
-
 
 -- --------------------------------------------------------
 

@@ -14,9 +14,9 @@ cd matcha
 
 Container for mysql
 1. docker build -t mysql:latest mysql/
-2. docker container run -d --rm -p 3306:3306 --name mysql mysql
+2. docker container run -d -p 3308:3306 --name mysql mysql
 
 Container for server
-1. docker build -t matcha:latest matcha/
+1. docker build -t matcha:latest server/
 2. docker container run -it -p 80:80 -v $(pwd):/matcha --name matcha matcha
 ```
