@@ -1,22 +1,28 @@
 # Matcha
 Unit Factory educational project.
 
-### Subject
-Create a "Dating" Web Application, which allows two potential lovers to meet.
-It's written in **Python Flask** framework for back-end and **Vue.js** with **Bootstrap 4** for front-end.
-The main constraints for this project is no ORM, validators and User Accounts Manager.
+It is a "Dating" Web Application, which allows two potential lovers to meet. It's written in **Python 
+Flask** framework for back-end and **Vue.js** with **Bootstrap4** for front-end.
 
-### Prerequisites and running
-install Docker.
-Set environment variables inside .env file
+### Constraints
+No ORM, validators and User Accounts Manager.
+
+### Requirements
+* Docker installed and docker daemon running: https://www.docker.com/
+* Set email and password inside **.env** file to make email sender work
+
+### Installation and running
+Docker should be installed and run
 ```
-cd matcha
-
-Container for mysql
-1. docker build -t mysql:latest mysql/
-2. docker container run -d -p 3308:3306 --name mysql mysql
-
-Container for server
-1. docker build -t matcha:latest server/
-2. docker container run -it -p 80:80 -v $(pwd):/matcha --name matcha matcha
+sh install.sh
 ```
+Wait ~10 seconds until mysql container starts working
+Open this link **docker-host-ip:80**
+Enjoy _Matcha_
+
+You can also uninstall all images and containers by writing:
+```
+sh uninstall.sh
+```
+
+### Usage
