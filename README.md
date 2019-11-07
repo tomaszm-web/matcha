@@ -26,3 +26,11 @@ sh uninstall.sh
 ```
 
 ### Usage
+You can search for your potential lovers using advanced search
+![Matcha](https://https://github.com/o4eredko/matcha/app/static/img/screenshot1.jpg)
+
+You should like the user and he/she will receive the notification and will be able to like you back.
+![Matcha](https://https://github.com/o4eredko/matcha/app/static/img/screenshot2.jpg)
+
+After you like each other, you can text in the chat.
+![Matcha](https://https://github.com/o4eredko/matcha/app/static/img/screenshot3.jpg)
