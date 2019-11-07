@@ -92,7 +92,7 @@
 				</div>
 				<div class="col-12 settings-animate-bottom">
 					Profile photos:
-					<div class="form-group d-sm-flex mt-3">
+					<div class="form-group d-flex mt-3 photo-container">
 						{% for photo in cur_user.photos %}
 							{% if photo %}
 								<div class="profile__photo mx-1" data-photo-id="%% loop.index - 1 %%">
@@ -103,7 +103,7 @@
 									</button>
 								</div>
 							{% else %}
-								<label class="profile__photo_empty rounded mx-1">
+								<label class="profile__photo_empty rounded m-1">
 									<i class="fa fa-upload mb-2"></i>
 									<span>Select or drop photo</span>
 									<input type="file" name="photos" accept=".png, .jpg, .jpeg">

@@ -50,7 +50,7 @@
 						<div class="dropdown-menu dropdown-menu-right notifications" aria-labelledby="user-notif">
 							<div class="dropdown-header">Notifications:</div>
 							<div class="message" v-for="notif in notifications">
-								<a :href="notif.link" class="text-info">{{ notif.message }}</a>
+								<a :href="notif.link" class="text-info text-truncate">{{ notif.message }}</a>
 								<span class="message__timestamp text-secondary">{{ notif.date_created }}</span>
 								<button type="button" class="close text-danger" @click.prevent="delNotification(notif.id)">
 									<span aria-hidden="true">&times;</span>
@@ -148,6 +148,7 @@
 					<button class="btn btn-info" data-dismiss="modal" data-toggle="modal" data-target="#reset">Forgot
 						your password?
 					</button>
+					<div class="alert alert-info">You can use <code>login</code> as login and password</div>
 				</form>
 			</div>
 			<div class="modal-footer">

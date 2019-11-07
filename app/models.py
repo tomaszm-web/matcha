@@ -435,7 +435,7 @@ class Account:
 				return ()
 			return [tag_name for tag_name, in tags]
 		else:
-			sql = "SELECT ut.user_id, tags.name FROM tags INNER JOIN user_tag AS ut ON tags.id = ut.tag_id"
+			sql = "SELECT ut.user_id, tags.name FROM tags INNER JOIN user_tag AS ut ON tags.id = ut.tag_id ORDER BY ut.user_id"
 			tags_groups = db.get_all_rows(sql)
 			if not tags_groups:
 				return None

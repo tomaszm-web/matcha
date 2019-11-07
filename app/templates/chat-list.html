@@ -13,11 +13,11 @@
 								{% set recipient_id = chat.recipient_id if chat.sender_id == cur_user.id else chat.sender_id %}
 								<a href="%% url_for('chat_page', user_id=recipient_id) %%"
 								   class="list-group-item text-light">
-									<div class="col-2">
+									<div class="col-3 col-sm-2">
 										<img src="/static/img/default_avatar.png" alt="Matcha"
 											 class="img-fluid img-round">
 									</div>
-									<p class=" text-truncate mb-0 col-6">%% chat.message %%</p>
+									<p class=" text-truncate mb-0 col-5 col-sm-6">%% chat.message %%</p>
 									<span class="timestamp col-4 text-right text-secondary">
 										%% chat.timestamp %%
 									</span>
