@@ -311,7 +311,7 @@ header {
 	height: 320px;
 	overflow: hidden;
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 }
 
 .card-img-top img {
