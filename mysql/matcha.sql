@@ -83,6 +83,8 @@ CREATE TABLE IF NOT EXISTS `likes`
     CONSTRAINT fk_likes_user_ref2 FOREIGN KEY (liked_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;
 
+INSERT INTO matcha.likes (id, user_id, liked_id) VALUES (1, 7, 2);
+INSERT INTO matcha.likes (id, user_id, liked_id) VALUES (2, 2, 7);
 
 -- --------------------------------------------------------
 
