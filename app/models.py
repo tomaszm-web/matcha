@@ -6,7 +6,7 @@ from datetime import datetime
 
 import pytz
 from MySQLdb.cursors import DictCursor
-from flask import flash, url_for
+from flask import flash, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
@@ -485,6 +485,8 @@ class Chat:
 		chats = itertools.groupby(chats, lambda row: row[0])
 		chats = list(dict(zip(columns, message)) for _, (message, *_) in chats)
 		for chat in chats:
+			second_user = chat['recipient_id'] if chat['sender_id'] == session['user'] else chat['sender_id']
+			chat['second_user'] = Account(second_user, extended=False)
 			local_dt = chat['timestamp'].replace(tzinfo=pytz.utc).astimezone(cls.tz)
 			cls.tz.normalize(local_dt)
 			chat['timestamp'] = local_dt.strftime(cls.timestamp_format)
