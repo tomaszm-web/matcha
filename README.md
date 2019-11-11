@@ -9,7 +9,6 @@ No ORM, validators and User Accounts Manager.
 
 ### Requirements
 * Docker installed and docker daemon running: https://www.docker.com/
-* Set email and password inside **.env** file to make email sender work
 
 ### Installation and running
 Docker should be installed and run
